@@ -1,7 +1,7 @@
 import 'dotenv/config'
 import { connectToBrowser } from '../browser.js'
-import { extractArticleLinks } from '../actions/extract-article-links.js'
-import { highlightTextOccurrence } from '../actions/highlight-text-occurrence.js'
+import { extractArticleLinks } from '../helpers/extract-article-links.js'
+import { highlightTextOccurrence } from '../helpers/highlight-text-occurrence.js'
 
 const { CDP_URL } = process.env
 const { browser, context, pages } = await connectToBrowser(CDP_URL)
