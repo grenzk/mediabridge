@@ -3,7 +3,11 @@
  * @param {string} targetText
  * @param {number} occurrenceIndex
  */
-export async function highlightTextOccurrence(editorBody, targetText, occurrenceIndex = 0) {
+export async function highlightTextOccurrence(
+  editorBody,
+  targetText,
+  occurrenceIndex = 0,
+) {
   await editorBody.evaluate(
     (body, { targetText, occurrenceIndex }) => {
       const walker = document.createTreeWalker(body, NodeFilter.SHOW_TEXT)
@@ -34,7 +38,10 @@ export async function highlightTextOccurrence(editorBody, targetText, occurrence
 
           currentOccurrence++
 
-          start = node.textContent.indexOf(targetText, start + targetText.length)
+          start = node.textContent.indexOf(
+            targetText,
+            start + targetText.length,
+          )
         }
       }
 

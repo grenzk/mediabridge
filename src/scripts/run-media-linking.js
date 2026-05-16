@@ -46,17 +46,19 @@ await articlePage.locator('#cke_16').click()
 
 const sourceEditor = articlePage.locator('.cke_source').first()
 const html = await sourceEditor.inputValue()
-const pdfLinks = links.filter((item) => item.filename.toLowerCase().endsWith('.pdf'))
+const pdfLinks = links.filter(item =>
+  item.filename.toLowerCase().endsWith('.pdf'),
+)
 
 const updatedHtml = await articlePage.evaluate(
   ({ html, links }) => {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
 
-    links.forEach((item) => {
+    links.forEach(item => {
       ;[...doc.querySelectorAll('a')]
-        .filter((link) => link.textContent.trim() === item.text)
-        .forEach((link) => link.classList.add('pdf'))
+        .filter(link => link.textContent.trim() === item.text)
+        .forEach(link => link.classList.add('pdf'))
     })
 
     return doc.body.innerHTML
