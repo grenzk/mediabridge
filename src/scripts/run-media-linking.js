@@ -2,20 +2,20 @@ import 'dotenv/config'
 import { connectToBrowser } from '../browser.js'
 import { extractArticleLinks } from '../helpers/extract-article-links.js'
 import { highlightTextOccurrence } from '../helpers/highlight-text-occurrence.js'
+import { getEditorLocators } from '../editor/get-editor-locators.js'
 
 const { CDP_URL } = process.env
 const { browser, context, pages } = await connectToBrowser(CDP_URL)
 
-const articlePage = pages[0]
-const mediaPage = pages[1]
+const articlePage = pages.find(page => page.url().includes('/article/'))
+const mediaPage = pages.find(page => page.url().includes('/media'))
+
+const { sourceEditor, editorBody, sourceButton } =
+  getEditorLocators(articlePage)
 
 const links = await extractArticleLinks(articlePage)
 
-const editorBody = articlePage
-  .frameLocator('iframe[title="Editor, 202300000099963_key_param"]')
-  .locator('body[contenteditable="true"]')
-
-await articlePage.locator('#cke_16').click()
+await sourceButton.click()
 
 const seen = new Map()
 
@@ -38,14 +38,12 @@ for (const link of links) {
 
     await mediaPage.getByText('Insert').click()
   }
-
-  await mediaPage.waitForTimeout(2000)
 }
 
-await articlePage.locator('#cke_16').click()
+await sourceButton.click()
 
-const sourceEditor = articlePage.locator('.cke_source').first()
 const html = await sourceEditor.inputValue()
+
 const pdfLinks = links.filter(item =>
   item.filename.toLowerCase().endsWith('.pdf'),
 )

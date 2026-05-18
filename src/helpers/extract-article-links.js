@@ -1,8 +1,13 @@
+import { getEditorLocators } from '../editor/get-editor-locators.js'
+
 /**
  * @param {import('playwright').Page} articlePage
  */
 export async function extractArticleLinks(articlePage) {
-  const html = await articlePage.locator('.cke_source').first().inputValue()
+  const { sourceEditor } = getEditorLocators(articlePage)
+
+  const html = await sourceEditor.inputValue()
+
   const links = await articlePage.evaluate(html => {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
