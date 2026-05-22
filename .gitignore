@@ -3,6 +3,8 @@
 
 # javascript files
 /node_modules
+/dist
+/release
 
 # OS-generated files
 /.DS_Store
