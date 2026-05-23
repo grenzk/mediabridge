@@ -7,12 +7,29 @@ const processedCount = ref(null)
 const status = ref('')
 const busyAction = ref('')
 const errorMessage = ref('')
+const selectedLinkingType = ref('pdf')
+
+const linkingTypes = {
+  pdf: { label: 'PDF', statusLabel: 'PDF' },
+  xls: { label: 'XLS', statusLabel: 'XLS' },
+  docs: { label: 'Docs', statusLabel: 'Docs' },
+  article: { label: 'Article', statusLabel: 'Article' },
+}
 
 const isBusy = computed(() => busyAction.value !== '')
 const linkLabel = computed(() => {
   return linkCount.value === 1 ? 'Link' : 'Links'
 })
 const currentMessage = computed(() => errorMessage.value || status.value)
+const selectedLinkingTypeConfig = computed(
+  () => linkingTypes[selectedLinkingType.value],
+)
+const linkingOptions = computed(() =>
+  Object.entries(linkingTypes).map(([value, item]) => ({
+    value,
+    label: item.label,
+  })),
+)
 
 async function runAction(name, action, successMessage) {
   busyAction.value = name
@@ -60,11 +77,23 @@ function refreshLinkCount() {
 }
 
 function runMediaLinking() {
+  if (selectedLinkingType.value !== 'pdf') {
+    status.value = `${selectedLinkingTypeConfig.value.statusLabel} automation is not ready yet`
+    errorMessage.value = ''
+
+    return
+  }
+
   return runAction(
     'Running script',
     () => window.sessionjack.runMediaLinking(),
     result => `Inserted ${result.processedCount} PDF links`,
   )
+}
+
+function selectLinkingType() {
+  status.value = selectedLinkingTypeConfig.value.statusLabel
+  errorMessage.value = ''
 }
 
 function closeToolbar() {
@@ -81,7 +110,9 @@ function closeToolbar() {
 
       <Button
         v-tooltip.bottom="'Launch controlled browser'"
+        class="launch-button"
         icon="pi pi-external-link"
+        label="Launch"
         severity="secondary"
         text
         :loading="busyAction === 'Opening browser'"
@@ -89,15 +120,38 @@ function closeToolbar() {
         @click="launchBrowser"
       />
 
-      <Button
-        v-tooltip.bottom="'Run media-linking script'"
-        icon="pi pi-play"
-        severity="secondary"
-        text
-        :loading="busyAction === 'Running script'"
-        aria-label="Run media linking script"
-        @click="runMediaLinking"
-      />
+      <div
+        v-tooltip.bottom="`Run ${selectedLinkingTypeConfig.label}`"
+        class="run-control"
+      >
+        <button
+          class="run-button"
+          type="button"
+          :disabled="isBusy"
+          aria-label="Run selected link automation"
+          @click="runMediaLinking"
+        >
+          <i class="pi pi-play" aria-hidden="true" />
+          <span>Run</span>
+        </button>
+
+        <select
+          v-model="selectedLinkingType"
+          class="run-select"
+          aria-label="Select link automation type"
+          :disabled="isBusy"
+          @change="selectLinkingType"
+        >
+          <option
+            v-for="option in linkingOptions"
+            :key="option.value"
+            :value="option.value"
+          >
+            {{ option.label }}
+          </option>
+        </select>
+        <i class="pi pi-chevron-down run-chevron" aria-hidden="true" />
+      </div>
 
       <button
         v-tooltip.bottom="'Refresh link count'"
