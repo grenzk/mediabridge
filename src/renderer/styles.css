@@ -50,7 +50,7 @@ button {
 .toolbar {
   -webkit-app-region: drag;
   display: grid;
-  grid-template-columns: minmax(48px, 1fr) 94px 104px 78px 1px 40px;
+  grid-template-columns: minmax(48px, 1fr) 94px 104px 92px 1px 40px;
   align-items: center;
   gap: 5px;
   height: 58px;
@@ -85,17 +85,17 @@ button {
   line-height: 1;
 }
 
-.p-button {
+.toolbar .p-button {
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  color: #f8fafc;
-  background: rgb(255 255 255 / 8%);
-  border: 1px solid rgb(255 255 255 / 14%);
+  color: #f8fafc !important;
+  background: rgb(255 255 255 / 8%) !important;
+  border: 1px solid rgb(255 255 255 / 14%) !important;
 }
 
-.p-button:hover {
-  background: rgb(255 255 255 / 16%);
+.toolbar .p-button:hover {
+  background: rgb(255 255 255 / 16%) !important;
 }
 
 .launch-button.p-button {
@@ -124,7 +124,7 @@ button {
   justify-content: center;
   gap: 6px;
   height: 40px;
-  padding: 0 8px;
+  padding: 0 7px;
   color: #f8fafc;
   border: 0;
   background: transparent;
@@ -181,11 +181,16 @@ button {
   gap: 6px;
   min-width: 0;
   height: 40px;
-  padding: 0 2px;
+  padding: 0 8px;
   color: #f8fafc;
-  border: 0;
-  background: transparent;
+  border: 1px solid rgb(255 255 255 / 14%);
+  border-radius: 8px;
+  background: rgb(255 255 255 / 8%);
   cursor: pointer;
+}
+
+.link-counter:hover {
+  background: rgb(255 255 255 / 16%);
 }
 
 .link-counter:hover .counter-label {
