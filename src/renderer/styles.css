@@ -50,9 +50,9 @@ button {
 .toolbar {
   -webkit-app-region: drag;
   display: grid;
-  grid-template-columns: 34px minmax(136px, 1fr) 44px 44px 92px 1px 44px;
+  grid-template-columns: 34px minmax(136px, 1fr) 40px 40px 78px 1px 40px;
   align-items: center;
-  gap: 8px;
+  gap: 5px;
   height: 58px;
   padding: 8px;
   border: 1px solid rgb(255 255 255 / 10%);
@@ -84,7 +84,7 @@ button {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  padding-right: 4px;
+  padding-right: 2px;
 }
 
 .brand-mark {
@@ -126,15 +126,22 @@ button {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
-  gap: 7px;
+  gap: 6px;
   min-width: 0;
   height: 40px;
-  padding: 0 9px 0 8px;
+  padding: 0 2px;
   color: #f8fafc;
-  border: 1px solid rgb(255 255 255 / 15%);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 10%);
+  border: 0;
+  background: transparent;
   cursor: pointer;
+}
+
+.link-counter:hover .counter-label {
+  color: #f8fafc;
+}
+
+.link-counter:hover .counter-number {
+  background: #fde16a;
 }
 
 .link-counter:disabled {
