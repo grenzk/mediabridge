@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 const linkCount = ref(null)
 const pdfCount = ref(null)
 const processedCount = ref(null)
-const status = ref('')
+const status = ref('PDF')
 const busyAction = ref('')
 const errorMessage = ref('')
 const selectedLinkingType = ref('pdf')
