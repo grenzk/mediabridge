@@ -75,15 +75,8 @@ function closeToolbar() {
 <template>
   <main class="toolbar-shell app-dark">
     <section class="toolbar" aria-label="Sessionjack toolbar">
-      <div class="grabber" aria-hidden="true">
-        <span />
-        <span />
-        <span />
-      </div>
-
       <div class="brand" aria-label="Asset Express">
         <span class="brand-mark">ASX</span>
-        <span class="brand-name">Asset Express</span>
       </div>
 
       <Button
