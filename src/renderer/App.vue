@@ -12,7 +12,7 @@ const selectedLinkingType = ref('pdf')
 const linkingTypes = {
   pdf: { label: 'PDF', statusLabel: 'PDF' },
   xls: { label: 'XLS', statusLabel: 'XLS' },
-  docs: { label: 'Docs', statusLabel: 'Docs' },
+  docs: { label: 'DOC', statusLabel: 'DOC' },
   article: { label: 'Article', statusLabel: 'Article' },
 }
 
