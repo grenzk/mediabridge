@@ -4,15 +4,13 @@ import { computed, ref } from 'vue'
 const linkCount = ref(null)
 const pdfCount = ref(null)
 const processedCount = ref(null)
-const status = ref('Ready')
+const status = ref('')
 const busyAction = ref('')
 const errorMessage = ref('')
 
 const isBusy = computed(() => busyAction.value !== '')
 const linkLabel = computed(() => {
-  if (linkCount.value === null) return 'Links'
-
-  return `${linkCount.value} links`
+  return linkCount.value === 1 ? 'Link' : 'Links'
 })
 const currentMessage = computed(() => errorMessage.value || status.value)
 
@@ -132,8 +130,7 @@ function closeToolbar() {
     </section>
 
     <section class="status-panel" :class="{ error: errorMessage }" aria-live="polite">
-      <div class="status-message">
-        <span class="status-dot" aria-hidden="true" />
+      <div v-if="currentMessage" class="status-message">
         <span>{{ currentMessage }}</span>
       </div>
 
