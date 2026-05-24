@@ -12,7 +12,7 @@
     "build": "vite build",
     "package": "npm run build && electron-builder --dir",
     "dist:mac": "npm run build && electron-builder --mac",
-    "dist:win": "npm run build && electron-builder --win",
+    "dist:win": "npm run build && electron-builder --win --x64",
     "preview": "vite preview",
     "script:media-linking": "node src/scripts/run-media-linking.js"
   },
@@ -40,8 +40,27 @@
     },
     "win": {
       "target": [
-        "nsis",
-        "zip"
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "zip",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "extraResources": [
+        {
+          "from": "vendor/chrome-win64",
+          "to": "chrome-win64",
+          "filter": [
+            "**/*"
+          ]
+        }
       ]
     }
   },

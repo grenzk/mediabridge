@@ -9,6 +9,7 @@ import { analyzeArticleLinks, runMediaLinking } from '../src/automation/media-li
 import { connectToBrowser } from '../src/browser.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
+const appRoot = join(__dirname, '..')
 
 let toolbarWindow
 let browserProcess
@@ -98,6 +99,10 @@ async function waitForBrowserConnection(cdpUrl) {
 }
 
 function getBrowserExecutable() {
+  const bundledChromeForTesting = app.isPackaged
+    ? join(process.resourcesPath, 'chrome-win64', 'chrome.exe')
+    : join(appRoot, 'vendor', 'chrome-win64', 'chrome.exe')
+
   const candidates = {
     darwin: [
       '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
@@ -105,6 +110,8 @@ function getBrowserExecutable() {
       '/Applications/Chromium.app/Contents/MacOS/Chromium',
     ],
     win32: [
+      process.env.SESSIONJACK_CHROME_PATH,
+      bundledChromeForTesting,
       join(process.env.PROGRAMFILES ?? 'C:\\Program Files', 'Google/Chrome/Application/chrome.exe'),
       join(process.env['PROGRAMFILES(X86)'] ?? 'C:\\Program Files (x86)', 'Google/Chrome/Application/chrome.exe'),
       join(process.env.LOCALAPPDATA ?? '', 'Google/Chrome/Application/chrome.exe'),
@@ -115,7 +122,7 @@ function getBrowserExecutable() {
   }
 
   const platformCandidates = candidates[process.platform] ?? candidates.linux
-  const existingPath = platformCandidates.find(item =>
+  const existingPath = platformCandidates.filter(Boolean).find(item =>
     process.platform === 'linux' ? true : existsSync(item),
   )
 

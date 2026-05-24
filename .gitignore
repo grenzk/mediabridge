@@ -5,6 +5,9 @@
 /node_modules
 /dist
 /release
+/vendor/chrome-win64/*
+!/vendor/chrome-win64/.gitkeep
+!/vendor/chrome-win64/README.md
 
 # OS-generated files
 /.DS_Store
