@@ -67,6 +67,31 @@ function filterLinksByMode(links, mode = 'pdf') {
 }
 
 /**
+ * The media server input field validates display names with a narrower character
+ * set than the article editor supports. Use a temporary safe value there, then
+ * restore the original article text during source HTML post-processing.
+ *
+ * @param {string} text
+ * @param {string} filename
+ * @returns {string}
+ */
+function getMediaDisplayName(text, filename) {
+  const sanitize = value =>
+    value
+      .replace(/[^A-Za-z0-9 !\-_.*'()]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+  const sanitizedText = sanitize(text)
+
+  if (sanitizedText) return sanitizedText
+
+  const filenameWithoutExtension = filename.replace(/\.[^.]+$/, '')
+
+  return sanitize(filenameWithoutExtension) || 'Document'
+}
+
+/**
  * Reads the article editor source and counts links matching the selected
  * document mode without modifying the article or media pages.
  *
@@ -97,7 +122,10 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
     getEditorLocators(articlePage)
 
   const links = await extractArticleLinks(articlePage)
-  const documentLinks = filterLinksByMode(links, mode)
+  const documentLinks = filterLinksByMode(links, mode).map(link => ({
+    ...link,
+    displayName: getMediaDisplayName(link.text, link.filename),
+  }))
 
   await sourceButton.click()
 
@@ -117,7 +145,7 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
     if (file) {
       await file.locator('.lucide-ellipsis-vertical').click()
       await mediaPage.getByText('Insert as link').click()
-      await mediaPage.getByPlaceholder('Enter display name').fill(targetText)
+      await mediaPage.getByPlaceholder('Enter display name').fill(link.displayName)
       await mediaPage.getByText('Insert').click()
       processedCount++
     }
@@ -131,10 +159,25 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
       const parser = new DOMParser()
       const doc = parser.parseFromString(html, 'text/html')
 
+      const anchors = [...doc.querySelectorAll('a')]
+      const updatedLinks = new Set()
+
       links.forEach(item => {
-        ;[...doc.querySelectorAll('a')]
-          .filter(link => link.textContent.trim() === item.text)
-          .forEach(link => link.classList.add(className))
+        const matchingIndex = anchors.findIndex((link, index) => {
+          if (updatedLinks.has(index)) return false
+
+          const text = link.textContent.trim()
+
+          return text === item.text || text === item.displayName
+        })
+
+        if (matchingIndex !== -1) {
+          const matchingLink = anchors[matchingIndex]
+
+          updatedLinks.add(matchingIndex)
+          matchingLink.classList.add(className)
+          matchingLink.textContent = item.text
+        }
       })
 
       return doc.body.innerHTML
