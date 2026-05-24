@@ -11,7 +11,7 @@ export function getEditorLocators(articlePage) {
     sourceEditor: articlePage.getByRole('textbox', { name: 'Editor' }),
 
     editorBody: articlePage
-      .frameLocator('iframe')
+      .frameLocator('iframe[title^="Editor"]')
       .locator('body[contenteditable="true"]'),
 
     sourceButton: articlePage.locator('a[title="Source"]'),
