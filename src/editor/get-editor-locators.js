@@ -1,5 +1,10 @@
 /**
- * @param {import('playwright').Locator} articlePage
+ * @param {import('playwright').Page} articlePage
+ * @returns {{
+ *   sourceEditor: import('playwright').Locator,
+ *   editorBody: import('playwright').Locator,
+ *   sourceButton: import('playwright').Locator,
+ * }}
  */
 export function getEditorLocators(articlePage) {
   return {

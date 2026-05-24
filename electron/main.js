@@ -71,12 +71,22 @@ async function getSession() {
   }
 }
 
+/**
+ * @param {number} milliseconds
+ * @returns {Promise<void>}
+ */
 function wait(milliseconds) {
   return new Promise(resolve => {
     setTimeout(resolve, milliseconds)
   })
 }
 
+/**
+ * Waits until Chrome's remote debugging endpoint accepts Playwright CDP
+ * connections. Chrome may need a short startup window after spawn.
+ *
+ * @param {string} cdpUrl
+ */
 async function waitForBrowserConnection(cdpUrl) {
   const deadline = Date.now() + 8000
   let lastError
@@ -98,6 +108,13 @@ async function waitForBrowserConnection(cdpUrl) {
   )
 }
 
+/**
+ * Finds the browser executable ASX should launch for automation. On Windows,
+ * Chrome for Testing is preferred so enterprise-managed Chrome policies do not
+ * block remote debugging.
+ *
+ * @returns {string}
+ */
 function getBrowserExecutable() {
   const bundledChromeForTesting = app.isPackaged
     ? join(process.resourcesPath, 'chrome-win64', 'chrome.exe')
@@ -208,7 +225,11 @@ ipcMain.handle('toolbar:close', () => {
 app.whenReady().then(createToolbarWindow)
 
 app.on('window-all-closed', async () => {
-  if (browserProcess && !browserProcess.killed) {
+  if (
+    process.env.SESSIONJACK_CLOSE_BROWSER_ON_EXIT === '1' &&
+    browserProcess &&
+    !browserProcess.killed
+  ) {
     browserProcess.kill()
   }
 

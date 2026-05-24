@@ -21,6 +21,12 @@ const LINKING_MODES = {
   },
 }
 
+/**
+ * @param {import('playwright').Page[]} pages
+ * @param {string} urlPart
+ * @param {string} pageName
+ * @returns {import('playwright').Page}
+ */
 function findRequiredPage(pages, urlPart, pageName) {
   const page = pages.find(item => item.url().includes(urlPart))
 
@@ -31,6 +37,10 @@ function findRequiredPage(pages, urlPart, pageName) {
   return page
 }
 
+/**
+ * @param {string} mode
+ * @returns {{ className: string, extensions: string[], label: string }}
+ */
 function getLinkingMode(mode = 'pdf') {
   const linkingMode = LINKING_MODES[mode]
 
@@ -41,6 +51,11 @@ function getLinkingMode(mode = 'pdf') {
   return linkingMode
 }
 
+/**
+ * @param {{ filename: string, text: string }[]} links
+ * @param {string} mode
+ * @returns {{ filename: string, text: string }[]}
+ */
 function filterLinksByMode(links, mode = 'pdf') {
   const { extensions } = getLinkingMode(mode)
 
@@ -51,6 +66,13 @@ function filterLinksByMode(links, mode = 'pdf') {
   })
 }
 
+/**
+ * Reads the article editor source and counts links matching the selected
+ * document mode without modifying the article or media pages.
+ *
+ * @param {import('playwright').Page[]} pages
+ * @param {string} mode
+ */
 export async function analyzeArticleLinks(pages, mode = 'pdf') {
   const articlePage = findRequiredPage(pages, '/article/', 'an article page')
   const links = await extractArticleLinks(articlePage)
@@ -59,6 +81,13 @@ export async function analyzeArticleLinks(pages, mode = 'pdf') {
   return { articlePage, documentLinks, links, mode: getLinkingMode(mode) }
 }
 
+/**
+ * Inserts media-library links for matching article links, then adds the
+ * selected document class to matching anchors in the article editor source.
+ *
+ * @param {{ pages: import('playwright').Page[] }} session
+ * @param {string} mode
+ */
 export async function runMediaLinking({ pages }, mode = 'pdf') {
   const articlePage = findRequiredPage(pages, '/article/', 'an article page')
   const mediaPage = findRequiredPage(pages, '/media', 'a media page')
@@ -118,6 +147,13 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
   return { documentLinks, links, mode: linkingMode, processedCount }
 }
 
+/**
+ * CLI-friendly entry point for running the media-linking workflow against an
+ * existing Chrome DevTools Protocol endpoint.
+ *
+ * @param {string} cdpUrl
+ * @param {string} mode
+ */
 export async function runMediaLinkingFromCdp(cdpUrl, mode = 'pdf') {
   const session = await connectToBrowser(cdpUrl)
 
