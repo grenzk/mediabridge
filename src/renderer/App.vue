@@ -13,7 +13,7 @@ const linkingTypes = {
   pdf: { label: 'PDF', statusLabel: 'PDF' },
   word: { label: 'Word', statusLabel: 'Word' },
   excel: { label: 'Excel', statusLabel: 'Excel' },
-  article: { label: 'Article', statusLabel: 'Article' },
+  article: { disabled: true, label: 'Article', statusLabel: 'Article' },
 }
 
 const isBusy = computed(() => busyAction.value !== '')
@@ -26,6 +26,7 @@ const selectedLinkingTypeConfig = computed(
 )
 const linkingOptions = computed(() =>
   Object.entries(linkingTypes).map(([value, item]) => ({
+    disabled: item.disabled ?? false,
     value,
     label: item.label,
   })),
@@ -154,6 +155,7 @@ function closeToolbar() {
           <option
             v-for="option in linkingOptions"
             :key="option.value"
+            :disabled="option.disabled"
             :value="option.value"
           >
             {{ option.label }}
