@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 contextBridge.exposeInMainWorld('sessionjack', {
   closeToolbar: () => ipcRenderer.invoke('toolbar:close'),
-  getLinkCount: () => ipcRenderer.invoke('session:get-link-count'),
+  getLinkCount: mode => ipcRenderer.invoke('session:get-link-count', mode),
   launchBrowser: () => ipcRenderer.invoke('session:launch-browser'),
-  runMediaLinking: () => ipcRenderer.invoke('session:run-media-linking'),
+  runMediaLinking: mode => ipcRenderer.invoke('session:run-media-linking', mode),
 })

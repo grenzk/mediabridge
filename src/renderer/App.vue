@@ -2,7 +2,7 @@
 import { computed, ref } from 'vue'
 
 const linkCount = ref(null)
-const pdfCount = ref(null)
+const documentCount = ref(null)
 const processedCount = ref(null)
 const status = ref('PDF')
 const busyAction = ref('')
@@ -11,8 +11,8 @@ const selectedLinkingType = ref('pdf')
 
 const linkingTypes = {
   pdf: { label: 'PDF', statusLabel: 'PDF' },
-  xls: { label: 'XLS', statusLabel: 'XLS' },
-  docs: { label: 'DOC', statusLabel: 'DOC' },
+  word: { label: 'Word', statusLabel: 'Word' },
+  excel: { label: 'Excel', statusLabel: 'Excel' },
   article: { label: 'Article', statusLabel: 'Article' },
 }
 
@@ -43,8 +43,8 @@ async function runAction(name, action, successMessage) {
       linkCount.value = result.count
     }
 
-    if (result?.pdfCount !== undefined) {
-      pdfCount.value = result.pdfCount
+    if (result?.documentCount !== undefined) {
+      documentCount.value = result.documentCount
     }
 
     if (result?.processedCount !== undefined) {
@@ -69,16 +69,23 @@ function launchBrowser() {
 }
 
 function refreshLinkCount() {
+  if (selectedLinkingType.value === 'article') {
+    status.value = 'Article automation is not ready yet'
+    errorMessage.value = ''
+
+    return
+  }
+
   return runAction(
     'Counting links',
-    () => window.sessionjack.getLinkCount(),
-    result => `${result.pdfCount} PDF links found`,
+    () => window.sessionjack.getLinkCount(selectedLinkingType.value),
+    result => `${result.documentCount} ${result.mode} links found`,
   )
 }
 
 function runMediaLinking() {
-  if (selectedLinkingType.value !== 'pdf') {
-    status.value = `${selectedLinkingTypeConfig.value.statusLabel} automation is not ready yet`
+  if (selectedLinkingType.value === 'article') {
+    status.value = 'Article automation is not ready yet'
     errorMessage.value = ''
 
     return
@@ -86,14 +93,16 @@ function runMediaLinking() {
 
   return runAction(
     'Running script',
-    () => window.sessionjack.runMediaLinking(),
-    result => `Inserted ${result.processedCount} PDF links`,
+    () => window.sessionjack.runMediaLinking(selectedLinkingType.value),
+    result => `Inserted ${result.processedCount} ${result.mode} links`,
   )
 }
 
 function selectLinkingType() {
   status.value = selectedLinkingTypeConfig.value.statusLabel
   errorMessage.value = ''
+  documentCount.value = null
+  processedCount.value = null
 }
 
 function closeToolbar() {
@@ -183,8 +192,8 @@ function closeToolbar() {
 
       <dl class="status-metrics">
         <div>
-          <dt>PDF</dt>
-          <dd>{{ pdfCount ?? '--' }}</dd>
+          <dt>Found</dt>
+          <dd>{{ documentCount ?? '--' }}</dd>
         </div>
         <div>
           <dt>Done</dt>

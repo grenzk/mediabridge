@@ -161,16 +161,17 @@ ipcMain.handle('session:launch-browser', async () => {
   return { ok: true }
 })
 
-ipcMain.handle('session:get-link-count', async () => {
+ipcMain.handle('session:get-link-count', async (_event, mode = 'pdf') => {
   const session = await getSession()
 
   try {
-    const result = await analyzeArticleLinks(session.pages)
+    const result = await analyzeArticleLinks(session.pages, mode)
 
     return {
       ok: true,
       count: result.links.length,
-      pdfCount: result.pdfLinks.length,
+      documentCount: result.documentLinks.length,
+      mode: result.mode.label,
       articleUrl: result.articlePage.url(),
     }
   } finally {
@@ -180,16 +181,17 @@ ipcMain.handle('session:get-link-count', async () => {
   }
 })
 
-ipcMain.handle('session:run-media-linking', async () => {
+ipcMain.handle('session:run-media-linking', async (_event, mode = 'pdf') => {
   const session = await getSession()
 
   try {
-    const result = await runMediaLinking(session)
+    const result = await runMediaLinking(session, mode)
 
     return {
       ok: true,
       count: result.links.length,
-      pdfCount: result.pdfLinks.length,
+      documentCount: result.documentLinks.length,
+      mode: result.mode.label,
       processedCount: result.processedCount,
     }
   } finally {
