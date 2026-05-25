@@ -2,7 +2,6 @@ import 'dotenv/config'
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { analyzeArticleLinks, runMediaLinking } from '../src/automation/media-linking.js'
@@ -153,7 +152,7 @@ function getBrowserExecutable() {
 ipcMain.handle('session:launch-browser', async () => {
   if (!browserProcess || browserProcess.killed) {
     const port = process.env.MEDIABRIDGE_CDP_PORT ?? '9222'
-    const userDataDir = join(tmpdir(), 'mediabridge-browser-profile')
+    const userDataDir = join(app.getPath('userData'), 'browser-profile')
 
     browserProcess = spawn(getBrowserExecutable(), [
       `--remote-debugging-port=${port}`,
