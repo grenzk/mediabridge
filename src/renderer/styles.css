@@ -60,7 +60,7 @@ button {
   background: rgb(255 255 255 / 6%);
 }
 
-.toolbar :is(button, select, .p-button) {
+.toolbar :is(button, .p-button) {
   -webkit-app-region: no-drag;
 }
 
@@ -138,37 +138,33 @@ button {
 }
 
 .run-button:disabled,
-.run-select:disabled {
+.run-mode-button:disabled {
   cursor: default;
   opacity: 0.72;
 }
 
-.run-select {
+.run-mode-button {
   grid-column: 2;
   grid-row: 1;
+  display: grid;
+  place-items: center;
   min-width: 0;
   width: 42px;
   height: 40px;
   padding: 0;
-  color: transparent;
   border: 0;
   border-left: 1px solid rgb(255 255 255 / 12%);
-  border-radius: 0;
   background: transparent;
+  color: #f8fafc;
   cursor: pointer;
   outline: none;
-  appearance: none;
 }
 
-.run-select:hover {
+.run-mode-button:hover {
   background: rgb(255 255 255 / 10%);
 }
 
 .run-chevron {
-  grid-column: 2;
-  grid-row: 1;
-  align-self: center;
-  justify-self: center;
   color: #f8fafc;
   font-size: 0.72rem;
   pointer-events: none;
@@ -261,6 +257,47 @@ button {
 .status-message span {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.linking-type-menu {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 4px;
+}
+
+.linking-type-option {
+  display: grid;
+  place-items: center;
+  height: 20px;
+  min-width: 44px;
+  padding: 0 8px;
+  color: rgb(255 255 255 / 76%);
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 6%);
+  font-size: 0.67rem;
+  font-weight: 750;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.linking-type-option:hover {
+  color: #f8fafc;
+  background: rgb(255 255 255 / 14%);
+}
+
+.linking-type-option.selected {
+  color: #111827;
+  border-color: rgb(247 213 74 / 88%);
+  background: #f7d54a;
+}
+
+.linking-type-option:disabled {
+  color: rgb(255 255 255 / 34%);
+  border-color: rgb(255 255 255 / 8%);
+  background: rgb(255 255 255 / 4%);
+  cursor: default;
 }
 
 .status-metrics {

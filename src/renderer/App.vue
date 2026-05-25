@@ -8,6 +8,7 @@ const status = ref('PDF')
 const busyAction = ref('')
 const errorMessage = ref('')
 const selectedLinkingType = ref('pdf')
+const isLinkingTypeMenuOpen = ref(false)
 
 const linkingTypes = {
   pdf: { label: 'PDF', statusLabel: 'PDF' },
@@ -36,6 +37,7 @@ async function runAction(name, action, successMessage) {
   busyAction.value = name
   errorMessage.value = ''
   status.value = name
+  isLinkingTypeMenuOpen.value = false
 
   try {
     const result = await action()
@@ -64,7 +66,7 @@ async function runAction(name, action, successMessage) {
 function launchBrowser() {
   return runAction(
     'Opening browser',
-    () => window.sessionjack.launchBrowser(),
+    () => window.mediabridge.launchBrowser(),
     () => 'Browser open',
   )
 }
@@ -79,7 +81,7 @@ function refreshLinkCount() {
 
   return runAction(
     'Counting links',
-    () => window.sessionjack.getLinkCount(selectedLinkingType.value),
+    () => window.mediabridge.getLinkCount(selectedLinkingType.value),
     result => `${result.documentCount} ${result.mode} links found`,
   )
 }
@@ -94,7 +96,7 @@ function runMediaLinking() {
 
   return runAction(
     'Running script',
-    () => window.sessionjack.runMediaLinking(selectedLinkingType.value),
+    () => window.mediabridge.runMediaLinking(selectedLinkingType.value),
     result => `Inserted ${result.processedCount} ${result.mode} links`,
   )
 }
@@ -106,16 +108,34 @@ function selectLinkingType() {
   processedCount.value = null
 }
 
+function toggleLinkingTypeMenu() {
+  if (isBusy.value) {
+    return
+  }
+
+  isLinkingTypeMenuOpen.value = !isLinkingTypeMenuOpen.value
+}
+
+function chooseLinkingType(option) {
+  if (option.disabled) {
+    return
+  }
+
+  selectedLinkingType.value = option.value
+  isLinkingTypeMenuOpen.value = false
+  selectLinkingType()
+}
+
 function closeToolbar() {
-  window.sessionjack.closeToolbar()
+  window.mediabridge.closeToolbar()
 }
 </script>
 
 <template>
   <main class="toolbar-shell app-dark">
-    <section class="toolbar" aria-label="Sessionjack toolbar">
-      <div class="brand" aria-label="Asset Express">
-        <span class="brand-mark">ASX</span>
+    <section class="toolbar" aria-label="MediaBridge toolbar">
+      <div class="brand" aria-label="MediaBridge">
+        <span class="brand-mark">MB</span>
       </div>
 
       <Button
@@ -145,23 +165,16 @@ function closeToolbar() {
           <span>Run</span>
         </button>
 
-        <select
-          v-model="selectedLinkingType"
-          class="run-select"
+        <button
+          class="run-mode-button"
+          type="button"
           aria-label="Select link automation type"
+          :aria-expanded="isLinkingTypeMenuOpen"
           :disabled="isBusy"
-          @change="selectLinkingType"
+          @click="toggleLinkingTypeMenu"
         >
-          <option
-            v-for="option in linkingOptions"
-            :key="option.value"
-            :disabled="option.disabled"
-            :value="option.value"
-          >
-            {{ option.label }}
-          </option>
-        </select>
-        <i class="pi pi-chevron-down run-chevron" aria-hidden="true" />
+          <i class="pi pi-chevron-down run-chevron" aria-hidden="true" />
+        </button>
       </div>
 
       <button
@@ -188,7 +201,28 @@ function closeToolbar() {
     </section>
 
     <section class="status-panel" :class="{ error: errorMessage }" aria-live="polite">
-      <div v-if="currentMessage" class="status-message">
+      <div
+        v-if="isLinkingTypeMenuOpen"
+        class="linking-type-menu"
+        role="listbox"
+        aria-label="Link automation type"
+      >
+        <button
+          v-for="option in linkingOptions"
+          :key="option.value"
+          class="linking-type-option"
+          :class="{ selected: option.value === selectedLinkingType }"
+          type="button"
+          role="option"
+          :aria-selected="option.value === selectedLinkingType"
+          :disabled="option.disabled"
+          @click="chooseLinkingType(option)"
+        >
+          {{ option.label }}
+        </button>
+      </div>
+
+      <div v-else-if="currentMessage" class="status-message">
         <span>{{ currentMessage }}</span>
       </div>
 

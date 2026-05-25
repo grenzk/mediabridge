@@ -1,14 +1,15 @@
-# Sessionjack
+# MediaBridge
 
-Sessionjack is an Electron toolbar for running the media-linking automation
+MediaBridge is an Electron toolbar for running the media-linking automation
 against an open article editor and media library.
 
 ## What It Does
 
 - Opens a controlled Chromium browser for the pages you want to automate.
-- Counts links in the article editor source, including matching PDF links.
-- Runs the existing media-linking workflow that inserts media-library PDF links
-  into matching article text and adds the `pdf` class to those anchors.
+- Counts links in the article editor source, including matching document links.
+- Runs the existing media-linking workflow that inserts media-library document
+  links into matching article text and adds the selected document class to those
+  anchors.
 - Provides a compact floating toolbar inspired by QuickTime and snipping-tool
   controls.
 

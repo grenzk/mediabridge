@@ -1,8 +1,8 @@
 {
-  "name": "sessionjack",
+  "name": "mediabridge",
   "version": "0.1.0",
-  "description": "Floating Electron toolbar for Sessionjack media-linking automation.",
-  "author": "Sessionjack",
+  "description": "Floating Electron toolbar for MediaBridge media-linking automation.",
+  "author": "MediaBridge",
   "private": true,
   "type": "module",
   "main": "electron/main.js",
@@ -18,8 +18,8 @@
     "script:media-linking": "node src/scripts/run-media-linking.js"
   },
   "build": {
-    "appId": "com.sessionjack.toolbar",
-    "productName": "Sessionjack",
+    "appId": "com.mediabridge.toolbar",
+    "productName": "MediaBridge",
     "directories": {
       "output": "release"
     },

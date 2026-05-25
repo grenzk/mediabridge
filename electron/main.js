@@ -36,7 +36,7 @@ async function createToolbarWindow() {
     transparent: true,
     alwaysOnTop: true,
     skipTaskbar: false,
-    title: 'Sessionjack',
+    title: 'MediaBridge',
     trafficLightPosition: { x: 12, y: 12 },
     webPreferences: {
       preload: join(__dirname, 'preload.cjs'),
@@ -109,7 +109,7 @@ async function waitForBrowserConnection(cdpUrl) {
 }
 
 /**
- * Finds the browser executable ASX should launch for automation. On Windows,
+ * Finds the browser executable MediaBridge should launch for automation. On Windows,
  * Chrome for Testing is preferred so enterprise-managed Chrome policies do not
  * block remote debugging.
  *
@@ -127,7 +127,7 @@ function getBrowserExecutable() {
       '/Applications/Chromium.app/Contents/MacOS/Chromium',
     ],
     win32: [
-      process.env.SESSIONJACK_CHROME_PATH,
+      process.env.MEDIABRIDGE_CHROME_PATH,
       bundledChromeForTesting,
       join(process.env.PROGRAMFILES ?? 'C:\\Program Files', 'Google/Chrome/Application/chrome.exe'),
       join(process.env['PROGRAMFILES(X86)'] ?? 'C:\\Program Files (x86)', 'Google/Chrome/Application/chrome.exe'),
@@ -152,8 +152,8 @@ function getBrowserExecutable() {
 
 ipcMain.handle('session:launch-browser', async () => {
   if (!browserProcess || browserProcess.killed) {
-    const port = process.env.SESSIONJACK_CDP_PORT ?? '9222'
-    const userDataDir = join(tmpdir(), 'sessionjack-browser-profile')
+    const port = process.env.MEDIABRIDGE_CDP_PORT ?? '9222'
+    const userDataDir = join(tmpdir(), 'mediabridge-browser-profile')
 
     browserProcess = spawn(getBrowserExecutable(), [
       `--remote-debugging-port=${port}`,
@@ -226,7 +226,7 @@ app.whenReady().then(createToolbarWindow)
 
 app.on('window-all-closed', async () => {
   if (
-    process.env.SESSIONJACK_CLOSE_BROWSER_ON_EXIT === '1' &&
+    process.env.MEDIABRIDGE_CLOSE_BROWSER_ON_EXIT === '1' &&
     browserProcess &&
     !browserProcess.killed
   ) {
