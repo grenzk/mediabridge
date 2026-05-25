@@ -222,6 +222,10 @@ ipcMain.handle('toolbar:close', () => {
   toolbarWindow?.close()
 })
 
+ipcMain.handle('toolbar:minimize', () => {
+  toolbarWindow?.minimize()
+})
+
 app.whenReady().then(createToolbarWindow)
 
 app.on('window-all-closed', async () => {

@@ -50,7 +50,7 @@ button {
 .toolbar {
   -webkit-app-region: drag;
   display: grid;
-  grid-template-columns: minmax(48px, 1fr) 94px 104px 92px 1px 40px;
+  grid-template-columns: minmax(48px, 1fr) 94px 104px 92px 1px 40px 40px;
   align-items: center;
   gap: 5px;
   height: 58px;

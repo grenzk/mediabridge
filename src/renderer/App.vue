@@ -129,6 +129,10 @@ function chooseLinkingType(option) {
 function closeToolbar() {
   window.mediabridge.closeToolbar()
 }
+
+function minimizeToolbar() {
+  window.mediabridge.minimizeToolbar()
+}
 </script>
 
 <template>
@@ -189,6 +193,15 @@ function closeToolbar() {
       </button>
 
       <div class="divider" aria-hidden="true" />
+
+      <Button
+        v-tooltip.bottom="'Minimize toolbar'"
+        icon="pi pi-minus"
+        severity="secondary"
+        text
+        aria-label="Minimize toolbar"
+        @click="minimizeToolbar"
+      />
 
       <Button
         v-tooltip.bottom="'Close toolbar'"
