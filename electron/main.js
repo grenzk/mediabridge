@@ -158,8 +158,7 @@ ipcMain.handle('session:launch-browser', async () => {
     browserProcess = spawn(getBrowserExecutable(), [
       `--remote-debugging-port=${port}`,
       `--user-data-dir=${userDataDir}`,
-      '--new-window',
-      'about:blank',
+      '--disable-infobars',
     ], {
       detached: true,
       stdio: 'ignore',
