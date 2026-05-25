@@ -12,6 +12,7 @@
     "build": "vite build",
     "package": "npm run build && electron-builder --dir",
     "dist:mac": "npm run build && electron-builder --mac",
+    "install:packaging": "npm install --include=peer",
     "dist:win": "npm run build && electron-builder --win --x64",
     "preview": "vite preview",
     "script:media-linking": "node src/scripts/run-media-linking.js"
