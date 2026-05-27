@@ -33,6 +33,9 @@ const selectedLinkingTypeConfig = computed(
 const selectedTargetLabel = computed(() =>
   selectedLinkingType.value === 'image' ? 'images' : 'links',
 )
+const selectedCountLabel = computed(() =>
+  selectedLinkingType.value === 'image' ? 'image' : 'link',
+)
 const linkingOptions = computed(() =>
   Object.entries(linkingTypes).map(([value, item]) => ({
     disabled: item.disabled ?? false,
@@ -113,6 +116,7 @@ function runMediaLinking() {
 function selectLinkingType() {
   status.value = selectedLinkingTypeConfig.value.statusLabel
   errorMessage.value = ''
+  linkCount.value = null
   documentCount.value = null
   processedCount.value = null
 }
@@ -191,7 +195,7 @@ function minimizeToolbar() {
       </div>
 
       <button
-        v-tooltip.bottom="`Refresh ${selectedTargetLabel} count`"
+        v-tooltip.bottom="`Refresh ${selectedCountLabel} count`"
         class="link-counter"
         type="button"
         :disabled="isBusy"
