@@ -66,6 +66,7 @@ function getLinkingMode(mode = 'pdf') {
 /**
  * @param {{ filename: string }[]} items
  * @param {string} mode
+ * @returns {{ filename: string }[]}
  */
 function filterItemsByMode(items, mode = 'pdf') {
   const { extensions } = getLinkingMode(mode)
@@ -77,10 +78,24 @@ function filterItemsByMode(items, mode = 'pdf') {
   })
 }
 
+/**
+ * Detects strings that already include a URL scheme. Relative dummy paths are
+ * intentionally excluded so they can still be matched against media filenames.
+ *
+ * @param {string} value
+ * @returns {boolean}
+ */
 function isAbsoluteUrl(value) {
   return /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value)
 }
 
+/**
+ * Checks whether a source href/src already points at the media service. Those
+ * targets should be skipped so the automation can be run repeatedly.
+ *
+ * @param {string} value
+ * @returns {boolean}
+ */
 function isLinkedMediaUrl(value = '') {
   const trimmedValue = value.trim()
 
@@ -107,10 +122,20 @@ function isLinkedMediaUrl(value = '') {
   }
 }
 
+/**
+ * @param {{ href?: string, src?: string }} item
+ * @returns {string}
+ */
 function getItemUrl(item) {
   return item.href ?? item.src ?? ''
 }
 
+/**
+ * Keeps only targets that still use dummy or non-media-service URLs.
+ *
+ * @param {{ href?: string, src?: string }[]} items
+ * @returns {{ href?: string, src?: string }[]}
+ */
 function filterUnlinkedItems(items) {
   return items.filter(item => !isLinkedMediaUrl(getItemUrl(item)))
 }
@@ -140,12 +165,25 @@ function getMediaDisplayName(text, filename) {
   return sanitize(filenameWithoutExtension) || 'Document'
 }
 
+/**
+ * @param {{ targetType?: string }} linkingMode
+ * @returns {string}
+ */
 function getInsertActionLabel(linkingMode) {
   return linkingMode.targetType === 'image'
     ? 'Insert as inline image'
     : 'Insert as link'
 }
 
+/**
+ * Opens the matching media-library item and inserts it into the article editor.
+ * Missing filenames are skipped instead of failing the whole run.
+ *
+ * @param {import('playwright').Page} mediaPage
+ * @param {{ displayName?: string, filename: string }} item
+ * @param {{ targetType?: string }} linkingMode
+ * @returns {Promise<boolean>} true when the item was inserted.
+ */
 async function insertMediaItem(mediaPage, item, linkingMode) {
   const file = mediaPage
     .locator('div.p-3')
@@ -167,6 +205,15 @@ async function insertMediaItem(mediaPage, item, linkingMode) {
   return true
 }
 
+/**
+ * Restores source HTML details that the media dialog cannot preserve. Documents
+ * get their class/original text restored; images get their original alt text.
+ *
+ * @param {import('playwright').Page} articlePage
+ * @param {import('playwright').Locator} sourceEditor
+ * @param {Array<object>} items
+ * @param {{ className?: string, targetType?: string }} linkingMode
+ */
 async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode) {
   const html = await sourceEditor.inputValue()
 

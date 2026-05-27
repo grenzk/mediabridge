@@ -1,7 +1,7 @@
 {
   "name": "mediabridge",
-  "version": "0.2.0",
-  "description": "Floating Electron toolbar for MediaBridge media-linking automation.",
+  "version": "0.2.1",
+  "description": "Floating toolbar for linking media server documents and images into the eGain article editor.",
   "author": "MediaBridge",
   "private": true,
   "type": "module",

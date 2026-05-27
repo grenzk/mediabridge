@@ -1,5 +1,7 @@
 /**
  * Selects the article editor image that corresponds to a source HTML image.
+ * Image selections use the node itself because img elements do not have text
+ * contents to select.
  *
  * @param {import('playwright').Locator} editorBody
  * @param {{ alt: string, filename: string, sourceIndex: number, src: string }} targetImage
