@@ -1,6 +1,6 @@
 import { connectToBrowser } from '../browser.js'
 import { extractArticleLinks } from '../helpers/extract-article-links.js'
-import { highlightTextOccurrence } from '../helpers/highlight-text-occurrence.js'
+import { highlightArticleLink } from '../helpers/highlight-article-link.js'
 import { getEditorLocators } from '../editor/get-editor-locators.js'
 
 const LINKING_MODES = {
@@ -52,9 +52,9 @@ function getLinkingMode(mode = 'pdf') {
 }
 
 /**
- * @param {{ filename: string, text: string }[]} links
+ * @param {{ filename: string, href: string, sourceIndex: number, text: string }[]} links
  * @param {string} mode
- * @returns {{ filename: string, text: string }[]}
+ * @returns {{ filename: string, href: string, sourceIndex: number, text: string }[]}
  */
 function filterLinksByMode(links, mode = 'pdf') {
   const { extensions } = getLinkingMode(mode)
@@ -129,16 +129,10 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
 
   await sourceButton.click()
 
-  const seen = new Map()
   let processedCount = 0
 
   for (const link of documentLinks) {
-    const targetText = link.text
-    const occurrenceIndex = seen.get(link.text) ?? 0
-
-    await highlightTextOccurrence(editorBody, targetText, occurrenceIndex)
-
-    seen.set(targetText, occurrenceIndex + 1)
+    await highlightArticleLink(editorBody, link)
 
     const file = mediaPage.locator('div.p-3').filter({ hasText: link.filename })
 
@@ -163,13 +157,19 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
       const updatedLinks = new Set()
 
       links.forEach(item => {
-        const matchingIndex = anchors.findIndex((link, index) => {
-          if (updatedLinks.has(index)) return false
+        let matchingIndex = -1
 
-          const text = link.textContent.trim()
+        if (anchors[item.sourceIndex] && !updatedLinks.has(item.sourceIndex)) {
+          matchingIndex = item.sourceIndex
+        } else {
+          matchingIndex = anchors.findIndex((link, index) => {
+            if (updatedLinks.has(index)) return false
 
-          return text === item.text || text === item.displayName
-        })
+            const text = link.textContent.trim()
+
+            return text === item.text || text === item.displayName
+          })
+        }
 
         if (matchingIndex !== -1) {
           const matchingLink = anchors[matchingIndex]

@@ -2,7 +2,7 @@ import { getEditorLocators } from '../editor/get-editor-locators.js'
 
 /**
  * @param {import('playwright').Page} articlePage
- * @returns {Promise<{ filename: string, text: string }[]>}
+ * @returns {Promise<{ filename: string, href: string, sourceIndex: number, text: string }[]>}
  */
 export async function extractArticleLinks(articlePage) {
   const { sourceEditor } = getEditorLocators(articlePage)
@@ -21,12 +21,15 @@ export async function extractArticleLinks(articlePage) {
       }
     }
 
-    return [...doc.querySelectorAll('a')].map(link => {
-      const url = new URL(link.href)
+    return [...doc.querySelectorAll('a')].map((link, sourceIndex) => {
+      const href = link.getAttribute('href') ?? link.href
+      const url = new URL(href, window.location.href)
       const filename = decodeFilename(url.pathname.split('/').pop())
 
       return {
         filename,
+        href,
+        sourceIndex,
         text: link.textContent.trim(),
       }
     })
