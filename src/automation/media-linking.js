@@ -31,6 +31,8 @@ const LINKING_MODES = {
   },
 }
 
+const LINKED_MEDIA_ORIGIN = 'https://napsapps.egain.services'
+
 /**
  * @param {import('playwright').Page[]} pages
  * @param {string} urlPart
@@ -73,6 +75,44 @@ function filterItemsByMode(items, mode = 'pdf') {
 
     return extensions.some(extension => filename.endsWith(extension))
   })
+}
+
+function isAbsoluteUrl(value) {
+  return /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value)
+}
+
+function isLinkedMediaUrl(value = '') {
+  const trimmedValue = value.trim()
+
+  if (!trimmedValue) {
+    return false
+  }
+
+  if (trimmedValue.startsWith('//')) {
+    try {
+      return new URL(`https:${trimmedValue}`).origin === LINKED_MEDIA_ORIGIN
+    } catch {
+      return false
+    }
+  }
+
+  if (!isAbsoluteUrl(trimmedValue)) {
+    return false
+  }
+
+  try {
+    return new URL(trimmedValue).origin === LINKED_MEDIA_ORIGIN
+  } catch {
+    return false
+  }
+}
+
+function getItemUrl(item) {
+  return item.href ?? item.src ?? ''
+}
+
+function filterUnlinkedItems(items) {
+  return items.filter(item => !isLinkedMediaUrl(getItemUrl(item)))
 }
 
 /**
@@ -233,7 +273,7 @@ export async function analyzeArticleLinks(pages, mode = 'pdf') {
   const links = getLinkingMode(mode).targetType === 'image'
     ? await extractArticleImages(articlePage)
     : await extractArticleLinks(articlePage)
-  const documentLinks = filterItemsByMode(links, mode)
+  const documentLinks = filterUnlinkedItems(filterItemsByMode(links, mode))
 
   return { articlePage, documentLinks, links, mode: getLinkingMode(mode) }
 }
@@ -256,16 +296,18 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
   const links = linkingMode.targetType === 'image'
     ? await extractArticleImages(articlePage)
     : await extractArticleLinks(articlePage)
-  const documentLinks = filterItemsByMode(links, mode).map(item => {
-    if (linkingMode.targetType === 'image') {
-      return item
-    }
+  const documentLinks = filterUnlinkedItems(filterItemsByMode(links, mode)).map(
+    item => {
+      if (linkingMode.targetType === 'image') {
+        return item
+      }
 
-    return {
-      ...item,
-      displayName: getMediaDisplayName(item.text, item.filename),
-    }
-  })
+      return {
+        ...item,
+        displayName: getMediaDisplayName(item.text, item.filename),
+      }
+    },
+  )
 
   await sourceButton.click()
 

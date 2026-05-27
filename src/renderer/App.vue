@@ -33,13 +33,6 @@ const selectedLinkingTypeConfig = computed(
 const selectedTargetLabel = computed(() =>
   selectedLinkingType.value === 'image' ? 'images' : 'links',
 )
-const selectedResultLabel = computed(() => {
-  if (selectedLinkingType.value === 'image') {
-    return documentCount.value === 1 ? 'Image' : 'Images'
-  }
-
-  return `${selectedLinkingTypeConfig.value.label} ${selectedTargetLabel.value}`
-})
 const linkingOptions = computed(() =>
   Object.entries(linkingTypes).map(([value, item]) => ({
     disabled: item.disabled ?? false,
@@ -92,10 +85,10 @@ function refreshLinkCount() {
     () => window.mediabridge.getLinkCount(selectedLinkingType.value),
     result => {
       const noun = selectedLinkingType.value === 'image'
-        ? result.documentCount === 1 ? 'Image' : 'Images'
-        : `${result.mode} ${selectedTargetLabel.value}`
+        ? result.documentCount === 1 ? 'image' : 'images'
+        : `${result.mode} ${result.documentCount === 1 ? 'link' : 'links'}`
 
-      return `${result.documentCount} ${noun} found`
+      return `${result.documentCount} ${noun} ready`
     },
   )
 }
@@ -104,7 +97,13 @@ function runMediaLinking() {
   return runAction(
     'Running script',
     () => window.mediabridge.runMediaLinking(selectedLinkingType.value),
-    result => `Inserted ${result.processedCount} ${selectedResultLabel.value}`,
+    result => {
+      const noun = selectedLinkingType.value === 'image'
+        ? result.processedCount === 1 ? 'image' : 'images'
+        : `${result.mode} ${result.processedCount === 1 ? 'link' : 'links'}`
+
+      return `Inserted ${result.processedCount} ${noun}`
+    },
   )
 }
 
