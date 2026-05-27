@@ -147,7 +147,14 @@ function getInsertActionLabel(linkingMode) {
 }
 
 async function insertMediaItem(mediaPage, item, linkingMode) {
-  const file = mediaPage.locator('div.p-3').filter({ hasText: item.filename })
+  const file = mediaPage
+    .locator('div.p-3')
+    .filter({ hasText: item.filename })
+    .first()
+
+  if ((await file.count()) === 0) {
+    return false
+  }
 
   await file.locator('.lucide-ellipsis-vertical').click()
   await mediaPage.getByText(getInsertActionLabel(linkingMode)).click()
@@ -156,6 +163,8 @@ async function insertMediaItem(mediaPage, item, linkingMode) {
     await mediaPage.getByPlaceholder('Enter display name').fill(item.displayName)
     await mediaPage.getByText('Insert').click()
   }
+
+  return true
 }
 
 async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode) {
@@ -312,6 +321,8 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
   await sourceButton.click()
 
   let processedCount = 0
+  const processedItems = []
+  const skippedItems = []
 
   for (const link of documentLinks) {
     if (linkingMode.targetType === 'image') {
@@ -320,14 +331,25 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
       await highlightArticleLink(editorBody, link)
     }
 
-    await insertMediaItem(mediaPage, link, linkingMode)
-    processedCount++
+    if (await insertMediaItem(mediaPage, link, linkingMode)) {
+      processedItems.push(link)
+      processedCount++
+    } else {
+      skippedItems.push(link)
+    }
   }
 
   await sourceButton.click()
-  await restoreLinkedItems(articlePage, sourceEditor, documentLinks, linkingMode)
+  await restoreLinkedItems(articlePage, sourceEditor, processedItems, linkingMode)
 
-  return { documentLinks, links, mode: linkingMode, processedCount }
+  return {
+    documentLinks,
+    links,
+    mode: linkingMode,
+    processedCount,
+    skippedCount: skippedItems.length,
+    skippedItems,
+  }
 }
 
 /**

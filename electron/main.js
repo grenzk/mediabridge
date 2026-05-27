@@ -208,6 +208,7 @@ ipcMain.handle('session:run-media-linking', async (_event, mode = 'pdf') => {
       documentCount: result.documentLinks.length,
       mode: result.mode.label,
       processedCount: result.processedCount,
+      skippedCount: result.skippedCount,
     }
   } finally {
     if (session.ownsBrowser) {

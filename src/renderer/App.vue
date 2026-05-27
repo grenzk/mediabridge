@@ -101,8 +101,11 @@ function runMediaLinking() {
       const noun = selectedLinkingType.value === 'image'
         ? result.processedCount === 1 ? 'image' : 'images'
         : `${result.mode} ${result.processedCount === 1 ? 'link' : 'links'}`
+      const skippedText = result.skippedCount
+        ? `, skipped ${result.skippedCount} missing`
+        : ''
 
-      return `Inserted ${result.processedCount} ${noun}`
+      return `Inserted ${result.processedCount} ${noun}${skippedText}`
     },
   )
 }
