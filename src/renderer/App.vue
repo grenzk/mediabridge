@@ -26,6 +26,7 @@ const linkLabel = computed(() => {
   return linkCount.value === 1 ? 'Link' : 'Links'
 })
 const currentMessage = computed(() => errorMessage.value || status.value)
+const showProgressDots = computed(() => isBusy.value && !errorMessage.value)
 const selectedLinkingTypeConfig = computed(
   () => linkingTypes[selectedLinkingType.value],
 )
@@ -243,6 +244,15 @@ function minimizeToolbar() {
 
       <div v-else-if="currentMessage" class="status-message">
         <span>{{ currentMessage }}</span>
+        <span
+          v-if="showProgressDots"
+          class="progress-dots"
+          aria-hidden="true"
+        >
+          <span>.</span>
+          <span>.</span>
+          <span>.</span>
+        </span>
       </div>
 
       <dl class="status-metrics">

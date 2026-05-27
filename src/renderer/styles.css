@@ -259,6 +259,41 @@ button {
   text-overflow: ellipsis;
 }
 
+.progress-dots {
+  display: inline-grid;
+  grid-template-columns: repeat(3, 0.45em);
+  flex: 0 0 auto;
+  margin-left: 1px;
+  color: #f8fafc;
+}
+
+.progress-dots span {
+  animation: progress-dot 1.2s infinite ease-in-out;
+  opacity: 0.28;
+}
+
+.progress-dots span:nth-child(2) {
+  animation-delay: 0.16s;
+}
+
+.progress-dots span:nth-child(3) {
+  animation-delay: 0.32s;
+}
+
+@keyframes progress-dot {
+  0%,
+  70%,
+  100% {
+    opacity: 0.28;
+    transform: translateY(0);
+  }
+
+  35% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+
 .linking-type-menu {
   display: flex;
   min-width: 0;
