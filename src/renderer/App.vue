@@ -14,17 +14,31 @@ const linkingTypes = {
   pdf: { label: 'PDF', statusLabel: 'PDF' },
   word: { label: 'Word', statusLabel: 'Word' },
   excel: { label: 'Excel', statusLabel: 'Excel' },
-  article: { disabled: true, label: 'Article', statusLabel: 'Article' },
+  image: { label: 'Image', statusLabel: 'Image' },
 }
 
 const isBusy = computed(() => busyAction.value !== '')
 const linkLabel = computed(() => {
+  if (selectedLinkingType.value === 'image') {
+    return linkCount.value === 1 ? 'Image' : 'Images'
+  }
+
   return linkCount.value === 1 ? 'Link' : 'Links'
 })
 const currentMessage = computed(() => errorMessage.value || status.value)
 const selectedLinkingTypeConfig = computed(
   () => linkingTypes[selectedLinkingType.value],
 )
+const selectedTargetLabel = computed(() =>
+  selectedLinkingType.value === 'image' ? 'images' : 'links',
+)
+const selectedResultLabel = computed(() => {
+  if (selectedLinkingType.value === 'image') {
+    return documentCount.value === 1 ? 'Image' : 'Images'
+  }
+
+  return `${selectedLinkingTypeConfig.value.label} ${selectedTargetLabel.value}`
+})
 const linkingOptions = computed(() =>
   Object.entries(linkingTypes).map(([value, item]) => ({
     disabled: item.disabled ?? false,
@@ -72,32 +86,24 @@ function launchBrowser() {
 }
 
 function refreshLinkCount() {
-  if (selectedLinkingType.value === 'article') {
-    status.value = 'Article automation is not ready yet'
-    errorMessage.value = ''
-
-    return
-  }
-
   return runAction(
-    'Counting links',
+    `Counting ${selectedTargetLabel.value}`,
     () => window.mediabridge.getLinkCount(selectedLinkingType.value),
-    result => `${result.documentCount} ${result.mode} links found`,
+    result => {
+      const noun = selectedLinkingType.value === 'image'
+        ? result.documentCount === 1 ? 'Image' : 'Images'
+        : `${result.mode} ${selectedTargetLabel.value}`
+
+      return `${result.documentCount} ${noun} found`
+    },
   )
 }
 
 function runMediaLinking() {
-  if (selectedLinkingType.value === 'article') {
-    status.value = 'Article automation is not ready yet'
-    errorMessage.value = ''
-
-    return
-  }
-
   return runAction(
     'Running script',
     () => window.mediabridge.runMediaLinking(selectedLinkingType.value),
-    result => `Inserted ${result.processedCount} ${result.mode} links`,
+    result => `Inserted ${result.processedCount} ${selectedResultLabel.value}`,
   )
 }
 
@@ -182,7 +188,7 @@ function minimizeToolbar() {
       </div>
 
       <button
-        v-tooltip.bottom="'Refresh link count'"
+        v-tooltip.bottom="`Refresh ${selectedTargetLabel} count`"
         class="link-counter"
         type="button"
         :disabled="isBusy"
