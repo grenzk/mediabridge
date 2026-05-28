@@ -206,6 +206,22 @@ async function insertMediaItem(mediaPage, item, linkingMode) {
 }
 
 /**
+ * Updates the source editor value directly. This avoids Playwright's fill
+ * action, which can hang on large CKEditor source textareas while still
+ * notifying the editor that its value changed.
+ *
+ * @param {import('playwright').Locator} sourceEditor
+ * @param {string} html
+ */
+async function setSourceEditorHtml(sourceEditor, html) {
+  await sourceEditor.evaluate((element, html) => {
+    element.value = html
+    element.dispatchEvent(new Event('input', { bubbles: true }))
+    element.dispatchEvent(new Event('change', { bubbles: true }))
+  }, html)
+}
+
+/**
  * Restores source HTML details that the media dialog cannot preserve. Documents
  * get their class/original text restored; images get their original alt text.
  *
@@ -272,7 +288,7 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
       { html, images: items },
     )
 
-    await sourceEditor.fill(updatedHtml)
+    await setSourceEditorHtml(sourceEditor, updatedHtml)
 
     return
   }
@@ -314,7 +330,7 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
     { className: linkingMode.className, html, links: items },
   )
 
-  await sourceEditor.fill(updatedHtml)
+  await setSourceEditorHtml(sourceEditor, updatedHtml)
 }
 
 /**
