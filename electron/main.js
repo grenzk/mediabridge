@@ -9,6 +9,8 @@ import { connectToBrowser } from '../src/browser.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
+const browserStartupTimeout =
+  Number(process.env.MEDIABRIDGE_BROWSER_STARTUP_TIMEOUT_MS) || 30000
 
 let toolbarWindow
 let browserProcess
@@ -87,7 +89,7 @@ function wait(milliseconds) {
  * @param {string} cdpUrl
  */
 async function waitForBrowserConnection(cdpUrl) {
-  const deadline = Date.now() + 8000
+  const deadline = Date.now() + browserStartupTimeout
   let lastError
 
   while (Date.now() < deadline) {
@@ -103,7 +105,7 @@ async function waitForBrowserConnection(cdpUrl) {
   }
 
   throw new Error(
-    `Browser opened, but CDP was not ready at ${cdpUrl}. ${lastError?.message ?? ''}`.trim(),
+    `Browser opened, but CDP was not ready at ${cdpUrl} after ${browserStartupTimeout / 1000} seconds. ${lastError?.message ?? ''}`.trim(),
   )
 }
 
