@@ -29,7 +29,7 @@ You can still run the original command-line automation with:
 npm run script:media-linking
 ```
 
-That command expects `CDP_URL` in your environment.
+That command connects to `MEDIABRIDGE_CDP_PORT`, or port `9222` by default.
 
 ## Desktop Builds
 

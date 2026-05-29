@@ -6,6 +6,7 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { analyzeArticleLinks, runMediaLinking } from '../src/automation/media-linking.js'
 import { connectToBrowser } from '../src/browser.js'
+import { getCdpPort, getDefaultCdpUrl } from '../src/config/runtime.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
@@ -60,15 +61,11 @@ async function createToolbarWindow() {
 }
 
 async function getSession() {
-  const cdpUrl = launchedCdpUrl ?? process.env.CDP_URL
-
-  if (!cdpUrl) {
-    throw new Error('Launch a browser first or set CDP_URL in your environment.')
-  }
+  const cdpUrl = launchedCdpUrl ?? getDefaultCdpUrl()
 
   return {
     ...(await connectToBrowser(cdpUrl)),
-    ownsBrowser: cdpUrl === process.env.CDP_URL,
+    ownsBrowser: false,
   }
 }
 
@@ -153,7 +150,7 @@ function getBrowserExecutable() {
 
 ipcMain.handle('session:launch-browser', async () => {
   if (!browserProcess || browserProcess.killed) {
-    const port = process.env.MEDIABRIDGE_CDP_PORT ?? '9222'
+    const port = getCdpPort()
     const userDataDir = join(app.getPath('userData'), 'browser-profile')
 
     browserProcess = spawn(getBrowserExecutable(), [
@@ -170,7 +167,7 @@ ipcMain.handle('session:launch-browser', async () => {
       browserProcess = undefined
       launchedCdpUrl = undefined
     })
-    launchedCdpUrl = `http://127.0.0.1:${port}`
+    launchedCdpUrl = getDefaultCdpUrl()
   }
 
   await waitForBrowserConnection(launchedCdpUrl)
