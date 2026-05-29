@@ -43,7 +43,14 @@ function findRequiredPage(pages, urlPart, pageName) {
   const page = pages.find(item => item.url().includes(urlPart))
 
   if (!page) {
-    throw new Error(`Could not find ${pageName}. Open a tab with "${urlPart}" in the controlled browser.`)
+    const openUrls = pages
+      .map(item => item.url())
+      .filter(Boolean)
+      .join(', ')
+
+    throw new Error(
+      `Could not find ${pageName}. Open a tab with "${urlPart}" in the controlled browser. Open tabs: ${openUrls || 'none'}`,
+    )
   }
 
   return page
