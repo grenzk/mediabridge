@@ -91,19 +91,33 @@ async function waitForBrowserConnection(cdpUrl) {
 
   while (Date.now() < deadline) {
     try {
-      const session = await connectToBrowser(cdpUrl)
-      await session.browser.close()
-
-      return
+      if (await isBrowserConnectionReady(cdpUrl)) {
+        return
+      }
     } catch (error) {
       lastError = error
-      await wait(250)
     }
+
+    await wait(250)
   }
 
   throw new Error(
     `Browser opened, but CDP was not ready at ${cdpUrl} after ${browserStartupTimeout / 1000} seconds. ${lastError?.message ?? ''}`.trim(),
   )
+}
+
+/**
+ * Checks Chrome's lightweight CDP metadata endpoint without attaching
+ * Playwright to the browser. This avoids changing browser/session state during
+ * a readiness probe.
+ *
+ * @param {string} cdpUrl
+ * @returns {Promise<boolean>}
+ */
+async function isBrowserConnectionReady(cdpUrl) {
+  const response = await fetch(new URL('/json/version', cdpUrl)).catch(() => undefined)
+
+  return response?.ok ?? false
 }
 
 /**
@@ -149,7 +163,15 @@ function getBrowserExecutable() {
 }
 
 ipcMain.handle('session:launch-browser', async () => {
+  const cdpUrl = getDefaultCdpUrl()
+
   if (!browserProcess || browserProcess.killed) {
+    if (await isBrowserConnectionReady(cdpUrl)) {
+      launchedCdpUrl = cdpUrl
+
+      return { ok: true }
+    }
+
     const port = getCdpPort()
     const userDataDir = join(app.getPath('userData'), 'browser-profile')
 
@@ -167,7 +189,7 @@ ipcMain.handle('session:launch-browser', async () => {
       browserProcess = undefined
       launchedCdpUrl = undefined
     })
-    launchedCdpUrl = getDefaultCdpUrl()
+    launchedCdpUrl = cdpUrl
   }
 
   await waitForBrowserConnection(launchedCdpUrl)
