@@ -449,7 +449,7 @@ button {
 
 .log-level {
   flex: 0 0 auto;
-  color: #9be7c2;
+  color: #60a5fa;
   font-weight: 800;
 }
 
@@ -458,7 +458,7 @@ button {
 }
 
 .log-entry.success .log-level {
-  color: #fde16a;
+  color: #22c55e;
 }
 
 .log-scope {
