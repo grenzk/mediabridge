@@ -230,7 +230,8 @@ async function setSourceEditorHtml(sourceEditor, html) {
 
 /**
  * Restores source HTML details that the media dialog cannot preserve. Documents
- * get their class/original text restored; images get their original alt text.
+ * get their class/original text restored; images get their original alt text
+ * and inline size attributes.
  *
  * @param {import('playwright').Page} articlePage
  * @param {import('playwright').Locator} sourceEditor
@@ -287,6 +288,14 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
 
             updatedImages.add(matchingIndex)
             matchingImage.setAttribute('alt', item.alt)
+
+            if (item.width) {
+              matchingImage.setAttribute('width', item.width)
+            }
+
+            if (item.height) {
+              matchingImage.setAttribute('height', item.height)
+            }
           }
         })
 

@@ -4,7 +4,7 @@
  * contents to select.
  *
  * @param {import('playwright').Locator} editorBody
- * @param {{ alt: string, filename: string, sourceIndex: number, src: string }} targetImage
+ * @param {{ alt: string, filename: string, height: string, sourceIndex: number, src: string, width: string }} targetImage
  */
 export async function highlightArticleImage(editorBody, targetImage) {
   const selected = await editorBody.evaluate((body, targetImage) => {
