@@ -57,3 +57,12 @@ Fixed
 - Fixed reconnect behavior so MediaBridge can derive the browser CDP URL from the configured port.
 - Fixed browser startup failures caused by Chrome taking longer to expose the remote debugging endpoint.
 - Improved the missing article page error by showing which browser tabs MediaBridge can see.
+
+June 1, 2026
+
+Changed
+- Included the config directory in the project files.
+
+Fixed
+- Fixed browser launch reuse so MediaBridge can attach to an already-running CDP browser without opening extra tabs.
+- Fixed image linking so inline width and height attributes from dummy image tags are restored after linking.
