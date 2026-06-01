@@ -4,9 +4,12 @@ import Aura from '@primeuix/themes/aura'
 import Button from 'primevue/button'
 import Tooltip from 'primevue/tooltip'
 import App from './App.vue'
+import LogConsole from './LogConsole.vue'
 import './styles.css'
 
-const app = createApp(App)
+const params = new URLSearchParams(window.location.search)
+const rootComponent = params.get('view') === 'logs' ? LogConsole : App
+const app = createApp(rootComponent)
 
 app.use(PrimeVue, {
   theme: {

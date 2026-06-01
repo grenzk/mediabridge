@@ -67,7 +67,8 @@ async function runAction(name, action, successMessage) {
 
     status.value = successMessage(result)
   } catch (error) {
-    errorMessage.value = error.message
+    await writeRendererErrorLog(name, error)
+    errorMessage.value = 'Needs attention. See logs.'
     status.value = 'Needs attention'
   } finally {
     busyAction.value = ''
@@ -146,6 +147,37 @@ function closeToolbar() {
 function minimizeToolbar() {
   window.mediabridge.minimizeToolbar()
 }
+
+async function openLogs() {
+  try {
+    await window.mediabridge.openLogs()
+  } catch (error) {
+    await writeRendererErrorLog('Logs', error)
+    errorMessage.value = 'Needs attention. See logs.'
+    status.value = 'Needs attention'
+  }
+}
+
+async function writeRendererErrorLog(scope, error) {
+  try {
+    await window.mediabridge.writeLog(
+      'error',
+      scope,
+      'Renderer received an action error.',
+      getErrorMessage(error),
+    )
+  } catch {
+    // Keep toolbar errors visible even if the log bridge itself fails.
+  }
+}
+
+function getErrorMessage(error) {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return String(error)
+}
 </script>
 
 <template>
@@ -206,6 +238,15 @@ function minimizeToolbar() {
       </button>
 
       <div class="divider" aria-hidden="true" />
+
+      <Button
+        v-tooltip.bottom="'Show logs'"
+        icon="pi pi-code"
+        severity="secondary"
+        text
+        aria-label="Show logs"
+        @click="openLogs"
+      />
 
       <Button
         v-tooltip.bottom="'Minimize toolbar'"

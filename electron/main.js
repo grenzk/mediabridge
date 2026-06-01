@@ -14,8 +14,12 @@ const browserStartupTimeout =
   Number(process.env.MEDIABRIDGE_BROWSER_STARTUP_TIMEOUT_MS) || 30000
 
 let toolbarWindow
+let logsWindow
 let browserProcess
 let launchedCdpUrl
+let nextLogId = 1
+const logs = []
+const maxLogEntries = 500
 
 function isDev() {
   return getDevServerUrl() !== undefined
@@ -57,6 +61,41 @@ async function createToolbarWindow() {
     await toolbarWindow.loadURL(getDevServerUrl())
   } else {
     await toolbarWindow.loadFile(join(__dirname, '../dist/renderer/index.html'))
+  }
+}
+
+async function createLogsWindow() {
+  if (logsWindow && !logsWindow.isDestroyed()) {
+    logsWindow.show()
+    logsWindow.focus()
+
+    return
+  }
+
+  logsWindow = new BrowserWindow({
+    width: 760,
+    height: 460,
+    minWidth: 560,
+    minHeight: 340,
+    title: 'MediaBridge Logs',
+    backgroundColor: '#080b10',
+    webPreferences: {
+      preload: join(__dirname, 'preload.cjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  })
+
+  logsWindow.once('closed', () => {
+    logsWindow = undefined
+  })
+
+  if (isDev()) {
+    await logsWindow.loadURL(`${getDevServerUrl()}?view=logs`)
+  } else {
+    await logsWindow.loadFile(join(__dirname, '../dist/renderer/index.html'), {
+      query: { view: 'logs' },
+    })
   }
 }
 
@@ -162,46 +201,127 @@ function getBrowserExecutable() {
   return existingPath
 }
 
-ipcMain.handle('session:launch-browser', async () => {
-  const cdpUrl = getDefaultCdpUrl()
+function getLogTimestamp() {
+  return new Date().toLocaleTimeString([], {
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+}
 
-  if (!browserProcess || browserProcess.killed) {
-    if (await isBrowserConnectionReady(cdpUrl)) {
-      launchedCdpUrl = cdpUrl
+function publishLogs() {
+  if (logsWindow && !logsWindow.isDestroyed()) {
+    logsWindow.webContents.send('logs:updated', logs)
+  }
+}
 
-      return { ok: true }
-    }
+/**
+ * @param {'info' | 'success' | 'error'} level
+ * @param {string} scope
+ * @param {string} message
+ * @param {string} [detail]
+ */
+function addLog(level, scope, message, detail = '') {
+  logs.push({
+    id: nextLogId,
+    timestamp: getLogTimestamp(),
+    level,
+    scope,
+    message,
+    detail,
+  })
+  nextLogId += 1
 
-    const port = getCdpPort()
-    const userDataDir = join(app.getPath('userData'), 'browser-profile')
-
-    browserProcess = spawn(getBrowserExecutable(), [
-      `--remote-debugging-port=${port}`,
-      `--user-data-dir=${userDataDir}`,
-      '--disable-infobars',
-    ], {
-      detached: true,
-      stdio: 'ignore',
-    })
-
-    browserProcess.unref()
-    browserProcess.once('exit', () => {
-      browserProcess = undefined
-      launchedCdpUrl = undefined
-    })
-    launchedCdpUrl = cdpUrl
+  if (logs.length > maxLogEntries) {
+    logs.splice(0, logs.length - maxLogEntries)
   }
 
-  await waitForBrowserConnection(launchedCdpUrl)
+  publishLogs()
+}
 
-  return { ok: true }
+/**
+ * @param {unknown} error
+ * @returns {string}
+ */
+function getErrorDetail(error) {
+  if (error instanceof Error) {
+    return error.stack ?? error.message
+  }
+
+  return String(error)
+}
+
+/**
+ * @param {unknown} error
+ * @returns {string}
+ */
+function getErrorMessage(error) {
+  if (error instanceof Error) {
+    return error.message
+  }
+
+  return String(error)
+}
+
+ipcMain.handle('session:launch-browser', async () => {
+  addLog('info', 'Browser', 'Opening controlled browser.')
+
+  try {
+    const cdpUrl = getDefaultCdpUrl()
+
+    if (!browserProcess || browserProcess.killed) {
+      if (await isBrowserConnectionReady(cdpUrl)) {
+        launchedCdpUrl = cdpUrl
+
+        addLog('success', 'Browser', `Connected to ${launchedCdpUrl}.`)
+
+        return { ok: true }
+      }
+
+      const port = getCdpPort()
+      const userDataDir = join(app.getPath('userData'), 'browser-profile')
+
+      browserProcess = spawn(getBrowserExecutable(), [
+        `--remote-debugging-port=${port}`,
+        `--user-data-dir=${userDataDir}`,
+        '--disable-infobars',
+      ], {
+        detached: true,
+        stdio: 'ignore',
+      })
+
+      browserProcess.unref()
+      browserProcess.once('exit', () => {
+        browserProcess = undefined
+        launchedCdpUrl = undefined
+      })
+      launchedCdpUrl = cdpUrl
+    }
+
+    await waitForBrowserConnection(launchedCdpUrl)
+    addLog('success', 'Browser', `Connected to ${launchedCdpUrl}.`)
+
+    return { ok: true }
+  } catch (error) {
+    addLog('error', 'Browser', getErrorMessage(error), getErrorDetail(error))
+    throw error
+  }
 })
 
 ipcMain.handle('session:get-link-count', async (_event, mode = 'pdf') => {
-  const session = await getSession()
+  let session
 
   try {
+    addLog('info', 'Counter', `Counting ${mode} targets.`)
+    session = await getSession()
     const result = await analyzeArticleLinks(session.pages, mode)
+    addLog(
+      'success',
+      'Counter',
+      `Found ${result.documentLinks.length} unlinked ${result.mode.label} target(s).`,
+      result.articlePage.url(),
+    )
 
     return {
       ok: true,
@@ -210,18 +330,31 @@ ipcMain.handle('session:get-link-count', async (_event, mode = 'pdf') => {
       mode: result.mode.label,
       articleUrl: result.articlePage.url(),
     }
+  } catch (error) {
+    addLog('error', 'Counter', getErrorMessage(error), getErrorDetail(error))
+    throw error
   } finally {
-    if (session.ownsBrowser) {
+    if (session?.ownsBrowser) {
       await session.browser.close()
     }
   }
 })
 
 ipcMain.handle('session:run-media-linking', async (_event, mode = 'pdf') => {
-  const session = await getSession()
+  let session
 
   try {
+    addLog('info', 'Linking', `Running ${mode} media linking.`)
+    session = await getSession()
     const result = await runMediaLinking(session, mode)
+    addLog(
+      'success',
+      'Linking',
+      `Inserted ${result.processedCount} ${result.mode.label} target(s).`,
+      result.skippedCount
+        ? `Skipped ${result.skippedCount} missing media file(s).`
+        : '',
+    )
 
     return {
       ok: true,
@@ -231,14 +364,39 @@ ipcMain.handle('session:run-media-linking', async (_event, mode = 'pdf') => {
       processedCount: result.processedCount,
       skippedCount: result.skippedCount,
     }
+  } catch (error) {
+    addLog('error', 'Linking', getErrorMessage(error), getErrorDetail(error))
+    throw error
   } finally {
-    if (session.ownsBrowser) {
+    if (session?.ownsBrowser) {
       await session.browser.close()
     }
   }
 })
 
+ipcMain.handle('logs:open', async () => {
+  await createLogsWindow()
+
+  return { ok: true }
+})
+
+ipcMain.handle('logs:get', () => logs)
+
+ipcMain.handle('logs:clear', () => {
+  logs.splice(0)
+  publishLogs()
+
+  return { ok: true }
+})
+
+ipcMain.handle('logs:write', (_event, level, scope, message, detail = '') => {
+  addLog(level, scope, message, detail)
+
+  return { ok: true }
+})
+
 ipcMain.handle('toolbar:close', () => {
+  logsWindow?.close()
   toolbarWindow?.close()
 })
 
