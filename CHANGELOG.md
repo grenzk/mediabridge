@@ -1,5 +1,46 @@
 MediaBridge Changelog
 
+June 1, 2026
+
+Changed
+- Included the config directory in the project files.
+
+Fixed
+- Fixed browser launch reuse so MediaBridge can attach to an already-running CDP browser without opening extra tabs.
+- Fixed image linking so inline width and height attributes from dummy image tags are restored after linking.
+
+
+May 30, 2026
+
+Changed
+- Increased the default browser startup wait time to reduce first-launch timing failures.
+- Replaced CDP_URL with MEDIABRIDGE_CDP_PORT as the configurable browser connection setting.
+- Added shared runtime helpers for deriving the CDP port and default CDP URL.
+- Added .env.example listing available MediaBridge environment variables.
+- Updated the CLI media-linking script to use the same CDP port behavior as the desktop app.
+- Updated documentation to describe MEDIABRIDGE_CDP_PORT usage.
+- Prepared release version 0.2.3.
+
+Fixed
+- Fixed reconnect behavior so MediaBridge can derive the browser CDP URL from the configured port.
+- Fixed browser startup failures caused by Chrome taking longer to expose the remote debugging endpoint.
+- Improved the missing article page error by showing which browser tabs MediaBridge can see.
+
+
+May 29, 2026
+
+Changed
+- Prepared release version 0.2.2.
+
+
+May 28, 2026
+
+Fixed
+- Fixed source editor updates to avoid filling the entire HTML through Playwright.
+- Improved Windows stability when restoring linked files into the article editor.
+- Updated the source editor value directly and dispatched input/change events so the article editor recognizes the HTML update without freezing.
+
+
 May 27, 2026
 
 Added
@@ -26,43 +67,3 @@ Fixed
 - Fixed missing media files stopping the entire process.
 - Fixed linking so missing files are skipped and the rest of the files continue processing.
 - Fixed the link/image counter resetting when the selected linking mode changes.
-
-
-May 28, 2026
-
-Fixed
-- Fixed source editor updates to avoid filling the entire HTML through Playwright.
-- Improved Windows stability when restoring linked files into the article editor.
-- Updated the source editor value directly and dispatched input/change events so the article editor recognizes the HTML update without freezing.
-
-
-May 29, 2026
-
-Changed
-- Prepared release version 0.2.2.
-
-
-May 30, 2026
-
-Changed
-- Increased the default browser startup wait time to reduce first-launch timing failures.
-- Replaced CDP_URL with MEDIABRIDGE_CDP_PORT as the configurable browser connection setting.
-- Added shared runtime helpers for deriving the CDP port and default CDP URL.
-- Added .env.example listing available MediaBridge environment variables.
-- Updated the CLI media-linking script to use the same CDP port behavior as the desktop app.
-- Updated documentation to describe MEDIABRIDGE_CDP_PORT usage.
-- Prepared release version 0.2.3.
-
-Fixed
-- Fixed reconnect behavior so MediaBridge can derive the browser CDP URL from the configured port.
-- Fixed browser startup failures caused by Chrome taking longer to expose the remote debugging endpoint.
-- Improved the missing article page error by showing which browser tabs MediaBridge can see.
-
-June 1, 2026
-
-Changed
-- Included the config directory in the project files.
-
-Fixed
-- Fixed browser launch reuse so MediaBridge can attach to an already-running CDP browser without opening extra tabs.
-- Fixed image linking so inline width and height attributes from dummy image tags are restored after linking.
