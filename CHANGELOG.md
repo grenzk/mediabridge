@@ -2,12 +2,18 @@ MediaBridge Changelog
 
 June 1, 2026
 
+Added
+- Added a separate log console window for viewing action details and errors.
+- Added toolbar access to open and clear logs.
+
 Changed
 - Included the config directory in the project files.
+- Prepared release version 0.3.0.
 
 Fixed
 - Fixed browser launch reuse so MediaBridge can attach to an already-running CDP browser without opening extra tabs.
 - Fixed image linking so inline width and height attributes from dummy image tags are restored after linking.
+- Fixed log output for image counts so it shows the actual number of unlinked image targets.
 
 
 May 30, 2026

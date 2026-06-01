@@ -1,6 +1,6 @@
 {
   "name": "mediabridge",
-  "version": "0.2.3",
+  "version": "0.3.0",
   "description": "Floating toolbar for linking media server documents and images into the eGain article editor.",
   "author": "MediaBridge",
   "private": true,
