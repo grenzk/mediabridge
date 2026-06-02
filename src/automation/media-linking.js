@@ -244,10 +244,10 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
   if (linkingMode.targetType === 'image') {
     const updatedHtml = await articlePage.evaluate(
       ({ html, images }) => {
-        const parser = new DOMParser()
-        const doc = parser.parseFromString(html, 'text/html')
+        const template = document.createElement('template')
+        template.innerHTML = html
 
-        const allImages = [...doc.querySelectorAll('img')]
+        const allImages = [...template.content.querySelectorAll('img')]
         const updatedImages = new Set()
 
         const decodeFilename = filename => {
@@ -299,7 +299,7 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
           }
         })
 
-        return doc.body.innerHTML
+        return template.innerHTML
       },
       { html, images: items },
     )
@@ -311,10 +311,10 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
 
   const updatedHtml = await articlePage.evaluate(
     ({ html, links, className }) => {
-      const parser = new DOMParser()
-      const doc = parser.parseFromString(html, 'text/html')
+      const template = document.createElement('template')
+      template.innerHTML = html
 
-      const anchors = [...doc.querySelectorAll('a')]
+      const anchors = [...template.content.querySelectorAll('a')]
       const updatedLinks = new Set()
 
       links.forEach(item => {
@@ -341,7 +341,7 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
         }
       })
 
-      return doc.body.innerHTML
+      return template.innerHTML
     },
     { className: linkingMode.className, html, links: items },
   )
