@@ -1,5 +1,11 @@
 MediaBridge Changelog
 
+June 2, 2026
+
+Fixed
+- Fixed source HTML restoration so top-level commented metadata is preserved after linking.
+
+
 June 1, 2026
 
 Added
