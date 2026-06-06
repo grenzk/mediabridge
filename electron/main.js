@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, nativeImage } from 'electron'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -31,6 +31,42 @@ function getDevServerUrl() {
   return process.env.VITE_DEV_SERVER_URL ?? arg?.replace('--dev-server=', '')
 }
 
+function getRuntimeIconPath() {
+  const filename = process.platform === 'darwin'
+    ? 'icon.icns'
+    : 'icon.ico'
+
+  return app.isPackaged
+    ? join(process.resourcesPath, filename)
+    : join(appRoot, 'build/icons', filename)
+}
+
+function getRuntimeIcon() {
+  const runtimeIconPath = getRuntimeIconPath()
+
+  if (!existsSync(runtimeIconPath)) {
+    return undefined
+  }
+
+  const icon = nativeImage.createFromPath(runtimeIconPath)
+
+  return icon.isEmpty() ? undefined : icon
+}
+
+function configureDockIcon() {
+  if (process.platform !== 'darwin') {
+    return
+  }
+
+  const icon = getRuntimeIcon()
+
+  if (icon) {
+    app.dock.setIcon(icon)
+  }
+
+  app.dock.show()
+}
+
 async function createToolbarWindow() {
   toolbarWindow = new BrowserWindow({
     width: 620,
@@ -43,6 +79,7 @@ async function createToolbarWindow() {
     alwaysOnTop: true,
     skipTaskbar: false,
     title: 'MediaBridge',
+    icon: getRuntimeIcon(),
     trafficLightPosition: { x: 12, y: 12 },
     webPreferences: {
       preload: join(__dirname, 'preload.cjs'),
@@ -404,7 +441,10 @@ ipcMain.handle('toolbar:minimize', () => {
   toolbarWindow?.minimize()
 })
 
-app.whenReady().then(createToolbarWindow)
+app.whenReady().then(async () => {
+  configureDockIcon()
+  await createToolbarWindow()
+})
 
 app.on('window-all-closed', async () => {
   if (

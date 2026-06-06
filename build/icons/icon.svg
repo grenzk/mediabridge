@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <rect x="132" y="132" width="760" height="760" rx="172" fill="#f7d54a"/>
+  <text
+    x="508"
+    y="542"
+    fill="#101419"
+    font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+    font-size="340"
+    font-weight="900"
+    letter-spacing="0"
+    text-anchor="middle"
+    dominant-baseline="middle"
+  >MB</text>
+</svg>

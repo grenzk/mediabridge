@@ -33,14 +33,26 @@
       "src/helpers/**/*",
       "package.json"
     ],
+    "extraResources": [
+      {
+        "from": "build/icons/icon.icns",
+        "to": "icon.icns"
+      },
+      {
+        "from": "build/icons/icon.ico",
+        "to": "icon.ico"
+      }
+    ],
     "mac": {
       "category": "public.app-category.productivity",
+      "icon": "build/icons/icon.icns",
       "target": [
         "dmg",
         "zip"
       ]
     },
     "win": {
+      "icon": "build/icons/icon.ico",
       "target": [
         {
           "target": "nsis",
