@@ -2,7 +2,7 @@ import { getEditorLocators } from '../editor/get-editor-locators.js'
 
 /**
  * @param {import('playwright').Page} articlePage
- * @returns {Promise<{ filename: string, href: string, sourceIndex: number, text: string }[]>}
+ * @returns {Promise<{ classNames: string[], filename: string, href: string, sourceIndex: number, text: string }[]>}
  */
 export async function extractArticleLinks(articlePage) {
   const { sourceEditor } = getEditorLocators(articlePage)
@@ -27,6 +27,7 @@ export async function extractArticleLinks(articlePage) {
       const filename = decodeFilename(url.pathname.split('/').pop())
 
       return {
+        classNames: [...link.classList],
         filename,
         href,
         sourceIndex,

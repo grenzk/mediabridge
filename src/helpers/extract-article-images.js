@@ -5,7 +5,7 @@ import { getEditorLocators } from '../editor/get-editor-locators.js'
  * dummy src paths as long as the path ends with the media-library filename.
  *
  * @param {import('playwright').Page} articlePage
- * @returns {Promise<{ alt: string, filename: string, height: string, sourceIndex: number, src: string, width: string }[]>}
+ * @returns {Promise<{ alt: string, filename: string, height: string, sourceIndex: number, src: string, style: string, width: string }[]>}
  */
 export async function extractArticleImages(articlePage) {
   const { sourceEditor } = getEditorLocators(articlePage)
@@ -42,6 +42,7 @@ export async function extractArticleImages(articlePage) {
         height: image.getAttribute('height') ?? '',
         sourceIndex,
         src,
+        style: image.getAttribute('style') ?? '',
         width: image.getAttribute('width') ?? '',
       }
     })

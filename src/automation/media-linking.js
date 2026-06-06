@@ -10,6 +10,10 @@ const LINKING_MODES = {
     className: 'pdf',
     extensions: ['.pdf'],
     label: 'PDF',
+    preservedClassNames: {
+      modifiers: ['downloadable'],
+      replacements: ['dwg'],
+    },
     targetType: 'link',
   },
   word: {
@@ -58,7 +62,7 @@ function findRequiredPage(pages, urlPart, pageName) {
 
 /**
  * @param {string} mode
- * @returns {{ className?: string, extensions: string[], label: string, targetType?: string }}
+ * @returns {{ className?: string, extensions: string[], label: string, preservedClassNames?: { modifiers: string[], replacements: string[] }, targetType?: string }}
  */
 function getLinkingMode(mode = 'pdf') {
   const linkingMode = LINKING_MODES[mode]
@@ -289,6 +293,10 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
             updatedImages.add(matchingIndex)
             matchingImage.setAttribute('alt', item.alt)
 
+            if (item.style) {
+              matchingImage.setAttribute('style', item.style)
+            }
+
             if (item.width) {
               matchingImage.setAttribute('width', item.width)
             }
@@ -310,12 +318,14 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
   }
 
   const updatedHtml = await articlePage.evaluate(
-    ({ html, links, className }) => {
+    ({ html, links, className, preservedClassNames }) => {
       const template = document.createElement('template')
       template.innerHTML = html
 
       const anchors = [...template.content.querySelectorAll('a')]
       const updatedLinks = new Set()
+      const modifierClassNameSet = new Set(preservedClassNames.modifiers)
+      const replacementClassNameSet = new Set(preservedClassNames.replacements)
 
       links.forEach(item => {
         let matchingIndex = -1
@@ -336,14 +346,39 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
           const matchingLink = anchors[matchingIndex]
 
           updatedLinks.add(matchingIndex)
-          matchingLink.classList.add(className)
+
+          const replacementClassName = item.classNames.find(name =>
+            replacementClassNameSet.has(name),
+          )
+          const modifierClassNames = item.classNames.filter(name =>
+            modifierClassNameSet.has(name),
+          )
+
+          if (replacementClassName) {
+            matchingLink.classList.add(replacementClassName)
+          } else if (className) {
+            matchingLink.classList.add(className)
+          }
+
+          if (modifierClassNames.length > 0) {
+            matchingLink.classList.add(...modifierClassNames)
+          }
+
           matchingLink.textContent = item.text
         }
       })
 
       return template.innerHTML
     },
-    { className: linkingMode.className, html, links: items },
+    {
+      className: linkingMode.className,
+      html,
+      links: items,
+      preservedClassNames: linkingMode.preservedClassNames ?? {
+        modifiers: [],
+        replacements: [],
+      },
+    },
   )
 
   await setSourceEditorHtml(sourceEditor, updatedHtml)
