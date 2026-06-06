@@ -1,5 +1,22 @@
 MediaBridge Changelog
 
+June 6, 2026
+
+Added
+- Added native macOS and Windows app icons.
+
+Changed
+- Updated the toolbar logo to match the app icon.
+- Improved toolbar typography and action alignment.
+- Added run mode chevron rotation when the selector is open.
+- Prepared release version 1.0.0.
+
+Fixed
+- Preserved source media attributes when restoring linked files.
+- Preserved document class names such as drawing and downloadable markers.
+- Preserved image style attributes from dummy image tags.
+
+
 June 2, 2026
 
 Fixed
