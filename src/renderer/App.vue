@@ -202,6 +202,7 @@ function getErrorMessage(error) {
       <div
         v-tooltip.bottom="`Run ${selectedLinkingTypeConfig.label}`"
         class="run-control"
+        :class="{ open: isLinkingTypeMenuOpen }"
       >
         <button
           class="run-button"

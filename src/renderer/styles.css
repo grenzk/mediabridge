@@ -167,6 +167,11 @@ button {
   color: #f8fafc;
   font-size: 0.72rem;
   pointer-events: none;
+  transition: transform 140ms ease;
+}
+
+.run-control.open .run-chevron {
+  transform: rotate(180deg);
 }
 
 .link-counter {
