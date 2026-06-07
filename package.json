@@ -23,6 +23,13 @@
     "directories": {
       "output": "release"
     },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "grenzk",
+        "repo": "mediabridge-releases"
+      }
+    ],
     "files": [
       "dist/renderer/**/*",
       "electron/**/*",
@@ -81,6 +88,7 @@
   "dependencies": {
     "@primeuix/themes": "^1.2.5",
     "dotenv": "^17.4.2",
+    "electron-updater": "^6.8.9",
     "playwright": "^1.60.0",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.5",

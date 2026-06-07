@@ -1,5 +1,6 @@
 import 'dotenv/config'
 import { app, BrowserWindow, ipcMain, Menu, nativeImage } from 'electron'
+import electronUpdater from 'electron-updater'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -18,8 +19,13 @@ let logsWindow
 let browserProcess
 let launchedCdpUrl
 let nextLogId = 1
+let lastUpdateDownloadLogPercent = 0
 const logs = []
 const maxLogEntries = 500
+
+function getAutoUpdater() {
+  return electronUpdater.autoUpdater
+}
 
 function isDev() {
   return getDevServerUrl() !== undefined
@@ -314,6 +320,79 @@ function addLog(level, scope, message, detail = '') {
   publishLogs()
 }
 
+function formatUpdateVersion(updateInfo) {
+  return updateInfo?.version ? `MediaBridge ${updateInfo.version}` : 'MediaBridge'
+}
+
+function configureAutoUpdater() {
+  if (!app.isPackaged) {
+    addLog('info', 'Updates', 'Skipping update check in development.')
+
+    return
+  }
+
+  const autoUpdater = getAutoUpdater()
+
+  autoUpdater.autoDownload = true
+  autoUpdater.autoInstallOnAppQuit = true
+
+  autoUpdater.on('checking-for-update', () => {
+    addLog('info', 'Updates', 'Checking for updates.')
+  })
+
+  autoUpdater.on('update-available', updateInfo => {
+    lastUpdateDownloadLogPercent = 0
+    addLog(
+      'info',
+      'Updates',
+      `${formatUpdateVersion(updateInfo)} is available.`,
+      'Downloading update in the background.',
+    )
+  })
+
+  autoUpdater.on('update-not-available', updateInfo => {
+    addLog(
+      'success',
+      'Updates',
+      `${formatUpdateVersion(updateInfo)} is up to date.`,
+    )
+  })
+
+  autoUpdater.on('download-progress', progress => {
+    const percent = Math.floor(progress.percent)
+
+    if (percent < lastUpdateDownloadLogPercent + 25 && percent < 100) {
+      return
+    }
+
+    lastUpdateDownloadLogPercent = percent
+    addLog('info', 'Updates', `Downloading update: ${percent}%.`)
+  })
+
+  autoUpdater.on('update-downloaded', updateInfo => {
+    addLog(
+      'success',
+      'Updates',
+      `${formatUpdateVersion(updateInfo)} downloaded.`,
+      'The update will install after MediaBridge quits.',
+    )
+  })
+
+  autoUpdater.on('error', error => {
+    addLog('error', 'Updates', getErrorMessage(error), getErrorDetail(error))
+  })
+}
+
+function checkForUpdates() {
+  if (!app.isPackaged) {
+    return
+  }
+
+  getAutoUpdater().checkForUpdates().catch(error => {
+    addLog('error', 'Updates', getErrorMessage(error), getErrorDetail(error))
+  })
+}
+
 /**
  * @param {unknown} error
  * @returns {string}
@@ -481,7 +560,9 @@ ipcMain.handle('toolbar:minimize', () => {
 app.whenReady().then(async () => {
   configureApplicationMenu()
   configureDockIcon()
+  configureAutoUpdater()
   await createToolbarWindow()
+  checkForUpdates()
 })
 
 app.on('window-all-closed', async () => {
