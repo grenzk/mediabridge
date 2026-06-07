@@ -1,5 +1,13 @@
 MediaBridge Changelog
 
+June 7, 2026
+
+Changed
+- Removed the menu bar on Windows and Linux.
+- Simplified the macOS app menu by removing Help and Services.
+- Kept only Copy and Select All in the macOS Edit menu for log viewing.
+
+
 June 6, 2026
 
 Added
