@@ -1,6 +1,6 @@
 MediaBridge Changelog
 
-June 7, 2026
+1.0.1 - June 7, 2026
 
 Changed
 - Added a startup log entry that shows the running MediaBridge version.
@@ -15,7 +15,7 @@ Fixed
 - Fixed counter label clipping when Image mode is selected.
 
 
-June 6, 2026
+1.0.0 - June 6, 2026
 
 Added
 - Added native macOS and Windows app icons.
@@ -38,7 +38,7 @@ Fixed
 - Fixed source HTML restoration so top-level commented metadata is preserved after linking.
 
 
-June 1, 2026
+0.3.0 - June 1, 2026
 
 Added
 - Added a separate log console window for viewing action details and errors.
@@ -54,7 +54,7 @@ Fixed
 - Fixed log output for image counts so it shows the actual number of unlinked image targets.
 
 
-May 30, 2026
+0.2.3 - May 30, 2026
 
 Changed
 - Increased the default browser startup wait time to reduce first-launch timing failures.
@@ -71,7 +71,7 @@ Fixed
 - Improved the missing article page error by showing which browser tabs MediaBridge can see.
 
 
-May 29, 2026
+0.2.2 - May 29, 2026
 
 Changed
 - Prepared release version 0.2.2.
@@ -85,7 +85,7 @@ Fixed
 - Updated the source editor value directly and dispatched input/change events so the article editor recognizes the HTML update without freezing.
 
 
-May 27, 2026
+0.2.1 / 0.2.0 - May 27, 2026
 
 Added
 - Added image media linking support.
