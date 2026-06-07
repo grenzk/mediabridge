@@ -11,6 +11,9 @@ Changed
 - Kept only Copy and Select All in the macOS Edit menu for log viewing.
 - Prepared release version 1.0.1.
 
+Fixed
+- Fixed counter label clipping when Image mode is selected.
+
 
 June 6, 2026
 
