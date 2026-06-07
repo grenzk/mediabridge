@@ -3,11 +3,13 @@ MediaBridge Changelog
 June 7, 2026
 
 Changed
+- Added a startup log entry that shows the running MediaBridge version.
 - Added GitHub Releases as the update source for packaged builds.
 - Added startup update checks with status written to the log console.
 - Removed the menu bar on Windows and Linux.
 - Simplified the macOS app menu by removing Help and Services.
 - Kept only Copy and Select All in the macOS Edit menu for log viewing.
+- Prepared release version 1.0.1.
 
 
 June 6, 2026

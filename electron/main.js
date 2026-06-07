@@ -561,6 +561,7 @@ app.whenReady().then(async () => {
   configureApplicationMenu()
   configureDockIcon()
   configureAutoUpdater()
+  addLog('info', 'App', `MediaBridge ${app.getVersion()} started.`)
   await createToolbarWindow()
   checkForUpdates()
 })
