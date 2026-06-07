@@ -324,9 +324,19 @@ function formatUpdateVersion(updateInfo) {
   return updateInfo?.version ? `MediaBridge ${updateInfo.version}` : 'MediaBridge'
 }
 
+function shouldCheckForUpdates() {
+  return app.isPackaged && process.platform === 'win32'
+}
+
 function configureAutoUpdater() {
   if (!app.isPackaged) {
     addLog('info', 'Updates', 'Skipping update check in development.')
+
+    return
+  }
+
+  if (!shouldCheckForUpdates()) {
+    addLog('info', 'Updates', 'Skipping update check outside Windows.')
 
     return
   }
@@ -384,7 +394,7 @@ function configureAutoUpdater() {
 }
 
 function checkForUpdates() {
-  if (!app.isPackaged) {
+  if (!shouldCheckForUpdates()) {
     return
   }
 
