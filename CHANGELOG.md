@@ -1,5 +1,14 @@
 MediaBridge Changelog
 
+1.0.2 - June 8, 2026
+
+Changed
+- Added an update-ready dialog so users can restart MediaBridge after an update downloads.
+- Added a status bar version badge for easier installed-version checks.
+- Refined the version badge layout and accessibility label.
+- Prepared release version 1.0.2.
+
+
 1.0.1 - June 7, 2026
 
 Changed
