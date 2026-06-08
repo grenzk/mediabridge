@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onBeforeMount, ref } from 'vue'
 
-const appVersion = ref('')
+const appVersion = ref(null)
 const linkCount = ref(null)
 const documentCount = ref(null)
 const processedCount = ref(null)
@@ -310,19 +310,23 @@ onBeforeMount(async () => await showAppVersion())
         </span>
       </div>
 
-      <dl class="status-metrics">
-        <div>
-          <dt>Found</dt>
-          <dd>{{ documentCount ?? '--' }}</dd>
+      <div class="status-tray">
+        <dl class="status-metrics">
+          <div>
+            <dt>Found</dt>
+            <dd>{{ documentCount ?? '--' }}</dd>
+          </div>
+          <div>
+            <dt>Done</dt>
+            <dd>{{ processedCount ?? '--' }}</dd>
+          </div>
+        </dl>
+
+        <div v-if="appVersion" class="version-badge" aria-label="MediaBridge version">
+          <span class="sr-only">Version</span>
+          <span>v{{ appVersion }}</span>
         </div>
-        <div>
-          <dt>Done</dt>
-          <dd>{{ processedCount ?? '--' }}</dd>
-        </div>
-         <div>
-          <dt>v{{ appVersion ?? '--' }}</dt>
-        </div>
-      </dl>
+      </div>
     </section>
   </main>
 </template>

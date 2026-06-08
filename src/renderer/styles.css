@@ -347,6 +347,12 @@ button {
   cursor: default;
 }
 
+.status-tray {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .status-metrics {
   display: flex;
   margin: 0;
@@ -379,6 +385,30 @@ button {
 
 .status-metrics dd {
   color: #f8fafc;
+}
+
+.version-badge {
+  display: flex;
+  align-items: center;
+  height: 20px;
+  padding: 0 7px;
+  color: rgb(255 255 255 / 62%);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 6%);
+  font-size: 0.67rem;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .status-panel.error {
