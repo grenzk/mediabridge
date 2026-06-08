@@ -16,6 +16,7 @@ contextBridge.exposeInMainWorld('mediabridge', {
   },
   openLogs: () => ipcRenderer.invoke('logs:open'),
   runMediaLinking: mode => ipcRenderer.invoke('session:run-media-linking', mode),
+  getAppVersion: () => ipcRenderer.invoke('session:get-app-version'),
   writeLog: (level, scope, message, detail) =>
     ipcRenderer.invoke('logs:write', level, scope, message, detail),
 })

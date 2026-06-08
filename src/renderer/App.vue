@@ -1,6 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue'
+import { computed, onBeforeMount, ref } from 'vue'
 
+const appVersion = ref('')
 const linkCount = ref(null)
 const documentCount = ref(null)
 const processedCount = ref(null)
@@ -81,6 +82,10 @@ function launchBrowser() {
     () => window.mediabridge.launchBrowser(),
     () => 'Browser open',
   )
+}
+
+async function showAppVersion() {
+  appVersion.value = await window.mediabridge.getAppVersion()
 }
 
 function refreshLinkCount() {
@@ -178,6 +183,8 @@ function getErrorMessage(error) {
 
   return String(error)
 }
+
+onBeforeMount(async () => await showAppVersion())
 </script>
 
 <template>
@@ -311,6 +318,9 @@ function getErrorMessage(error) {
         <div>
           <dt>Done</dt>
           <dd>{{ processedCount ?? '--' }}</dd>
+        </div>
+         <div>
+          <dt>v{{ appVersion ?? '--' }}</dt>
         </div>
       </dl>
     </section>

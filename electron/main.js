@@ -427,6 +427,10 @@ function getErrorMessage(error) {
   return String(error)
 }
 
+ipcMain.handle('session:get-app-version', () => {
+  return app.getVersion()
+})
+
 ipcMain.handle('session:launch-browser', async () => {
   addLog('info', 'Browser', 'Opening controlled browser.')
 
