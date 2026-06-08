@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { app, BrowserWindow, ipcMain, Menu, nativeImage } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage } from 'electron'
 import electronUpdater from 'electron-updater'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -347,7 +347,7 @@ function configureAutoUpdater() {
   autoUpdater.autoInstallOnAppQuit = true
 
   autoUpdater.on('checking-for-update', () => {
-    addLog('info', 'Updates', 'Checking for updates.')
+    addLog('info', 'Updates', 'Checking for updates...')
   })
 
   autoUpdater.on('update-available', updateInfo => {
@@ -379,13 +379,29 @@ function configureAutoUpdater() {
     addLog('info', 'Updates', `Downloading update: ${percent}%.`)
   })
 
-  autoUpdater.on('update-downloaded', updateInfo => {
+  autoUpdater.on('update-downloaded', async updateInfo => {
+    const version = formatUpdateVersion(updateInfo)
+
     addLog(
       'success',
       'Updates',
-      `${formatUpdateVersion(updateInfo)} downloaded.`,
-      'The update will install after MediaBridge quits.',
+      `${version} is ready to install.`,
+      'Restart MediaBridge to complete the update.',
     )
+
+    const { response } = await dialog.showMessageBox({
+      type: 'question',
+      title: 'Update Ready',
+      message: `${version} is ready to install.`,
+      detail: 'Restart MediaBridge now?',
+      buttons: ['Restart Now', 'Later'],
+      defaultId: 0,
+      cancelId: 1,
+   })
+
+    if (response === 0) {
+      autoUpdater.quitAndInstall()
+    }
   })
 
   autoUpdater.on('error', error => {
