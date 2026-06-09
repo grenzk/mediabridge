@@ -1,6 +1,7 @@
 import { connectToBrowser } from '../browser.js'
 import { extractArticleImages } from '../helpers/extract-article-images.js'
 import { extractArticleLinks } from '../helpers/extract-article-links.js'
+import { extractArticleReferenceLinks } from '../helpers/extract-article-reference-links.js'
 import { highlightArticleImage } from '../helpers/highlight-article-image.js'
 import { highlightArticleLink } from '../helpers/highlight-article-link.js'
 import { getEditorLocators } from '../editor/get-editor-locators.js'
@@ -33,6 +34,10 @@ const LINKING_MODES = {
     label: 'Image',
     targetType: 'image',
   },
+  article: {
+    label: 'Article',
+    targetType: 'article',
+  },
 }
 
 const LINKED_MEDIA_ORIGIN = 'https://napsapps.egain.services'
@@ -62,7 +67,7 @@ function findRequiredPage(pages, urlPart, pageName) {
 
 /**
  * @param {string} mode
- * @returns {{ className?: string, extensions: string[], label: string, preservedClassNames?: { modifiers: string[], replacements: string[] }, targetType?: string }}
+ * @returns {{ className?: string, extensions?: string[], label: string, preservedClassNames?: { modifiers: string[], replacements: string[] }, targetType?: string }}
  */
 function getLinkingMode(mode = 'pdf') {
   const linkingMode = LINKING_MODES[mode]
@@ -80,7 +85,11 @@ function getLinkingMode(mode = 'pdf') {
  * @returns {{ filename: string }[]}
  */
 function filterItemsByMode(items, mode = 'pdf') {
-  const { extensions } = getLinkingMode(mode)
+  const { extensions = [], targetType } = getLinkingMode(mode)
+
+  if (targetType === 'article') {
+    return items
+  }
 
   return items.filter(item => {
     const filename = item.filename.toLowerCase()
@@ -152,6 +161,24 @@ function filterUnlinkedItems(items) {
 }
 
 /**
+ * Reads the source editor targets that match the selected automation mode.
+ *
+ * @param {import('playwright').Page} articlePage
+ * @param {{ targetType?: string }} linkingMode
+ */
+async function extractItemsForMode(articlePage, linkingMode) {
+  if (linkingMode.targetType === 'image') {
+    return extractArticleImages(articlePage)
+  }
+
+  if (linkingMode.targetType === 'article') {
+    return extractArticleReferenceLinks(articlePage)
+  }
+
+  return extractArticleLinks(articlePage)
+}
+
+/**
  * The media server input field validates display names with a narrower character
  * set than the article editor supports. Use a temporary safe value there, then
  * restore the original article text during source HTML post-processing.
@@ -212,6 +239,40 @@ async function insertMediaItem(mediaPage, item, linkingMode) {
     await mediaPage.getByPlaceholder('Enter display name').fill(item.displayName)
     await mediaPage.getByText('Insert').click()
   }
+
+  return true
+}
+
+/**
+ * Uses the eGain article-link dialog to resolve the selected editor anchor by
+ * article ID. Missing search results are skipped so the run can continue.
+ *
+ * @param {import('playwright').Page} articlePage
+ * @param {{ articleId: string }} item
+ * @param {{ linkArticleButton: import('playwright').Locator, selectLinkArticleModal: import('playwright').Locator }} editorLocators
+ * @returns {Promise<boolean>} true when the article was linked.
+ */
+async function insertArticleLink(articlePage, item, editorLocators) {
+  const { linkArticleButton, selectLinkArticleModal } = editorLocators
+
+  await linkArticleButton.click()
+  await selectLinkArticleModal.locator('.btn-dropdown').click()
+  await selectLinkArticleModal.getByText('Article ID', { exact: true }).click()
+  await selectLinkArticleModal.locator('.css-1uw98w5 input').fill(item.articleId)
+  await articlePage.keyboard.press('Enter')
+
+  const result = selectLinkArticleModal.getByText(item.articleId, { exact: true })
+
+  try {
+    await result.waitFor({ state: 'visible', timeout: 10000 })
+  } catch {
+    await selectLinkArticleModal.getByText('Cancel', { exact: true }).click()
+
+    return false
+  }
+
+  await result.click()
+  await selectLinkArticleModal.getByText('OK', { exact: true }).click()
 
   return true
 }
@@ -347,10 +408,11 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
 
           updatedLinks.add(matchingIndex)
 
-          const replacementClassName = item.classNames.find(name =>
+          const itemClassNames = item.classNames ?? []
+          const replacementClassName = itemClassNames.find(name =>
             replacementClassNameSet.has(name),
           )
-          const modifierClassNames = item.classNames.filter(name =>
+          const modifierClassNames = itemClassNames.filter(name =>
             modifierClassNameSet.has(name),
           )
 
@@ -393,12 +455,14 @@ async function restoreLinkedItems(articlePage, sourceEditor, items, linkingMode)
  */
 export async function analyzeArticleLinks(pages, mode = 'pdf') {
   const articlePage = findRequiredPage(pages, '/article/', 'an article page')
-  const links = getLinkingMode(mode).targetType === 'image'
-    ? await extractArticleImages(articlePage)
-    : await extractArticleLinks(articlePage)
-  const documentLinks = filterUnlinkedItems(filterItemsByMode(links, mode))
+  const linkingMode = getLinkingMode(mode)
+  const links = await extractItemsForMode(articlePage, linkingMode)
+  const modeItems = filterItemsByMode(links, mode)
+  const documentLinks = linkingMode.targetType === 'article'
+    ? modeItems
+    : filterUnlinkedItems(modeItems)
 
-  return { articlePage, documentLinks, links, mode: getLinkingMode(mode) }
+  return { articlePage, documentLinks, links, mode: linkingMode }
 }
 
 /**
@@ -410,27 +474,29 @@ export async function analyzeArticleLinks(pages, mode = 'pdf') {
  */
 export async function runMediaLinking({ pages }, mode = 'pdf') {
   const articlePage = findRequiredPage(pages, '/article/', 'an article page')
-  const mediaPage = findRequiredPage(pages, '/media', 'a media page')
   const linkingMode = getLinkingMode(mode)
+  const mediaPage = linkingMode.targetType === 'article'
+    ? null
+    : findRequiredPage(pages, '/media', 'a media page')
 
-  const { sourceEditor, editorBody, sourceButton } =
-    getEditorLocators(articlePage)
+  const editorLocators = getEditorLocators(articlePage)
+  const { sourceEditor, editorBody, sourceButton } = editorLocators
 
-  const links = linkingMode.targetType === 'image'
-    ? await extractArticleImages(articlePage)
-    : await extractArticleLinks(articlePage)
-  const documentLinks = filterUnlinkedItems(filterItemsByMode(links, mode)).map(
-    item => {
-      if (linkingMode.targetType === 'image') {
-        return item
-      }
+  const links = await extractItemsForMode(articlePage, linkingMode)
+  const modeItems = filterItemsByMode(links, mode)
+  const unlinkedItems = linkingMode.targetType === 'article'
+    ? modeItems
+    : filterUnlinkedItems(modeItems)
+  const documentLinks = unlinkedItems.map(item => {
+    if (linkingMode.targetType === 'image' || linkingMode.targetType === 'article') {
+      return item
+    }
 
-      return {
-        ...item,
-        displayName: getMediaDisplayName(item.text, item.filename),
-      }
-    },
-  )
+    return {
+      ...item,
+      displayName: getMediaDisplayName(item.text, item.filename),
+    }
+  })
 
   await sourceButton.click()
 
@@ -445,7 +511,11 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
       await highlightArticleLink(editorBody, link)
     }
 
-    if (await insertMediaItem(mediaPage, link, linkingMode)) {
+    const inserted = linkingMode.targetType === 'article'
+      ? await insertArticleLink(articlePage, link, editorLocators)
+      : await insertMediaItem(mediaPage, link, linkingMode)
+
+    if (inserted) {
       processedItems.push(link)
       processedCount++
     } else {

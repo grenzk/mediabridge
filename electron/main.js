@@ -527,7 +527,7 @@ ipcMain.handle('session:run-media-linking', async (_event, mode = 'pdf') => {
   let session
 
   try {
-    addLog('info', 'Linking', `Running ${mode} media linking.`)
+    addLog('info', 'Linking', `Running ${mode} linking.`)
     session = await getSession()
     const result = await runMediaLinking(session, mode)
     addLog(
@@ -535,7 +535,7 @@ ipcMain.handle('session:run-media-linking', async (_event, mode = 'pdf') => {
       'Linking',
       `Inserted ${result.processedCount} ${result.mode.label} target(s).`,
       result.skippedCount
-        ? `Skipped ${result.skippedCount} missing media file(s).`
+        ? `Skipped ${result.skippedCount} unresolved target(s).`
         : '',
     )
 

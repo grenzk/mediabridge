@@ -16,6 +16,7 @@ const linkingTypes = {
   word: { label: 'Word', statusLabel: 'Word' },
   excel: { label: 'Excel', statusLabel: 'Excel' },
   image: { label: 'Image', statusLabel: 'Image' },
+  article: { label: 'Article', statusLabel: 'Article' },
 }
 
 const isBusy = computed(() => busyAction.value !== '')

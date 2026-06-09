@@ -4,6 +4,8 @@
  *   sourceEditor: import('playwright').Locator,
  *   editorBody: import('playwright').Locator,
  *   sourceButton: import('playwright').Locator,
+ *   linkArticleButton: import('playwright').Locator,
+ *   selectLinkArticleModal: import('playwright').Locator,
  * }}
  */
 export function getEditorLocators(articlePage) {
@@ -15,5 +17,9 @@ export function getEditorLocators(articlePage) {
       .locator('body[contenteditable="true"]'),
 
     sourceButton: articlePage.locator('a[title="Source"]'),
+
+    linkArticleButton: articlePage.locator('.cke_button__linkarticle_icon'),
+
+    selectLinkArticleModal: articlePage.locator('div[data-testid="pop-up-window-select-link-article"]')
   }
 }
