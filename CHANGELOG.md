@@ -1,5 +1,19 @@
 MediaBridge Changelog
 
+1.1.0 - June 9, 2026
+
+Added
+- Added Article linking mode for resolving eGain article ID placeholders from the article editor.
+- Added article placeholder extraction for anchor href values containing ECV3 article IDs.
+- Added editor locators for the Link Article toolbar button and Select Link Article modal.
+
+Changed
+- Updated linking automation so Article mode runs entirely inside the article editor without requiring the media server page.
+- Updated toolbar linking options to include Article.
+- Updated linking logs to describe generic targets instead of media-only files.
+- Prepared release version 1.1.0.
+
+
 1.0.2 - June 8, 2026
 
 Changed
