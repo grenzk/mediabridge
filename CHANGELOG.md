@@ -11,6 +11,7 @@ Changed
 - Updated linking automation so Article mode runs entirely inside the article editor without requiring the media server page.
 - Updated toolbar linking options to include Article.
 - Updated linking logs to describe generic targets instead of media-only files.
+- Increased the visible Windows app icon artwork size so it better matches other app icons.
 - Prepared release version 1.1.0.
 
 

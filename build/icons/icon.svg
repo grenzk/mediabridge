@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <rect x="132" y="132" width="760" height="760" rx="172" fill="#f7d54a"/>
+  <rect x="76" y="76" width="872" height="872" rx="196" fill="#f7d54a"/>
   <text
     x="508"
     y="542"
     fill="#101419"
     font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    font-size="340"
+    font-size="372"
     font-weight="900"
     letter-spacing="0"
     text-anchor="middle"
