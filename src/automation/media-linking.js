@@ -256,6 +256,7 @@ async function insertArticleLink(articlePage, item, editorLocators) {
   const { linkArticleButton, selectLinkArticleModal } = editorLocators
 
   await linkArticleButton.click()
+  await articlePage.waitForTimeout(500)
   await selectLinkArticleModal.locator('.btn-dropdown').click()
   await selectLinkArticleModal.getByText('Article ID', { exact: true }).click()
   await selectLinkArticleModal.locator('.css-1uw98w5 input').fill(item.articleId)
