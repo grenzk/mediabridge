@@ -1,5 +1,16 @@
 MediaBridge Changelog
 
+June 11, 2026
+
+Fixed
+- Fixed counter label displaying incorrect total link counts.
+
+June 10, 2026
+
+Fixed
+- Fixed article linking flow not completing correctly on some pages.
+
+
 1.1.0 - June 9, 2026
 
 Added
