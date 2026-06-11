@@ -53,7 +53,6 @@ export async function extractArticleReferenceLinks(articlePage) {
             text: link.textContent.trim(),
           }
         })
-        .filter(link => link.articleId)
     },
     { articleIdPrefix: ARTICLE_ID_PREFIX, html },
   )

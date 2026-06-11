@@ -88,7 +88,7 @@ function filterItemsByMode(items, mode = 'pdf') {
   const { extensions = [], targetType } = getLinkingMode(mode)
 
   if (targetType === 'article') {
-    return items
+    return items.filter(item => item.articleId)
   }
 
   return items.filter(item => {
