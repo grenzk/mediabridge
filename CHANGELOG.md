@@ -8,7 +8,7 @@ Fixed
 June 10, 2026
 
 Fixed
-- Fixed article linking flow not completing correctly on some pages.
+- Fixed article linking flow not completing correctly.
 
 
 1.1.0 - June 9, 2026
