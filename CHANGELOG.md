@@ -1,5 +1,11 @@
 MediaBridge Changelog
 
+June 13, 2026
+
+Refactored
+- Replaced the fixed Article linking dropdown delay with retry logic that waits for the Article ID option to become visible.
+
+
 June 11, 2026
 
 Fixed
