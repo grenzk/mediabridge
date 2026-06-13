@@ -2,7 +2,7 @@ import { getEditorLocators } from '../editor/get-editor-locators.js'
 
 /**
  * Reads image placeholders from the source editor. Content developers can use
- * dummy src paths as long as the path ends with the media-library filename.
+ * dummy src paths as long as the path ends with the media server filename.
  *
  * @param {import('playwright').Page} articlePage
  * @returns {Promise<{ alt: string, filename: string, height: string, sourceIndex: number, src: string, style: string, width: string }[]>}

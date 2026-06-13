@@ -32,9 +32,9 @@ function isDev() {
 }
 
 function getDevServerUrl() {
-  const arg = process.argv.find(item => item.startsWith('--dev-server='))
+  const devServerArg = process.argv.find(arg => arg.startsWith('--dev-server='))
 
-  return process.env.VITE_DEV_SERVER_URL ?? arg?.replace('--dev-server=', '')
+  return process.env.VITE_DEV_SERVER_URL ?? devServerArg?.replace('--dev-server=', '')
 }
 
 function getRuntimeIconPath() {
@@ -270,8 +270,8 @@ function getBrowserExecutable() {
   }
 
   const platformCandidates = candidates[process.platform] ?? candidates.linux
-  const existingPath = platformCandidates.filter(Boolean).find(item =>
-    process.platform === 'linux' ? true : existsSync(item),
+  const existingPath = platformCandidates.filter(Boolean).find(candidatePath =>
+    process.platform === 'linux' ? true : existsSync(candidatePath),
   )
 
   if (!existingPath) {

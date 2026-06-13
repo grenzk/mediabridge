@@ -39,10 +39,10 @@ const selectedCountLabel = computed(() =>
   selectedLinkingType.value === 'image' ? 'image' : 'link',
 )
 const linkingOptions = computed(() =>
-  Object.entries(linkingTypes).map(([value, item]) => ({
-    disabled: item.disabled ?? false,
+  Object.entries(linkingTypes).map(([value, linkingType]) => ({
+    disabled: linkingType.disabled ?? false,
     value,
-    label: item.label,
+    label: linkingType.label,
   })),
 )
 
