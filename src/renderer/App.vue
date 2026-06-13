@@ -24,10 +24,15 @@ import { computed, onBeforeMount, ref } from 'vue'
  * }} LinkingOption
  */
 
+/** @type {import('vue').Ref<null | string>} */
 const appVersion = ref(null)
+/** @type {import('vue').Ref<null | number>} */
 const linkCount = ref(null)
+/** @type {import('vue').Ref<null | number>} */
 const documentCount = ref(null)
+/** @type {import('vue').Ref<null | number>} */
 const processedCount = ref(null)
+
 const status = ref('PDF')
 const busyAction = ref('')
 const errorMessage = ref('')

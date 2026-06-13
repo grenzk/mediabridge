@@ -1,7 +1,9 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
+/** @type {import('vue').Ref<import('./mediabridge').MediaBridgeLogEntry[]>} */
 const logs = ref([])
+/** @type {import('vue').Ref<HTMLElement | null>} */
 const consoleBody = ref(null)
 /** @type {undefined | (() => void)} */
 let unsubscribeLogs
