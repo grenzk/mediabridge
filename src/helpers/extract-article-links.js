@@ -9,11 +9,11 @@ export async function extractArticleLinks(articlePage) {
 
   const html = await sourceEditor.inputValue()
 
-  const links = await articlePage.evaluate(html => {
+  const links = await articlePage.evaluate((html) => {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
 
-    const decodeFilename = filename => {
+    const decodeFilename = (filename) => {
       try {
         return decodeURIComponent(filename)
       } catch {

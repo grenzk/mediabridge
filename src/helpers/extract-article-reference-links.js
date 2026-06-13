@@ -19,7 +19,7 @@ export async function extractArticleReferenceLinks(articlePage) {
       const parser = new DOMParser()
       const doc = parser.parseFromString(html, 'text/html')
 
-      const decodePathPart = value => {
+      const decodePathPart = (value) => {
         try {
           return decodeURIComponent(value)
         } catch {
@@ -27,32 +27,29 @@ export async function extractArticleReferenceLinks(articlePage) {
         }
       }
 
-      const getArticleId = href => {
+      const getArticleId = (href) => {
         const pathPart = decodePathPart(href.split('/').pop() ?? '')
           .split('?')[0]
           .split('#')[0]
           .trim()
         const articleIdStart = pathPart.toUpperCase().indexOf(articleIdPrefix)
 
-        return articleIdStart !== -1
-          ? pathPart.slice(articleIdStart)
-          : ''
+        return articleIdStart !== -1 ? pathPart.slice(articleIdStart) : ''
       }
 
-      return [...doc.querySelectorAll('a')]
-        .map((link, sourceIndex) => {
-          const href = link.getAttribute('href') ?? ''
-          const articleId = getArticleId(href)
+      return [...doc.querySelectorAll('a')].map((link, sourceIndex) => {
+        const href = link.getAttribute('href') ?? ''
+        const articleId = getArticleId(href)
 
-          return {
-            articleId,
-            classNames: [],
-            filename: articleId,
-            href,
-            sourceIndex,
-            text: link.textContent.trim(),
-          }
-        })
+        return {
+          articleId,
+          classNames: [],
+          filename: articleId,
+          href,
+          sourceIndex,
+          text: link.textContent.trim(),
+        }
+      })
     },
     { articleIdPrefix: ARTICLE_ID_PREFIX, html },
   )

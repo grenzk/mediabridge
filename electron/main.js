@@ -11,8 +11,7 @@ import { getCdpPort, getDefaultCdpUrl } from '../src/config/runtime.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
-const browserStartupTimeout =
-  Number(process.env.MEDIABRIDGE_BROWSER_STARTUP_TIMEOUT_MS) || 30000
+const browserStartupTimeout = Number(process.env.MEDIABRIDGE_BROWSER_STARTUP_TIMEOUT_MS) || 30000
 
 let toolbarWindow
 let logsWindow
@@ -32,19 +31,15 @@ function isDev() {
 }
 
 function getDevServerUrl() {
-  const devServerArg = process.argv.find(arg => arg.startsWith('--dev-server='))
+  const devServerArg = process.argv.find((arg) => arg.startsWith('--dev-server='))
 
   return process.env.VITE_DEV_SERVER_URL ?? devServerArg?.replace('--dev-server=', '')
 }
 
 function getRuntimeIconPath() {
-  const filename = process.platform === 'darwin'
-    ? 'icon.icns'
-    : 'icon.ico'
+  const filename = process.platform === 'darwin' ? 'icon.icns' : 'icon.ico'
 
-  return app.isPackaged
-    ? join(process.resourcesPath, filename)
-    : join(appRoot, 'build/icons', filename)
+  return app.isPackaged ? join(process.resourcesPath, filename) : join(appRoot, 'build/icons', filename)
 }
 
 function getRuntimeIcon() {
@@ -80,34 +75,30 @@ function configureApplicationMenu() {
     return
   }
 
-  Menu.setApplicationMenu(Menu.buildFromTemplate([
-    {
-      label: app.name,
-      submenu: [
-        { role: 'about' },
-        { type: 'separator' },
-        { role: 'hide' },
-        { role: 'hideOthers' },
-        { role: 'unhide' },
-        { type: 'separator' },
-        { role: 'quit' },
-      ],
-    },
-    {
-      label: 'Edit',
-      submenu: [
-        { role: 'copy' },
-        { role: 'selectAll' },
-      ],
-    },
-    {
-      label: 'Window',
-      submenu: [
-        { role: 'minimize' },
-        { role: 'close' },
-      ],
-    },
-  ]))
+  Menu.setApplicationMenu(
+    Menu.buildFromTemplate([
+      {
+        label: app.name,
+        submenu: [
+          { role: 'about' },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideOthers' },
+          { role: 'unhide' },
+          { type: 'separator' },
+          { role: 'quit' },
+        ],
+      },
+      {
+        label: 'Edit',
+        submenu: [{ role: 'copy' }, { role: 'selectAll' }],
+      },
+      {
+        label: 'Window',
+        submenu: [{ role: 'minimize' }, { role: 'close' }],
+      },
+    ]),
+  )
 }
 
 async function createToolbarWindow() {
@@ -193,7 +184,7 @@ async function getSession() {
  * @returns {Promise<void>}
  */
 function wait(milliseconds) {
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     setTimeout(resolve, milliseconds)
   })
 }
@@ -270,9 +261,9 @@ function getBrowserExecutable() {
   }
 
   const platformCandidates = candidates[process.platform] ?? candidates.linux
-  const existingPath = platformCandidates.filter(Boolean).find(candidatePath =>
-    process.platform === 'linux' ? true : existsSync(candidatePath),
-  )
+  const existingPath = platformCandidates
+    .filter(Boolean)
+    .find((candidatePath) => (process.platform === 'linux' ? true : existsSync(candidatePath)))
 
   if (!existingPath) {
     throw new Error('Could not find Chrome, Edge, or Chromium on this computer.')
@@ -350,7 +341,7 @@ function configureAutoUpdater() {
     addLog('info', 'Updates', 'Checking for updates...')
   })
 
-  autoUpdater.on('update-available', updateInfo => {
+  autoUpdater.on('update-available', (updateInfo) => {
     lastUpdateDownloadLogPercent = 0
     addLog(
       'info',
@@ -360,15 +351,11 @@ function configureAutoUpdater() {
     )
   })
 
-  autoUpdater.on('update-not-available', updateInfo => {
-    addLog(
-      'success',
-      'Updates',
-      `${formatUpdateVersion(updateInfo)} is up to date.`,
-    )
+  autoUpdater.on('update-not-available', (updateInfo) => {
+    addLog('success', 'Updates', `${formatUpdateVersion(updateInfo)} is up to date.`)
   })
 
-  autoUpdater.on('download-progress', progress => {
+  autoUpdater.on('download-progress', (progress) => {
     const percent = Math.floor(progress.percent)
 
     if (percent < lastUpdateDownloadLogPercent + 25 && percent < 100) {
@@ -379,15 +366,10 @@ function configureAutoUpdater() {
     addLog('info', 'Updates', `Downloading update: ${percent}%.`)
   })
 
-  autoUpdater.on('update-downloaded', async updateInfo => {
+  autoUpdater.on('update-downloaded', async (updateInfo) => {
     const version = formatUpdateVersion(updateInfo)
 
-    addLog(
-      'success',
-      'Updates',
-      `${version} is ready to install.`,
-      'Restart MediaBridge to complete the update.',
-    )
+    addLog('success', 'Updates', `${version} is ready to install.`, 'Restart MediaBridge to complete the update.')
 
     const { response } = await dialog.showMessageBox({
       type: 'question',
@@ -397,14 +379,14 @@ function configureAutoUpdater() {
       buttons: ['Restart Now', 'Later'],
       defaultId: 0,
       cancelId: 1,
-   })
+    })
 
     if (response === 0) {
       autoUpdater.quitAndInstall()
     }
   })
 
-  autoUpdater.on('error', error => {
+  autoUpdater.on('error', (error) => {
     addLog('error', 'Updates', getErrorMessage(error), getErrorDetail(error))
   })
 }
@@ -414,9 +396,11 @@ function checkForUpdates() {
     return
   }
 
-  getAutoUpdater().checkForUpdates().catch(error => {
-    addLog('error', 'Updates', getErrorMessage(error), getErrorDetail(error))
-  })
+  getAutoUpdater()
+    .checkForUpdates()
+    .catch((error) => {
+      addLog('error', 'Updates', getErrorMessage(error), getErrorDetail(error))
+    })
 }
 
 /**
@@ -465,14 +449,14 @@ ipcMain.handle('session:launch-browser', async () => {
       const port = getCdpPort()
       const userDataDir = join(app.getPath('userData'), 'browser-profile')
 
-      browserProcess = spawn(getBrowserExecutable(), [
-        `--remote-debugging-port=${port}`,
-        `--user-data-dir=${userDataDir}`,
-        '--disable-infobars',
-      ], {
-        detached: true,
-        stdio: 'ignore',
-      })
+      browserProcess = spawn(
+        getBrowserExecutable(),
+        [`--remote-debugging-port=${port}`, `--user-data-dir=${userDataDir}`, '--disable-infobars'],
+        {
+          detached: true,
+          stdio: 'ignore',
+        },
+      )
 
       browserProcess.unref()
       browserProcess.once('exit', () => {
@@ -534,9 +518,7 @@ ipcMain.handle('session:run-media-linking', async (_event, mode = 'pdf') => {
       'success',
       'Linking',
       `Inserted ${result.processedCount} ${result.mode.label} target(s).`,
-      result.skippedCount
-        ? `Skipped ${result.skippedCount} unresolved target(s).`
-        : '',
+      result.skippedCount ? `Skipped ${result.skippedCount} unresolved target(s).` : '',
     )
 
     return {
@@ -597,11 +579,7 @@ app.whenReady().then(async () => {
 })
 
 app.on('window-all-closed', () => {
-  if (
-    process.env.MEDIABRIDGE_CLOSE_BROWSER_ON_EXIT === '1' &&
-    browserProcess &&
-    !browserProcess.killed
-  ) {
+  if (process.env.MEDIABRIDGE_CLOSE_BROWSER_ON_EXIT === '1' && browserProcess && !browserProcess.killed) {
     browserProcess.kill()
   }
 

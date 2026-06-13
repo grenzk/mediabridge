@@ -56,17 +56,9 @@ onBeforeUnmount(() => {
         @click="clearLogs"
       />
 
-      <p v-if="!hasLogs" class="log-empty">
-        No logs yet. Run an action from the toolbar to start capturing output.
-      </p>
+      <p v-if="!hasLogs" class="log-empty">No logs yet. Run an action from the toolbar to start capturing output.</p>
 
-      <article
-        v-for="entry in logs"
-        v-else
-        :key="entry.id"
-        class="log-entry"
-        :class="entry.level"
-      >
+      <article v-for="entry in logs" v-else :key="entry.id" class="log-entry" :class="entry.level">
         <div class="log-entry-line">
           <span class="log-time">{{ entry.timestamp }}</span>
           <span class="log-level">{{ getLevelLabel(entry.level) }}</span>

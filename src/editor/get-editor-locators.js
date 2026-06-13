@@ -12,14 +12,12 @@ export function getEditorLocators(articlePage) {
   return {
     sourceEditor: articlePage.getByRole('textbox', { name: 'Editor' }),
 
-    editorBody: articlePage
-      .frameLocator('iframe[title^="Editor"]')
-      .locator('body[contenteditable="true"]'),
+    editorBody: articlePage.frameLocator('iframe[title^="Editor"]').locator('body[contenteditable="true"]'),
 
     sourceButton: articlePage.locator('a[title="Source"]'),
 
     linkArticleButton: articlePage.locator('.cke_button__linkarticle_icon'),
 
-    selectLinkArticleModal: articlePage.locator('div[data-testid="pop-up-window-select-link-article"]')
+    selectLinkArticleModal: articlePage.locator('div[data-testid="pop-up-window-select-link-article"]'),
   }
 }

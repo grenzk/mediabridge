@@ -89,11 +89,11 @@ const LINKED_MEDIA_ORIGIN = 'https://napsapps.egain.services'
  * @returns {import('playwright').Page}
  */
 function findRequiredPage(pages, urlPart, pageName) {
-  const page = pages.find(candidatePage => candidatePage.url().includes(urlPart))
+  const page = pages.find((candidatePage) => candidatePage.url().includes(urlPart))
 
   if (!page) {
     const openUrls = pages
-      .map(candidatePage => candidatePage.url())
+      .map((candidatePage) => candidatePage.url())
       .filter(Boolean)
       .join(', ')
 
@@ -128,13 +128,13 @@ function filterLinksByMode(links, mode = 'pdf') {
   const { extensions = [], targetType } = getLinkingMode(mode)
 
   if (targetType === 'article') {
-    return links.filter(link => link.articleId)
+    return links.filter((link) => link.articleId)
   }
 
-  return links.filter(link => {
+  return links.filter((link) => {
     const filename = link.filename.toLowerCase()
 
-    return extensions.some(extension => filename.endsWith(extension))
+    return extensions.some((extension) => filename.endsWith(extension))
   })
 }
 
@@ -197,7 +197,7 @@ function getLinkUrl(link) {
  * @returns {ArticleEditorTarget[]}
  */
 function filterUnlinkedLinks(links) {
-  return links.filter(link => !isLinkedMediaUrl(getLinkUrl(link)))
+  return links.filter((link) => !isLinkedMediaUrl(getLinkUrl(link)))
 }
 
 /**
@@ -229,7 +229,7 @@ async function extractLinksForMode(articlePage, linkingMode) {
  * @returns {string}
  */
 function getMediaDisplayName(text, filename) {
-  const sanitize = value =>
+  const sanitize = (value) =>
     value
       .replace(/[^A-Za-z0-9 !\-_.*'()]/g, '')
       .replace(/\s+/g, ' ')
@@ -249,9 +249,7 @@ function getMediaDisplayName(text, filename) {
  * @returns {string}
  */
 function getInsertActionLabel(linkingMode) {
-  return linkingMode.targetType === 'image'
-    ? 'Insert as inline image'
-    : 'Insert as link'
+  return linkingMode.targetType === 'image' ? 'Insert as inline image' : 'Insert as link'
 }
 
 /**
@@ -264,10 +262,7 @@ function getInsertActionLabel(linkingMode) {
  * @returns {Promise<boolean>} true when the media server target was inserted.
  */
 async function insertMediaLink(mediaPage, link, linkingMode) {
-  const file = mediaPage
-    .locator('div.p-3')
-    .filter({ hasText: link.filename })
-    .first()
+  const file = mediaPage.locator('div.p-3').filter({ hasText: link.filename }).first()
 
   if ((await file.count()) === 0) {
     return false
@@ -386,7 +381,7 @@ async function restoreLinkedTargets(articlePage, sourceEditor, links, linkingMod
         const allImages = [...template.content.querySelectorAll('img')]
         const updatedImages = new Set()
 
-        const decodeFilename = filename => {
+        const decodeFilename = (filename) => {
           try {
             return decodeURIComponent(filename)
           } catch {
@@ -394,7 +389,7 @@ async function restoreLinkedTargets(articlePage, sourceEditor, links, linkingMod
           }
         }
 
-        const getImageFilename = image => {
+        const getImageFilename = (image) => {
           const src = image.getAttribute('src') ?? image.src
 
           try {
@@ -406,7 +401,7 @@ async function restoreLinkedTargets(articlePage, sourceEditor, links, linkingMod
           }
         }
 
-        images.forEach(imageLink => {
+        images.forEach((imageLink) => {
           let matchingIndex = -1
 
           if (allImages[imageLink.sourceIndex] && !updatedImages.has(imageLink.sourceIndex)) {
@@ -459,7 +454,7 @@ async function restoreLinkedTargets(articlePage, sourceEditor, links, linkingMod
       const modifierClassNameSet = new Set(preservedClassNames.modifiers)
       const replacementClassNameSet = new Set(preservedClassNames.replacements)
 
-      links.forEach(articleLink => {
+      links.forEach((articleLink) => {
         let matchingIndex = -1
 
         if (anchors[articleLink.sourceIndex] && !updatedLinks.has(articleLink.sourceIndex)) {
@@ -480,12 +475,8 @@ async function restoreLinkedTargets(articlePage, sourceEditor, links, linkingMod
           updatedLinks.add(matchingIndex)
 
           const linkClassNames = articleLink.classNames ?? []
-          const replacementClassName = linkClassNames.find(name =>
-            replacementClassNameSet.has(name),
-          )
-          const modifierClassNames = linkClassNames.filter(name =>
-            modifierClassNameSet.has(name),
-          )
+          const replacementClassName = linkClassNames.find((name) => replacementClassNameSet.has(name))
+          const modifierClassNames = linkClassNames.filter((name) => modifierClassNameSet.has(name))
 
           if (replacementClassName) {
             matchingLink.classList.add(replacementClassName)
@@ -529,9 +520,7 @@ export async function analyzeArticleLinks(pages, mode = 'pdf') {
   const linkingMode = getLinkingMode(mode)
   const links = await extractLinksForMode(articlePage, linkingMode)
   const modeLinks = filterLinksByMode(links, mode)
-  const documentLinks = linkingMode.targetType === 'article'
-    ? modeLinks
-    : filterUnlinkedLinks(modeLinks)
+  const documentLinks = linkingMode.targetType === 'article' ? modeLinks : filterUnlinkedLinks(modeLinks)
 
   return { articlePage, documentLinks, links, mode: linkingMode }
 }
@@ -546,19 +535,15 @@ export async function analyzeArticleLinks(pages, mode = 'pdf') {
 export async function runMediaLinking({ pages }, mode = 'pdf') {
   const articlePage = findRequiredPage(pages, '/article/', 'an article page')
   const linkingMode = getLinkingMode(mode)
-  const mediaPage = linkingMode.targetType === 'article'
-    ? null
-    : findRequiredPage(pages, '/media', 'a media page')
+  const mediaPage = linkingMode.targetType === 'article' ? null : findRequiredPage(pages, '/media', 'a media page')
 
   const editorLocators = getEditorLocators(articlePage)
   const { sourceEditor, editorBody, sourceButton } = editorLocators
 
   const links = await extractLinksForMode(articlePage, linkingMode)
   const modeLinks = filterLinksByMode(links, mode)
-  const unlinkedLinks = linkingMode.targetType === 'article'
-    ? modeLinks
-    : filterUnlinkedLinks(modeLinks)
-  const documentLinks = unlinkedLinks.map(link => {
+  const unlinkedLinks = linkingMode.targetType === 'article' ? modeLinks : filterUnlinkedLinks(modeLinks)
+  const documentLinks = unlinkedLinks.map((link) => {
     if (linkingMode.targetType === 'image' || linkingMode.targetType === 'article') {
       return link
     }
@@ -582,9 +567,10 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
       await highlightArticleLink(editorBody, link)
     }
 
-    const inserted = linkingMode.targetType === 'article'
-      ? await insertArticleLink(articlePage, link, editorLocators)
-      : await insertMediaLink(mediaPage, link, linkingMode)
+    const inserted =
+      linkingMode.targetType === 'article'
+        ? await insertArticleLink(articlePage, link, editorLocators)
+        : await insertMediaLink(mediaPage, link, linkingMode)
 
     if (inserted) {
       processedLinks.push(link)

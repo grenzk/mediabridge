@@ -53,15 +53,9 @@ const linkLabel = computed(() => {
 })
 const currentMessage = computed(() => errorMessage.value || status.value)
 const showProgressDots = computed(() => isBusy.value && !errorMessage.value)
-const selectedLinkingTypeConfig = computed(
-  () => linkingTypes[selectedLinkingType.value],
-)
-const selectedTargetLabel = computed(() =>
-  selectedLinkingType.value === 'image' ? 'images' : 'links',
-)
-const selectedCountLabel = computed(() =>
-  selectedLinkingType.value === 'image' ? 'image' : 'link',
-)
+const selectedLinkingTypeConfig = computed(() => linkingTypes[selectedLinkingType.value])
+const selectedTargetLabel = computed(() => (selectedLinkingType.value === 'image' ? 'images' : 'links'))
+const selectedCountLabel = computed(() => (selectedLinkingType.value === 'image' ? 'image' : 'link'))
 const linkingOptions = computed(() =>
   Object.entries(linkingTypes).map(([value, linkingType]) => ({
     disabled: linkingType.disabled ?? false,
@@ -141,10 +135,13 @@ function refreshLinkCount() {
   return runAction(
     `Counting ${selectedTargetLabel.value}`,
     () => window.mediabridge.getLinkCount(selectedLinkingType.value),
-    result => {
-      const noun = selectedLinkingType.value === 'image'
-        ? result.documentCount === 1 ? 'image' : 'images'
-        : `${result.mode} ${result.documentCount === 1 ? 'link' : 'links'}`
+    (result) => {
+      const noun =
+        selectedLinkingType.value === 'image'
+          ? result.documentCount === 1
+            ? 'image'
+            : 'images'
+          : `${result.mode} ${result.documentCount === 1 ? 'link' : 'links'}`
 
       return `${result.documentCount} ${noun} ready`
     },
@@ -160,13 +157,14 @@ function runMediaLinking() {
   return runAction(
     'Running script',
     () => window.mediabridge.runMediaLinking(selectedLinkingType.value),
-    result => {
-      const noun = selectedLinkingType.value === 'image'
-        ? result.processedCount === 1 ? 'image' : 'images'
-        : `${result.mode} ${result.processedCount === 1 ? 'link' : 'links'}`
-      const skippedText = result.skippedCount
-        ? `, skipped ${result.skippedCount} missing`
-        : ''
+    (result) => {
+      const noun =
+        selectedLinkingType.value === 'image'
+          ? result.processedCount === 1
+            ? 'image'
+            : 'images'
+          : `${result.mode} ${result.processedCount === 1 ? 'link' : 'links'}`
+      const skippedText = result.skippedCount ? `, skipped ${result.skippedCount} missing` : ''
 
       return `Inserted ${result.processedCount} ${noun}${skippedText}`
     },
@@ -235,12 +233,7 @@ async function openLogs() {
  */
 async function writeRendererErrorLog(scope, error) {
   try {
-    await window.mediabridge.writeLog(
-      'error',
-      scope,
-      'Renderer received an action error.',
-      getErrorMessage(error),
-    )
+    await window.mediabridge.writeLog('error', scope, 'Renderer received an action error.', getErrorMessage(error))
   } catch {
     // Keep toolbar errors visible even if the log bridge itself fails.
   }
@@ -352,12 +345,7 @@ onBeforeMount(async () => await showAppVersion())
     </section>
 
     <section class="status-panel" :class="{ error: errorMessage }" aria-live="polite">
-      <div
-        v-if="isLinkingTypeMenuOpen"
-        class="linking-type-menu"
-        role="listbox"
-        aria-label="Link automation type"
-      >
+      <div v-if="isLinkingTypeMenuOpen" class="linking-type-menu" role="listbox" aria-label="Link automation type">
         <button
           v-for="option in linkingOptions"
           :key="option.value"
@@ -375,11 +363,7 @@ onBeforeMount(async () => await showAppVersion())
 
       <div v-else-if="currentMessage" class="status-message">
         <span>{{ currentMessage }}</span>
-        <span
-          v-if="showProgressDots"
-          class="progress-dots"
-          aria-hidden="true"
-        >
+        <span v-if="showProgressDots" class="progress-dots" aria-hidden="true">
           <span>.</span>
           <span>.</span>
           <span>.</span>
