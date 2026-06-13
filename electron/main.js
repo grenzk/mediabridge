@@ -596,7 +596,7 @@ app.whenReady().then(async () => {
   checkForUpdates()
 })
 
-app.on('window-all-closed', async () => {
+app.on('window-all-closed', () => {
   if (
     process.env.MEDIABRIDGE_CLOSE_BROWSER_ON_EXIT === '1' &&
     browserProcess &&

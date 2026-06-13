@@ -1,6 +1,29 @@
 <script setup>
 import { computed, onBeforeMount, ref } from 'vue'
 
+/**
+ * @typedef {{
+ *   disabled?: boolean,
+ *   label: string,
+ *   statusLabel: string,
+ * }} LinkingTypeConfig
+ *
+ * @typedef {{
+ *   count?: number,
+ *   documentCount?: number,
+ *   mode?: string,
+ *   ok?: boolean,
+ *   processedCount?: number,
+ *   skippedCount?: number,
+ * }} ActionResult
+ *
+ * @typedef {{
+ *   disabled: boolean,
+ *   label: string,
+ *   value: string,
+ * }} LinkingOption
+ */
+
 const appVersion = ref(null)
 const linkCount = ref(null)
 const documentCount = ref(null)
@@ -11,6 +34,7 @@ const errorMessage = ref('')
 const selectedLinkingType = ref('pdf')
 const isLinkingTypeMenuOpen = ref(false)
 
+/** @type {Record<string, LinkingTypeConfig>} */
 const linkingTypes = {
   pdf: { label: 'PDF', statusLabel: 'PDF' },
   word: { label: 'Word', statusLabel: 'Word' },
@@ -46,6 +70,15 @@ const linkingOptions = computed(() =>
   })),
 )
 
+/**
+ * Runs a toolbar action while keeping status text, busy state, and error
+ * logging consistent across browser, count, and linking commands.
+ *
+ * @param {string} name
+ * @param {() => Promise<ActionResult>} action
+ * @param {(result: ActionResult) => string} successMessage
+ * @returns {Promise<void>}
+ */
 async function runAction(name, action, successMessage) {
   busyAction.value = name
   errorMessage.value = ''
@@ -77,6 +110,11 @@ async function runAction(name, action, successMessage) {
   }
 }
 
+/**
+ * Opens or connects to the controlled browser.
+ *
+ * @returns {Promise<void>}
+ */
 function launchBrowser() {
   return runAction(
     'Opening browser',
@@ -85,10 +123,20 @@ function launchBrowser() {
   )
 }
 
+/**
+ * Reads the packaged app version for the status badge.
+ *
+ * @returns {Promise<void>}
+ */
 async function showAppVersion() {
   appVersion.value = await window.mediabridge.getAppVersion()
 }
 
+/**
+ * Counts targets for the selected linking mode.
+ *
+ * @returns {Promise<void>}
+ */
 function refreshLinkCount() {
   return runAction(
     `Counting ${selectedTargetLabel.value}`,
@@ -103,6 +151,11 @@ function refreshLinkCount() {
   )
 }
 
+/**
+ * Runs the selected linking automation mode.
+ *
+ * @returns {Promise<void>}
+ */
 function runMediaLinking() {
   return runAction(
     'Running script',
@@ -120,6 +173,9 @@ function runMediaLinking() {
   )
 }
 
+/**
+ * Resets display state after the user changes linking modes.
+ */
 function selectLinkingType() {
   status.value = selectedLinkingTypeConfig.value.statusLabel
   errorMessage.value = ''
@@ -136,6 +192,11 @@ function toggleLinkingTypeMenu() {
   isLinkingTypeMenuOpen.value = !isLinkingTypeMenuOpen.value
 }
 
+/**
+ * Selects a linking mode from the dropdown menu.
+ *
+ * @param {LinkingOption} option
+ */
 function chooseLinkingType(option) {
   if (option.disabled) {
     return
@@ -164,6 +225,14 @@ async function openLogs() {
   }
 }
 
+/**
+ * Sends renderer-facing errors to the shared log window without masking the
+ * toolbar's own fallback error display.
+ *
+ * @param {string} scope
+ * @param {unknown} error
+ * @returns {Promise<void>}
+ */
 async function writeRendererErrorLog(scope, error) {
   try {
     await window.mediabridge.writeLog(
@@ -177,6 +246,12 @@ async function writeRendererErrorLog(scope, error) {
   }
 }
 
+/**
+ * Converts unknown thrown values into readable status/log text.
+ *
+ * @param {unknown} error
+ * @returns {string}
+ */
 function getErrorMessage(error) {
   if (error instanceof Error) {
     return error.message

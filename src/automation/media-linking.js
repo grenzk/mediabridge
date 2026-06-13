@@ -519,7 +519,7 @@ async function restoreLinkedTargets(articlePage, sourceEditor, links, linkingMod
 
 /**
  * Reads the article editor source and counts targets matching the selected
- * mode without modifying the article editor or media server pages.
+ * mode without modifying the article editor.
  *
  * @param {import('playwright').Page[]} pages
  * @param {string} mode

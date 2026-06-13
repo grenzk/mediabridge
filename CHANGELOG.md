@@ -4,7 +4,7 @@ June 13, 2026
 
 Refactored
 - Replaced the fixed Article linking dropdown delay with retry logic that waits for the Article ID option to become visible.
-- Improved automation JSDoc types, link target naming, and media server terminology for readability.
+- Improved automation, renderer, and preload JSDoc types, link target naming, and media server terminology for readability.
 
 
 June 11, 2026
