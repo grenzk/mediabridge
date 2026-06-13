@@ -1,7 +1,7 @@
-type MediaBridgeLinkingMode = 'pdf' | 'word' | 'excel' | 'image' | 'article'
-type MediaBridgeLogLevel = 'info' | 'success' | 'error'
+export type MediaBridgeLinkingMode = 'pdf' | 'word' | 'excel' | 'image' | 'article'
+export type MediaBridgeLogLevel = 'info' | 'success' | 'error'
 
-type MediaBridgeActionResult = {
+export type MediaBridgeActionResult = {
   articleUrl?: string
   count?: number
   documentCount?: number
@@ -11,11 +11,11 @@ type MediaBridgeActionResult = {
   skippedCount?: number
 }
 
-type MediaBridgeOkResult = {
+export type MediaBridgeOkResult = {
   ok: boolean
 }
 
-type MediaBridgeLogEntry = {
+export type MediaBridgeLogEntry = {
   detail?: string
   id: number
   level: MediaBridgeLogLevel
@@ -24,7 +24,7 @@ type MediaBridgeLogEntry = {
   timestamp: string
 }
 
-type MediaBridgeApi = {
+export type MediaBridgeApi = {
   clearLogs: () => Promise<MediaBridgeOkResult>
   closeToolbar: () => Promise<void>
   getAppVersion: () => Promise<string>

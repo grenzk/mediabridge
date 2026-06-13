@@ -3,10 +3,16 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const logs = ref([])
 const consoleBody = ref(null)
+/** @type {undefined | (() => void)} */
 let unsubscribeLogs
 
 const hasLogs = computed(() => logs.value.length > 0)
 
+/**
+ * Scrolls the console to the latest log after Vue flushes DOM updates.
+ *
+ * @returns {Promise<void>}
+ */
 async function scrollToBottom() {
   await nextTick()
 
@@ -15,19 +21,40 @@ async function scrollToBottom() {
   }
 }
 
+/**
+ * Replaces the visible logs with entries from the shared Electron log store.
+ *
+ * @param {import('./mediabridge').MediaBridgeLogEntry[]} nextLogs
+ */
 function setLogs(nextLogs) {
   logs.value = nextLogs
   scrollToBottom()
 }
 
+/**
+ * Loads the current log history when the console window opens.
+ *
+ * @returns {Promise<void>}
+ */
 async function loadLogs() {
   setLogs(await window.mediabridge.getLogs())
 }
 
+/**
+ * Clears logs from the shared Electron log store.
+ *
+ * @returns {Promise<void>}
+ */
 async function clearLogs() {
   await window.mediabridge.clearLogs()
 }
 
+/**
+ * Formats the log level for terminal-style display.
+ *
+ * @param {import('./mediabridge').MediaBridgeLogLevel} level
+ * @returns {string}
+ */
 function getLevelLabel(level) {
   return level.toUpperCase()
 }
