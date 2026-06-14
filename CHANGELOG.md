@@ -1,5 +1,12 @@
 MediaBridge Changelog
 
+1.1.1 - June 14, 2026
+
+Changed
+
+- Updated linking logs to list exact missing article IDs and media filenames for skipped targets while keeping toolbar status compact.
+- Prepared release version 1.1.1.
+
 June 13, 2026
 
 Refactored
@@ -19,7 +26,7 @@ Fixed
 
 - Fixed article linking flow not completing correctly.
 
-  1.1.0 - June 9, 2026
+1.1.0 - June 9, 2026
 
 Added
 
@@ -35,7 +42,7 @@ Changed
 - Increased the visible Windows app icon artwork size so it better matches other app icons.
 - Prepared release version 1.1.0.
 
-  1.0.2 - June 8, 2026
+1.0.2 - June 8, 2026
 
 Changed
 
@@ -44,7 +51,7 @@ Changed
 - Refined the version badge layout and accessibility label.
 - Prepared release version 1.0.2.
 
-  1.0.1 - June 7, 2026
+1.0.1 - June 7, 2026
 
 Changed
 
@@ -60,7 +67,7 @@ Fixed
 
 - Fixed counter label clipping when Image mode is selected.
 
-  1.0.0 - June 6, 2026
+1.0.0 - June 6, 2026
 
 Added
 
@@ -85,7 +92,7 @@ Fixed
 
 - Fixed source HTML restoration so top-level commented metadata is preserved after linking.
 
-  0.3.0 - June 1, 2026
+0.3.0 - June 1, 2026
 
 Added
 
@@ -103,7 +110,7 @@ Fixed
 - Fixed image linking so inline width and height attributes from dummy image tags are restored after linking.
 - Fixed log output for image counts so it shows the actual number of unlinked image targets.
 
-  0.2.3 - May 30, 2026
+0.2.3 - May 30, 2026
 
 Changed
 
@@ -121,7 +128,7 @@ Fixed
 - Fixed browser startup failures caused by Chrome taking longer to expose the remote debugging endpoint.
 - Improved the missing article page error by showing which browser tabs MediaBridge can see.
 
-  0.2.2 - May 29, 2026
+0.2.2 - May 29, 2026
 
 Changed
 
@@ -135,7 +142,7 @@ Fixed
 - Improved Windows stability when restoring linked files into the article editor.
 - Updated the source editor value directly and dispatched input/change events so the article editor recognizes the HTML update without freezing.
 
-  0.2.1 / 0.2.0 - May 27, 2026
+0.2.1 / 0.2.0 - May 27, 2026
 
 Added
 
