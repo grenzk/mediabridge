@@ -14,18 +14,6 @@ Refactored
 - Replaced the fixed Article linking dropdown delay with retry logic that waits for the Article ID option to become visible.
 - Improved automation, renderer, and preload JSDoc types, link target naming, and media server terminology for readability.
 
-June 11, 2026
-
-Fixed
-
-- Fixed counter label displaying incorrect total link counts.
-
-June 10, 2026
-
-Fixed
-
-- Fixed article linking flow not completing correctly.
-
 1.1.0 - June 9, 2026
 
 Added
@@ -41,6 +29,11 @@ Changed
 - Updated linking logs to describe generic targets instead of media-only files.
 - Increased the visible Windows app icon artwork size so it better matches other app icons.
 - Prepared release version 1.1.0.
+
+Fixed
+
+- Fixed Article linking dropdown timing by adding a short delay before selecting Article ID.
+- Fixed counter label displaying incorrect total link counts.
 
 1.0.2 - June 8, 2026
 
