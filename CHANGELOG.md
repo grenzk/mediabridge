@@ -5,6 +5,7 @@ MediaBridge Changelog
 Changed
 
 - Updated linking logs to list exact missing article IDs and media filenames for skipped targets while keeping toolbar status compact.
+- Grouped changelog entries by the versions that shipped them.
 - Prepared release version 1.1.1.
 
 Fixed
@@ -14,6 +15,8 @@ Fixed
 Refactored
 
 - Improved automation, renderer, and preload JSDoc types, link target naming, and media server terminology for readability.
+- Clarified skipped target logging names and formatter annotations.
+- Formatted the codebase with Prettier using single-parameter arrow functions without parentheses.
 
 1.1.0 - June 9, 2026
 
