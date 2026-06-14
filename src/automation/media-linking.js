@@ -589,7 +589,7 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
     mode: linkingMode,
     processedCount,
     skippedCount: skippedLinks.length,
-    skippedItems: skippedLinks,
+    skippedTargets: skippedLinks,
   }
 }
 

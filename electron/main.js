@@ -311,6 +311,69 @@ function addLog(level, scope, message, detail = '') {
   publishLogs()
 }
 
+/**
+ * @param {unknown} value
+ * @returns {string}
+ */
+function getReadableValue(value) {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+/**
+ * @param {Record<string, unknown>} skippedTarget
+ * @param {number} index
+ * @returns {string}
+ */
+function formatMissingArticleId(skippedTarget, index) {
+  const articleId = getReadableValue(skippedTarget.articleId) || `target ${index + 1}`
+  const label = getReadableValue(skippedTarget.text)
+
+  return label ? `- ${articleId} (${label})` : `- ${articleId}`
+}
+
+/**
+ * @param {Record<string, unknown>} skippedTarget
+ * @param {number} index
+ * @returns {string}
+ */
+function formatMissingMediaFilename(skippedTarget, index) {
+  const filename = getReadableValue(skippedTarget.filename) || `target ${index + 1}`
+  const label =
+    getReadableValue(skippedTarget.displayName) ||
+    getReadableValue(skippedTarget.alt) ||
+    getReadableValue(skippedTarget.text)
+
+  return label && label !== filename ? `- ${filename} (${label})` : `- ${filename}`
+}
+
+/**
+ * @param {{
+ *   mode?: { targetType?: string },
+ *   skippedTargets?: unknown[],
+ * }} result
+ * @returns {string}
+ */
+function formatSkippedTargetsDetail(result) {
+  if (!Array.isArray(result.skippedTargets) || result.skippedTargets.length === 0) {
+    return ''
+  }
+
+  const isArticleMode = result.mode?.targetType === 'article'
+  const heading = isArticleMode ? 'Missing article IDs:' : 'Missing media filenames:'
+  const lines = result.skippedTargets.map((skippedTargetCandidate, index) => {
+    const skippedTarget =
+      skippedTargetCandidate && typeof skippedTargetCandidate === 'object'
+        ? skippedTargetCandidate
+        : {}
+
+    return isArticleMode
+      ? formatMissingArticleId(skippedTarget, index)
+      : formatMissingMediaFilename(skippedTarget, index)
+  })
+
+  return [heading, ...lines].join('\n')
+}
+
 function formatUpdateVersion(updateInfo) {
   return updateInfo?.version ? `MediaBridge ${updateInfo.version}` : 'MediaBridge'
 }
@@ -518,7 +581,7 @@ ipcMain.handle('session:run-media-linking', async (_event, mode = 'pdf') => {
       'success',
       'Linking',
       `Inserted ${result.processedCount} ${result.mode.label} target(s).`,
-      result.skippedCount ? `Skipped ${result.skippedCount} unresolved target(s).` : '',
+      formatSkippedTargetsDetail(result),
     )
 
     return {
