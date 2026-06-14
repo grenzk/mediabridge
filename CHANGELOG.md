@@ -7,11 +7,12 @@ Changed
 - Updated linking logs to list exact missing article IDs and media filenames for skipped targets while keeping toolbar status compact.
 - Prepared release version 1.1.1.
 
-June 13, 2026
+Fixed
+
+- Replaced the fixed Article linking dropdown delay with retry logic that waits for the Article ID option to become visible.
 
 Refactored
 
-- Replaced the fixed Article linking dropdown delay with retry logic that waits for the Article ID option to become visible.
 - Improved automation, renderer, and preload JSDoc types, link target naming, and media server terminology for readability.
 
 1.1.0 - June 9, 2026
@@ -28,6 +29,7 @@ Changed
 - Updated toolbar linking options to include Article.
 - Updated linking logs to describe generic targets instead of media-only files.
 - Increased the visible Windows app icon artwork size so it better matches other app icons.
+- Updated the project description for MediaBridge.
 - Prepared release version 1.1.0.
 
 Fixed
@@ -71,19 +73,15 @@ Changed
 - Updated the toolbar logo to match the app icon.
 - Improved toolbar typography and action alignment.
 - Added run mode chevron rotation when the selector is open.
+- Refreshed release dependencies.
 - Prepared release version 1.0.0.
 
 Fixed
 
+- Fixed source HTML restoration so top-level commented metadata is preserved after linking.
 - Preserved source media attributes when restoring linked files.
 - Preserved document class names such as drawing and downloadable markers.
 - Preserved image style attributes from dummy image tags.
-
-June 2, 2026
-
-Fixed
-
-- Fixed source HTML restoration so top-level commented metadata is preserved after linking.
 
 0.3.0 - June 1, 2026
 
@@ -126,8 +124,6 @@ Fixed
 Changed
 
 - Prepared release version 0.2.2.
-
-May 28, 2026
 
 Fixed
 
