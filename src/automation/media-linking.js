@@ -558,7 +558,7 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
 
   let processedCount = 0
   const processedLinks = []
-  const skippedLinks = []
+  const skippedTargets = []
 
   for (const link of documentLinks) {
     if (linkingMode.targetType === 'image') {
@@ -576,7 +576,7 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
       processedLinks.push(link)
       processedCount++
     } else {
-      skippedLinks.push(link)
+      skippedTargets.push(link)
     }
   }
 
@@ -588,8 +588,8 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
     links,
     mode: linkingMode,
     processedCount,
-    skippedCount: skippedLinks.length,
-    skippedTargets: skippedLinks,
+    skippedCount: skippedTargets.length,
+    skippedTargets,
   }
 }
 

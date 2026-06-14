@@ -320,7 +320,7 @@ function getReadableValue(value) {
 }
 
 /**
- * @param {Record<string, unknown>} skippedTarget
+ * @param {{ articleId?: string, text?: string }} skippedTarget
  * @param {number} index
  * @returns {string}
  */
@@ -332,7 +332,7 @@ function formatMissingArticleId(skippedTarget, index) {
 }
 
 /**
- * @param {Record<string, unknown>} skippedTarget
+ * @param {{ alt?: string, displayName?: string, filename?: string, text?: string }} skippedTarget
  * @param {number} index
  * @returns {string}
  */
