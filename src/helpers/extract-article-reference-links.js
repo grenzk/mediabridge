@@ -19,7 +19,7 @@ export async function extractArticleReferenceLinks(articlePage) {
       const parser = new DOMParser()
       const doc = parser.parseFromString(html, 'text/html')
 
-      const decodePathPart = (value) => {
+      const decodePathPart = value => {
         try {
           return decodeURIComponent(value)
         } catch {
@@ -27,7 +27,7 @@ export async function extractArticleReferenceLinks(articlePage) {
         }
       }
 
-      const getArticleId = (href) => {
+      const getArticleId = href => {
         const pathPart = decodePathPart(href.split('/').pop() ?? '')
           .split('?')[0]
           .split('#')[0]

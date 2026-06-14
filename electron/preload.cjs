@@ -41,7 +41,7 @@ contextBridge.exposeInMainWorld('mediabridge', {
    * @param {MediaBridgeLinkingMode} mode
    * @returns {Promise<MediaBridgeActionResult>}
    */
-  getLinkCount: (mode) => ipcRenderer.invoke('session:get-link-count', mode),
+  getLinkCount: mode => ipcRenderer.invoke('session:get-link-count', mode),
 
   /**
    * @returns {Promise<MediaBridgeLogEntry[]>}
@@ -62,7 +62,7 @@ contextBridge.exposeInMainWorld('mediabridge', {
    * @param {(logs: MediaBridgeLogEntry[]) => void} callback
    * @returns {() => void}
    */
-  onLogsUpdated: (callback) => {
+  onLogsUpdated: callback => {
     const listener = (_event, logs) => callback(logs)
 
     ipcRenderer.on('logs:updated', listener)
@@ -79,7 +79,7 @@ contextBridge.exposeInMainWorld('mediabridge', {
    * @param {MediaBridgeLinkingMode} mode
    * @returns {Promise<MediaBridgeActionResult>}
    */
-  runMediaLinking: (mode) => ipcRenderer.invoke('session:run-media-linking', mode),
+  runMediaLinking: mode => ipcRenderer.invoke('session:run-media-linking', mode),
 
   /**
    * @returns {Promise<string>}

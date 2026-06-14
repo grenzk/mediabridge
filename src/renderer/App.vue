@@ -140,7 +140,7 @@ function refreshLinkCount() {
   return runAction(
     `Counting ${selectedTargetLabel.value}`,
     () => window.mediabridge.getLinkCount(selectedLinkingType.value),
-    (result) => {
+    result => {
       const noun =
         selectedLinkingType.value === 'image'
           ? result.documentCount === 1
@@ -162,7 +162,7 @@ function runMediaLinking() {
   return runAction(
     'Running script',
     () => window.mediabridge.runMediaLinking(selectedLinkingType.value),
-    (result) => {
+    result => {
       const noun =
         selectedLinkingType.value === 'image'
           ? result.processedCount === 1

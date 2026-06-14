@@ -31,7 +31,7 @@ function isDev() {
 }
 
 function getDevServerUrl() {
-  const devServerArg = process.argv.find((arg) => arg.startsWith('--dev-server='))
+  const devServerArg = process.argv.find(arg => arg.startsWith('--dev-server='))
 
   return process.env.VITE_DEV_SERVER_URL ?? devServerArg?.replace('--dev-server=', '')
 }
@@ -184,7 +184,7 @@ async function getSession() {
  * @returns {Promise<void>}
  */
 function wait(milliseconds) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     setTimeout(resolve, milliseconds)
   })
 }
@@ -263,7 +263,7 @@ function getBrowserExecutable() {
   const platformCandidates = candidates[process.platform] ?? candidates.linux
   const existingPath = platformCandidates
     .filter(Boolean)
-    .find((candidatePath) => (process.platform === 'linux' ? true : existsSync(candidatePath)))
+    .find(candidatePath => (process.platform === 'linux' ? true : existsSync(candidatePath)))
 
   if (!existingPath) {
     throw new Error('Could not find Chrome, Edge, or Chromium on this computer.')
@@ -362,9 +362,7 @@ function formatSkippedTargetsDetail(result) {
   const heading = isArticleMode ? 'Missing article IDs:' : 'Missing media filenames:'
   const lines = result.skippedTargets.map((skippedTargetCandidate, index) => {
     const skippedTarget =
-      skippedTargetCandidate && typeof skippedTargetCandidate === 'object'
-        ? skippedTargetCandidate
-        : {}
+      skippedTargetCandidate && typeof skippedTargetCandidate === 'object' ? skippedTargetCandidate : {}
 
     return isArticleMode
       ? formatMissingArticleId(skippedTarget, index)
@@ -404,7 +402,7 @@ function configureAutoUpdater() {
     addLog('info', 'Updates', 'Checking for updates...')
   })
 
-  autoUpdater.on('update-available', (updateInfo) => {
+  autoUpdater.on('update-available', updateInfo => {
     lastUpdateDownloadLogPercent = 0
     addLog(
       'info',
@@ -414,11 +412,11 @@ function configureAutoUpdater() {
     )
   })
 
-  autoUpdater.on('update-not-available', (updateInfo) => {
+  autoUpdater.on('update-not-available', updateInfo => {
     addLog('success', 'Updates', `${formatUpdateVersion(updateInfo)} is up to date.`)
   })
 
-  autoUpdater.on('download-progress', (progress) => {
+  autoUpdater.on('download-progress', progress => {
     const percent = Math.floor(progress.percent)
 
     if (percent < lastUpdateDownloadLogPercent + 25 && percent < 100) {
@@ -429,7 +427,7 @@ function configureAutoUpdater() {
     addLog('info', 'Updates', `Downloading update: ${percent}%.`)
   })
 
-  autoUpdater.on('update-downloaded', async (updateInfo) => {
+  autoUpdater.on('update-downloaded', async updateInfo => {
     const version = formatUpdateVersion(updateInfo)
 
     addLog('success', 'Updates', `${version} is ready to install.`, 'Restart MediaBridge to complete the update.')
@@ -449,7 +447,7 @@ function configureAutoUpdater() {
     }
   })
 
-  autoUpdater.on('error', (error) => {
+  autoUpdater.on('error', error => {
     addLog('error', 'Updates', getErrorMessage(error), getErrorDetail(error))
   })
 }
@@ -461,7 +459,7 @@ function checkForUpdates() {
 
   getAutoUpdater()
     .checkForUpdates()
-    .catch((error) => {
+    .catch(error => {
       addLog('error', 'Updates', getErrorMessage(error), getErrorDetail(error))
     })
 }

@@ -10,7 +10,7 @@ export async function highlightArticleImage(editorBody, targetImage) {
   const selected = await editorBody.evaluate((body, targetImage) => {
     const images = [...body.querySelectorAll('img')]
 
-    const decodeFilename = (filename) => {
+    const decodeFilename = filename => {
       try {
         return decodeURIComponent(filename)
       } catch {
@@ -18,7 +18,7 @@ export async function highlightArticleImage(editorBody, targetImage) {
       }
     }
 
-    const getImageFilename = (image) => {
+    const getImageFilename = image => {
       const src = image.getAttribute('src') ?? image.src
 
       try {
@@ -30,7 +30,7 @@ export async function highlightArticleImage(editorBody, targetImage) {
       }
     }
 
-    const filenameMatches = (image) => {
+    const filenameMatches = image => {
       if (!image) {
         return false
       }
@@ -38,7 +38,7 @@ export async function highlightArticleImage(editorBody, targetImage) {
       return getImageFilename(image) === targetImage.filename
     }
 
-    const imageMatches = (image) => {
+    const imageMatches = image => {
       return filenameMatches(image) && (image.getAttribute('alt') ?? '') === targetImage.alt
     }
 

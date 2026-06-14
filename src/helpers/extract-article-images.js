@@ -12,11 +12,11 @@ export async function extractArticleImages(articlePage) {
 
   const html = await sourceEditor.inputValue()
 
-  const images = await articlePage.evaluate((html) => {
+  const images = await articlePage.evaluate(html => {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
 
-    const decodeFilename = (filename) => {
+    const decodeFilename = filename => {
       try {
         return decodeURIComponent(filename)
       } catch {

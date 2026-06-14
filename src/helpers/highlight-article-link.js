@@ -10,7 +10,7 @@ export async function highlightArticleLink(editorBody, targetLink) {
   const selected = await editorBody.evaluate((body, targetLink) => {
     const anchors = [...body.querySelectorAll('a')]
 
-    const decodeFilename = (filename) => {
+    const decodeFilename = filename => {
       try {
         return decodeURIComponent(filename)
       } catch {
@@ -18,9 +18,9 @@ export async function highlightArticleLink(editorBody, targetLink) {
       }
     }
 
-    const normalizeText = (text) => text.replace(/\s+/g, ' ').trim()
+    const normalizeText = text => text.replace(/\s+/g, ' ').trim()
 
-    const getAnchorFilename = (anchor) => {
+    const getAnchorFilename = anchor => {
       const href = anchor.getAttribute('href') ?? anchor.href
 
       try {
@@ -32,7 +32,7 @@ export async function highlightArticleLink(editorBody, targetLink) {
       }
     }
 
-    const anchorMatches = (anchor) => {
+    const anchorMatches = anchor => {
       if (!anchor) {
         return false
       }
