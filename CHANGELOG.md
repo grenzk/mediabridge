@@ -8,10 +8,6 @@ Changed
 - Grouped changelog entries by the versions that shipped them.
 - Prepared release version 1.1.1.
 
-Fixed
-
-- Replaced the fixed Article linking dropdown delay with retry logic that waits for the Article ID option to become visible.
-
 Refactored
 
 - Improved automation, renderer, and preload JSDoc types, link target naming, and media server terminology for readability.
