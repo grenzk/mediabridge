@@ -280,35 +280,6 @@ async function insertMediaLink(mediaPage, link, linkingMode) {
 }
 
 /**
- * Opens the article selector type dropdown and returns the Article ID option.
- * eGain can render the dropdown button before its option panel is ready on
- * slower Windows machines, so retry based on the option becoming visible.
- *
- * @param {import('playwright').Locator} selectLinkArticleModal
- * @returns {Promise<import('playwright').Locator>}
- */
-async function openArticleIdDropdown(selectLinkArticleModal) {
-  const dropdownButton = selectLinkArticleModal.locator('.btn-dropdown')
-  const articleIdOption = selectLinkArticleModal.getByText('Article ID', {
-    exact: true,
-  })
-
-  for (let attempt = 0; attempt < 3; attempt++) {
-    await dropdownButton.click()
-
-    try {
-      await articleIdOption.waitFor({ state: 'visible', timeout: 1500 })
-
-      return articleIdOption
-    } catch {
-      // The first click can be swallowed while eGain initializes the dropdown.
-    }
-  }
-
-  throw new Error('Could not open the article type dropdown.')
-}
-
-/**
  * Uses the eGain article-link dialog to resolve the selected editor anchor by
  * article ID. Missing search results are skipped so the run can continue.
  *
@@ -321,9 +292,14 @@ async function insertArticleLink(articlePage, link, editorLocators) {
   const { linkArticleButton, selectLinkArticleModal } = editorLocators
 
   await linkArticleButton.click()
-  const articleIdOption = await openArticleIdDropdown(selectLinkArticleModal)
+  await articlePage.waitForTimeout(500)
+  await selectLinkArticleModal.locator('.btn-dropdown').click()
+  await selectLinkArticleModal
+    .getByText('Article ID', {
+      exact: true,
+    })
+    .click()
 
-  await articleIdOption.click()
   await selectLinkArticleModal.locator('.css-1uw98w5 input').fill(link.articleId)
   await articlePage.keyboard.press('Enter')
 
@@ -332,7 +308,7 @@ async function insertArticleLink(articlePage, link, editorLocators) {
   try {
     await result.waitFor({ state: 'visible', timeout: 10000 })
   } catch {
-    await selectLinkArticleModal.getByText('Cancel', { exact: true }).click()
+    await selectLinkArticleModal.getByText('Cancel').click()
 
     return false
   }
