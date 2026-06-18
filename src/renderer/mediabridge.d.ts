@@ -5,6 +5,7 @@ export type MediaBridgeActionResult = {
   articleUrl?: string
   count?: number
   documentCount?: number
+  linkedCount?: number
   mode?: string
   ok: boolean
   processedCount?: number

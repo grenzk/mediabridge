@@ -81,6 +81,7 @@ const LINKING_MODES = {
 }
 
 const LINKED_MEDIA_ORIGIN = 'https://napsapps.egain.services'
+const LINKED_ARTICLE_CLASS_NAME = 'eGainArticleLink'
 
 /**
  * @param {import('playwright').Page[]} pages
@@ -125,16 +126,19 @@ function getLinkingMode(mode = 'pdf') {
  * @returns {ArticleEditorTarget[]}
  */
 function filterLinksByMode(links, mode = 'pdf') {
-  const { extensions = [], targetType } = getLinkingMode(mode)
+  const { className, extensions = [], preservedClassNames, targetType } = getLinkingMode(mode)
 
   if (targetType === 'article') {
-    return links.filter(link => link.articleId)
+    return links.filter(link => link.articleId || link.classNames?.includes(LINKED_ARTICLE_CLASS_NAME))
   }
+
+  const modeClassNames = [className, ...(preservedClassNames?.replacements ?? [])].filter(Boolean)
 
   return links.filter(link => {
     const filename = link.filename.toLowerCase()
+    const hasModeClassName = link.classNames?.some(linkClassName => modeClassNames.includes(linkClassName))
 
-    return extensions.some(extension => filename.endsWith(extension))
+    return hasModeClassName || extensions.some(extension => filename.endsWith(extension))
   })
 }
 
@@ -191,13 +195,30 @@ function getLinkUrl(link) {
 }
 
 /**
- * Keeps only targets that still use dummy or non-media-service URLs.
+ * Checks whether a target has already been linked by eGain.
+ *
+ * @param {ArticleEditorTarget} link
+ * @param {LinkingMode} linkingMode
+ * @returns {boolean}
+ */
+function isLinkedTarget(link, linkingMode) {
+  if (linkingMode.targetType === 'article') {
+    return link.classNames?.includes(LINKED_ARTICLE_CLASS_NAME) ?? false
+  }
+
+  return isLinkedMediaUrl(getLinkUrl(link))
+}
+
+/**
+ * Keeps targets whose linked state matches the requested value.
  *
  * @param {ArticleEditorTarget[]} links
+ * @param {LinkingMode} linkingMode
+ * @param {boolean} isLinked
  * @returns {ArticleEditorTarget[]}
  */
-function filterUnlinkedLinks(links) {
-  return links.filter(link => !isLinkedMediaUrl(getLinkUrl(link)))
+function filterLinksByLinkedState(links, linkingMode, isLinked) {
+  return links.filter(link => isLinkedTarget(link, linkingMode) === isLinked)
 }
 
 /**
@@ -496,9 +517,10 @@ export async function analyzeArticleLinks(pages, mode = 'pdf') {
   const linkingMode = getLinkingMode(mode)
   const links = await extractLinksForMode(articlePage, linkingMode)
   const modeLinks = filterLinksByMode(links, mode)
-  const documentLinks = linkingMode.targetType === 'article' ? modeLinks : filterUnlinkedLinks(modeLinks)
+  const documentLinks = filterLinksByLinkedState(modeLinks, linkingMode, false)
+  const linkedLinks = filterLinksByLinkedState(modeLinks, linkingMode, true)
 
-  return { articlePage, documentLinks, links, mode: linkingMode }
+  return { articlePage, documentLinks, linkedLinks, links, mode: linkingMode }
 }
 
 /**
@@ -518,7 +540,7 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
 
   const links = await extractLinksForMode(articlePage, linkingMode)
   const modeLinks = filterLinksByMode(links, mode)
-  const unlinkedLinks = linkingMode.targetType === 'article' ? modeLinks : filterUnlinkedLinks(modeLinks)
+  const unlinkedLinks = filterLinksByLinkedState(modeLinks, linkingMode, false)
   const documentLinks = unlinkedLinks.map(link => {
     if (linkingMode.targetType === 'image' || linkingMode.targetType === 'article') {
       return link

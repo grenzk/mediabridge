@@ -555,6 +555,7 @@ ipcMain.handle('session:get-link-count', async (_event, mode = 'pdf') => {
       ok: true,
       count: result.links.length,
       documentCount: result.documentLinks.length,
+      linkedCount: result.linkedLinks.length,
       mode: result.mode.label,
       articleUrl: result.articlePage.url(),
     }

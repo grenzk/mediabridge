@@ -43,7 +43,7 @@ export async function extractArticleReferenceLinks(articlePage) {
 
         return {
           articleId,
-          classNames: [],
+          classNames: [...link.classList],
           filename: articleId,
           href,
           sourceIndex,

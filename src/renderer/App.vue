@@ -11,6 +11,7 @@ import { computed, onBeforeMount, ref } from 'vue'
  * @typedef {{
  *   count?: number,
  *   documentCount?: number,
+ *   linkedCount?: number,
  *   mode?: string,
  *   ok?: boolean,
  *   processedCount?: number,
@@ -31,7 +32,7 @@ const linkCount = ref(null)
 /** @type {import('vue').Ref<null | number>} */
 const documentCount = ref(null)
 /** @type {import('vue').Ref<null | number>} */
-const processedCount = ref(null)
+const doneCount = ref(null)
 
 const status = ref('PDF')
 const busyAction = ref('')
@@ -96,7 +97,11 @@ async function runAction(name, action, successMessage) {
     }
 
     if (result?.processedCount !== undefined) {
-      processedCount.value = result.processedCount
+      doneCount.value = result.processedCount
+    }
+
+    if (result?.linkedCount !== undefined) {
+      doneCount.value = result.linkedCount
     }
 
     status.value = successMessage(result)
@@ -137,6 +142,10 @@ async function showAppVersion() {
  * @returns {Promise<void>}
  */
 function refreshLinkCount() {
+  linkCount.value = null
+  documentCount.value = null
+  doneCount.value = null
+
   return runAction(
     `Counting ${selectedTargetLabel.value}`,
     () => window.mediabridge.getLinkCount(selectedLinkingType.value),
@@ -184,7 +193,7 @@ function selectLinkingType() {
   errorMessage.value = ''
   linkCount.value = null
   documentCount.value = null
-  processedCount.value = null
+  doneCount.value = null
 }
 
 function toggleLinkingTypeMenu() {
@@ -383,7 +392,7 @@ onBeforeMount(async () => await showAppVersion())
           </div>
           <div>
             <dt>Done</dt>
-            <dd>{{ processedCount ?? '--' }}</dd>
+            <dd>{{ doneCount ?? '--' }}</dd>
           </div>
         </dl>
 
