@@ -1,5 +1,17 @@
 MediaBridge Changelog
 
+1.1.2 - June 18, 2026
+
+Changed
+
+- Updated target classification to recognize linked documents by mode class, linked images by media URL, and linked articles by the eGain article-link class.
+- Prepared release version 1.1.2.
+
+Fixed
+
+- Fixed the Done counter so refreshing displays the number of targets already linked for the selected mode.
+- Fixed counter state not resetting before a new refresh.
+
 1.1.1 - June 14, 2026
 
 Changed
