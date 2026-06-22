@@ -1,5 +1,16 @@
 MediaBridge Changelog
 
+1.1.3 - June 22, 2026
+
+Changed
+
+- Added a shared VS Code launch configuration for debugging the Electron main process.
+- Prepared release version 1.1.3.
+
+Fixed
+
+- Prevented duplicate MediaBridge instances and focused the existing toolbar when the app is opened again.
+
 1.1.2 - June 18, 2026
 
 Changed
