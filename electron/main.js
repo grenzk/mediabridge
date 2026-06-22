@@ -12,6 +12,7 @@ import { getCdpPort, getDefaultCdpUrl } from '../src/config/runtime.js'
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
 const browserStartupTimeout = Number(process.env.MEDIABRIDGE_BROWSER_STARTUP_TIMEOUT_MS) || 30000
+const hasSingleInstanceLock = app.requestSingleInstanceLock()
 
 let toolbarWindow
 let logsWindow
@@ -19,8 +20,29 @@ let browserProcess
 let launchedCdpUrl
 let nextLogId = 1
 let lastUpdateDownloadLogPercent = 0
+let shouldFocusToolbarOnReady = false
 const logs = []
 const maxLogEntries = 500
+
+/**
+ * Restores and focuses the existing toolbar after another launch attempt.
+ */
+function focusToolbarWindow() {
+  if (!toolbarWindow || toolbarWindow.isDestroyed()) {
+    shouldFocusToolbarOnReady = true
+
+    return
+  }
+
+  if (toolbarWindow.isMinimized()) {
+    toolbarWindow.restore()
+  }
+
+  toolbarWindow.show()
+  toolbarWindow.focus()
+  toolbarWindow.moveTop()
+  shouldFocusToolbarOnReady = false
+}
 
 function getAutoUpdater() {
   return electronUpdater.autoUpdater
@@ -132,6 +154,10 @@ async function createToolbarWindow() {
     await toolbarWindow.loadURL(getDevServerUrl())
   } else {
     await toolbarWindow.loadFile(join(__dirname, '../dist/renderer/index.html'))
+  }
+
+  if (shouldFocusToolbarOnReady) {
+    focusToolbarWindow()
   }
 }
 
@@ -631,14 +657,20 @@ ipcMain.handle('toolbar:minimize', () => {
   toolbarWindow?.minimize()
 })
 
-app.whenReady().then(async () => {
-  configureApplicationMenu()
-  configureDockIcon()
-  configureAutoUpdater()
-  addLog('info', 'App', `MediaBridge ${app.getVersion()} started.`)
-  await createToolbarWindow()
-  checkForUpdates()
-})
+if (!hasSingleInstanceLock) {
+  app.quit()
+} else {
+  app.on('second-instance', focusToolbarWindow)
+
+  app.whenReady().then(async () => {
+    configureApplicationMenu()
+    configureDockIcon()
+    configureAutoUpdater()
+    addLog('info', 'App', `MediaBridge ${app.getVersion()} started.`)
+    await createToolbarWindow()
+    checkForUpdates()
+  })
+}
 
 app.on('window-all-closed', () => {
   if (process.env.MEDIABRIDGE_CLOSE_BROWSER_ON_EXIT === '1' && browserProcess && !browserProcess.killed) {
