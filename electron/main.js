@@ -10,8 +10,9 @@ import { getCdpPort, getDefaultCdpUrl } from '../src/config/runtime.js'
 import { configureApplicationMenu } from './app-menu.js'
 import { checkForUpdates, configureAutoUpdater } from './auto-updater.js'
 import { getErrorDetail, getErrorMessage } from './error-format.js'
-import { configureDockIcon, getRuntimeIcon } from './runtime-icon.js'
+import { configureDockIcon } from './runtime-icon.js'
 import { formatSkippedTargetsDetail } from './skipped-target-logs.js'
+import { createLogsBrowserWindow, createToolbarBrowserWindow } from './windows.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
@@ -47,10 +48,6 @@ function focusToolbarWindow() {
   shouldFocusToolbarOnReady = false
 }
 
-function isDev() {
-  return getDevServerUrl() !== undefined
-}
-
 function getDevServerUrl() {
   const devServerArg = process.argv.find(arg => arg.startsWith('--dev-server='))
 
@@ -58,76 +55,24 @@ function getDevServerUrl() {
 }
 
 async function createToolbarWindow() {
-  toolbarWindow = new BrowserWindow({
-    width: 620,
-    height: 116,
-    minWidth: 520,
-    minHeight: 108,
-    resizable: false,
-    frame: false,
-    transparent: true,
-    alwaysOnTop: true,
-    skipTaskbar: false,
-    title: 'MediaBridge',
-    icon: getRuntimeIcon(appRoot),
-    trafficLightPosition: { x: 12, y: 12 },
-    webPreferences: {
-      preload: join(__dirname, 'preload.cjs'),
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
+  toolbarWindow = await createToolbarBrowserWindow({
+    appRoot,
+    devServerUrl: getDevServerUrl(),
+    electronDirectory: __dirname,
+    focusToolbarWindow,
+    shouldFocusOnReady: shouldFocusToolbarOnReady,
   })
-
-  if (process.platform === 'darwin') {
-    toolbarWindow.setVisibleOnAllWorkspaces(true, {
-      visibleOnFullScreen: true,
-    })
-  }
-
-  if (isDev()) {
-    await toolbarWindow.loadURL(getDevServerUrl())
-  } else {
-    await toolbarWindow.loadFile(join(__dirname, '../dist/renderer/index.html'))
-  }
-
-  if (shouldFocusToolbarOnReady) {
-    focusToolbarWindow()
-  }
 }
 
 async function createLogsWindow() {
-  if (logsWindow && !logsWindow.isDestroyed()) {
-    logsWindow.show()
-    logsWindow.focus()
-
-    return
-  }
-
-  logsWindow = new BrowserWindow({
-    width: 760,
-    height: 460,
-    minWidth: 560,
-    minHeight: 340,
-    title: 'MediaBridge Logs',
-    backgroundColor: '#080b10',
-    webPreferences: {
-      preload: join(__dirname, 'preload.cjs'),
-      nodeIntegration: false,
-      contextIsolation: true,
+  logsWindow = await createLogsBrowserWindow({
+    devServerUrl: getDevServerUrl(),
+    electronDirectory: __dirname,
+    existingWindow: logsWindow,
+    onClosed: () => {
+      logsWindow = undefined
     },
   })
-
-  logsWindow.once('closed', () => {
-    logsWindow = undefined
-  })
-
-  if (isDev()) {
-    await logsWindow.loadURL(`${getDevServerUrl()}?view=logs`)
-  } else {
-    await logsWindow.loadFile(join(__dirname, '../dist/renderer/index.html'), {
-      query: { view: 'logs' },
-    })
-  }
 }
 
 async function getSession() {
