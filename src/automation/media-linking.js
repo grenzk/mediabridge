@@ -5,17 +5,11 @@ import { extractArticleReferenceLinks } from '../helpers/extract-article-referen
 import { highlightArticleImage } from '../helpers/highlight-article-image.js'
 import { highlightArticleLink } from '../helpers/highlight-article-link.js'
 import { getEditorLocators } from '../editor/get-editor-locators.js'
+import { filterLinksByLinkedState, filterLinksByMode } from './linked-targets.js'
+import { getLinkingMode } from './linking-modes.js'
 
 /**
- * @typedef {'link' | 'image' | 'article'} LinkingTargetType
- *
- * @typedef {{
- *   className?: string,
- *   extensions?: string[],
- *   label: string,
- *   preservedClassNames?: { modifiers: string[], replacements: string[] },
- *   targetType?: LinkingTargetType,
- * }} LinkingMode
+ * @typedef {import('./linking-modes.js').LinkingMode} LinkingMode
  *
  * @typedef {{
  *   articleId?: string,
@@ -45,44 +39,6 @@ import { getEditorLocators } from '../editor/get-editor-locators.js'
  * }} ArticleDialogLocators
  */
 
-/** @type {Record<string, LinkingMode>} */
-const LINKING_MODES = {
-  pdf: {
-    className: 'pdf',
-    extensions: ['.pdf'],
-    label: 'PDF',
-    preservedClassNames: {
-      modifiers: ['downloadable'],
-      replacements: ['dwg'],
-    },
-    targetType: 'link',
-  },
-  word: {
-    className: 'doc',
-    extensions: ['.doc', '.docx'],
-    label: 'Word',
-    targetType: 'link',
-  },
-  excel: {
-    className: 'xls',
-    extensions: ['.xls', '.xlsx'],
-    label: 'Excel',
-    targetType: 'link',
-  },
-  image: {
-    extensions: ['.gif', '.jpeg', '.jpg', '.png'],
-    label: 'Image',
-    targetType: 'image',
-  },
-  article: {
-    label: 'Article',
-    targetType: 'article',
-  },
-}
-
-const LINKED_MEDIA_ORIGIN = 'https://napsapps.egain.services'
-const LINKED_ARTICLE_CLASS_NAME = 'eGainArticleLink'
-
 /**
  * @param {import('playwright').Page[]} pages
  * @param {string} urlPart
@@ -104,121 +60,6 @@ function findRequiredPage(pages, urlPart, pageName) {
   }
 
   return page
-}
-
-/**
- * @param {string} mode
- * @returns {LinkingMode}
- */
-function getLinkingMode(mode = 'pdf') {
-  const linkingMode = LINKING_MODES[mode]
-
-  if (!linkingMode) {
-    throw new Error(`Unsupported linking mode: ${mode}`)
-  }
-
-  return linkingMode
-}
-
-/**
- * @param {ArticleEditorTarget[]} links
- * @param {string} mode
- * @returns {ArticleEditorTarget[]}
- */
-function filterLinksByMode(links, mode = 'pdf') {
-  const { className, extensions = [], preservedClassNames, targetType } = getLinkingMode(mode)
-
-  if (targetType === 'article') {
-    return links.filter(link => link.articleId || link.classNames?.includes(LINKED_ARTICLE_CLASS_NAME))
-  }
-
-  const modeClassNames = [className, ...(preservedClassNames?.replacements ?? [])].filter(Boolean)
-
-  return links.filter(link => {
-    const filename = link.filename.toLowerCase()
-    const hasModeClassName = link.classNames?.some(linkClassName => modeClassNames.includes(linkClassName))
-
-    return hasModeClassName || extensions.some(extension => filename.endsWith(extension))
-  })
-}
-
-/**
- * Detects strings that already include a URL scheme. Relative dummy paths are
- * intentionally excluded so they can still be matched against media filenames.
- *
- * @param {string} value
- * @returns {boolean}
- */
-function isAbsoluteUrl(value) {
-  return /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value)
-}
-
-/**
- * Checks whether a source href/src already points at the media service. Those
- * targets should be skipped so the automation can be run repeatedly.
- *
- * @param {string} value
- * @returns {boolean}
- */
-function isLinkedMediaUrl(value = '') {
-  const trimmedValue = value.trim()
-
-  if (!trimmedValue) {
-    return false
-  }
-
-  if (trimmedValue.startsWith('//')) {
-    try {
-      return new URL(`https:${trimmedValue}`).origin === LINKED_MEDIA_ORIGIN
-    } catch {
-      return false
-    }
-  }
-
-  if (!isAbsoluteUrl(trimmedValue)) {
-    return false
-  }
-
-  try {
-    return new URL(trimmedValue).origin === LINKED_MEDIA_ORIGIN
-  } catch {
-    return false
-  }
-}
-
-/**
- * @param {SourceUrlTarget} link
- * @returns {string}
- */
-function getLinkUrl(link) {
-  return link.href ?? link.src ?? ''
-}
-
-/**
- * Checks whether a target has already been linked by eGain.
- *
- * @param {ArticleEditorTarget} link
- * @param {LinkingMode} linkingMode
- * @returns {boolean}
- */
-function isLinkedTarget(link, linkingMode) {
-  if (linkingMode.targetType === 'article') {
-    return link.classNames?.includes(LINKED_ARTICLE_CLASS_NAME) ?? false
-  }
-
-  return isLinkedMediaUrl(getLinkUrl(link))
-}
-
-/**
- * Keeps targets whose linked state matches the requested value.
- *
- * @param {ArticleEditorTarget[]} links
- * @param {LinkingMode} linkingMode
- * @param {boolean} isLinked
- * @returns {ArticleEditorTarget[]}
- */
-function filterLinksByLinkedState(links, linkingMode, isLinked) {
-  return links.filter(link => isLinkedTarget(link, linkingMode) === isLinked)
 }
 
 /**
