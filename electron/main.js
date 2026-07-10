@@ -1,14 +1,12 @@
 import 'dotenv/config'
 import { app, BrowserWindow, ipcMain } from 'electron'
-import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { analyzeArticleLinks, runMediaLinking } from '../src/automation/media-linking.js'
 import { connectToBrowser } from '../src/browser.js'
-import { getCdpPort, getDefaultCdpUrl } from '../src/config/runtime.js'
 import { configureApplicationMenu } from './app-menu.js'
 import { checkForUpdates, configureAutoUpdater } from './auto-updater.js'
+import { createBrowserProcessController } from './browser-process.js'
 import { getErrorDetail, getErrorMessage } from './error-format.js'
 import { configureDockIcon } from './runtime-icon.js'
 import { formatSkippedTargetsDetail } from './skipped-target-logs.js'
@@ -18,11 +16,13 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
 const browserStartupTimeout = Number(process.env.MEDIABRIDGE_BROWSER_STARTUP_TIMEOUT_MS) || 30000
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
+const browserProcessController = createBrowserProcessController({
+  appRoot,
+  startupTimeout: browserStartupTimeout,
+})
 
 let toolbarWindow
 let logsWindow
-let browserProcess
-let launchedCdpUrl
 let nextLogId = 1
 let shouldFocusToolbarOnReady = false
 const logs = []
@@ -76,105 +76,12 @@ async function createLogsWindow() {
 }
 
 async function getSession() {
-  const cdpUrl = launchedCdpUrl ?? getDefaultCdpUrl()
+  const cdpUrl = browserProcessController.getCdpUrl()
 
   return {
     ...(await connectToBrowser(cdpUrl)),
     ownsBrowser: false,
   }
-}
-
-/**
- * @param {number} milliseconds
- * @returns {Promise<void>}
- */
-function wait(milliseconds) {
-  return new Promise(resolve => {
-    setTimeout(resolve, milliseconds)
-  })
-}
-
-/**
- * Waits until Chrome's remote debugging endpoint accepts Playwright CDP
- * connections. Chrome may need a short startup window after spawn.
- *
- * @param {string} cdpUrl
- */
-async function waitForBrowserConnection(cdpUrl) {
-  const deadline = Date.now() + browserStartupTimeout
-  let lastError
-
-  while (Date.now() < deadline) {
-    try {
-      if (await isBrowserConnectionReady(cdpUrl)) {
-        return
-      }
-    } catch (error) {
-      lastError = error
-    }
-
-    await wait(250)
-  }
-
-  throw new Error(
-    `Browser opened, but CDP was not ready at ${cdpUrl} after ${browserStartupTimeout / 1000} seconds. ${lastError?.message ?? ''}`.trim(),
-  )
-}
-
-/**
- * Checks Chrome's lightweight CDP metadata endpoint without attaching
- * Playwright to the browser. This avoids changing browser/session state during
- * a readiness probe.
- *
- * @param {string} cdpUrl
- * @returns {Promise<boolean>}
- */
-async function isBrowserConnectionReady(cdpUrl) {
-  const response = await fetch(new URL('/json/version', cdpUrl)).catch(() => undefined)
-
-  return response?.ok ?? false
-}
-
-/**
- * Finds the browser executable MediaBridge should launch for automation. On Windows,
- * Chrome for Testing is preferred so enterprise-managed Chrome policies do not
- * block remote debugging.
- *
- * @returns {string}
- */
-function getBrowserExecutable() {
-  const bundledChromeForTesting = app.isPackaged
-    ? join(process.resourcesPath, 'chrome-win64', 'chrome.exe')
-    : join(appRoot, 'vendor', 'chrome-win64', 'chrome.exe')
-
-  const candidates = {
-    darwin: [
-      '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
-      '/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge',
-      '/Applications/Chromium.app/Contents/MacOS/Chromium',
-    ],
-    win32: [
-      process.env.MEDIABRIDGE_CHROME_PATH,
-      bundledChromeForTesting,
-      join(process.env.PROGRAMFILES ?? 'C:\\Program Files', 'Google/Chrome/Application/chrome.exe'),
-      join(process.env['PROGRAMFILES(X86)'] ?? 'C:\\Program Files (x86)', 'Google/Chrome/Application/chrome.exe'),
-      join(process.env.LOCALAPPDATA ?? '', 'Google/Chrome/Application/chrome.exe'),
-      join(process.env.PROGRAMFILES ?? 'C:\\Program Files', 'Microsoft/Edge/Application/msedge.exe'),
-      join(process.env['PROGRAMFILES(X86)'] ?? 'C:\\Program Files (x86)', 'Microsoft/Edge/Application/msedge.exe'),
-    ],
-    linux: ['google-chrome', 'chromium', 'microsoft-edge'],
-  }
-
-  const platformCandidates = candidates[process.platform] ?? candidates.linux
-  const existingPath = platformCandidates
-    .filter(Boolean)
-    .find(candidatePath => (process.platform === 'linux' ? true : existsSync(candidatePath)))
-
-  if (!existingPath) {
-    throw new Error('Could not find Chrome, Edge, or Chromium on this computer.')
-  }
-
-  return existingPath
 }
 
 function getLogTimestamp() {
@@ -224,39 +131,8 @@ ipcMain.handle('session:launch-browser', async () => {
   addLog('info', 'Browser', 'Opening controlled browser.')
 
   try {
-    const cdpUrl = getDefaultCdpUrl()
-
-    if (!browserProcess || browserProcess.killed) {
-      if (await isBrowserConnectionReady(cdpUrl)) {
-        launchedCdpUrl = cdpUrl
-
-        addLog('success', 'Browser', `Connected to ${launchedCdpUrl}.`)
-
-        return { ok: true }
-      }
-
-      const port = getCdpPort()
-      const userDataDir = join(app.getPath('userData'), 'browser-profile')
-
-      browserProcess = spawn(
-        getBrowserExecutable(),
-        [`--remote-debugging-port=${port}`, `--user-data-dir=${userDataDir}`, '--disable-infobars'],
-        {
-          detached: true,
-          stdio: 'ignore',
-        },
-      )
-
-      browserProcess.unref()
-      browserProcess.once('exit', () => {
-        browserProcess = undefined
-        launchedCdpUrl = undefined
-      })
-      launchedCdpUrl = cdpUrl
-    }
-
-    await waitForBrowserConnection(launchedCdpUrl)
-    addLog('success', 'Browser', `Connected to ${launchedCdpUrl}.`)
+    const cdpUrl = await browserProcessController.launch()
+    addLog('success', 'Browser', `Connected to ${cdpUrl}.`)
 
     return { ok: true }
   } catch (error) {
@@ -375,8 +251,8 @@ if (!hasSingleInstanceLock) {
 }
 
 app.on('window-all-closed', () => {
-  if (process.env.MEDIABRIDGE_CLOSE_BROWSER_ON_EXIT === '1' && browserProcess && !browserProcess.killed) {
-    browserProcess.kill()
+  if (process.env.MEDIABRIDGE_CLOSE_BROWSER_ON_EXIT === '1') {
+    browserProcessController.close()
   }
 
   app.quit()
