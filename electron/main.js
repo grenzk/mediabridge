@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { app, BrowserWindow, dialog, ipcMain, Menu, nativeImage } from 'electron'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import electronUpdater from 'electron-updater'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url'
 import { analyzeArticleLinks, runMediaLinking } from '../src/automation/media-linking.js'
 import { connectToBrowser } from '../src/browser.js'
 import { getCdpPort, getDefaultCdpUrl } from '../src/config/runtime.js'
+import { configureApplicationMenu } from './app-menu.js'
+import { configureDockIcon, getRuntimeIcon } from './runtime-icon.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
@@ -58,71 +60,6 @@ function getDevServerUrl() {
   return process.env.VITE_DEV_SERVER_URL ?? devServerArg?.replace('--dev-server=', '')
 }
 
-function getRuntimeIconPath() {
-  const filename = process.platform === 'darwin' ? 'icon.icns' : 'icon.ico'
-
-  return app.isPackaged ? join(process.resourcesPath, filename) : join(appRoot, 'build/icons', filename)
-}
-
-function getRuntimeIcon() {
-  const runtimeIconPath = getRuntimeIconPath()
-
-  if (!existsSync(runtimeIconPath)) {
-    return undefined
-  }
-
-  const icon = nativeImage.createFromPath(runtimeIconPath)
-
-  return icon.isEmpty() ? undefined : icon
-}
-
-function configureDockIcon() {
-  if (process.platform !== 'darwin') {
-    return
-  }
-
-  const icon = getRuntimeIcon()
-
-  if (icon) {
-    app.dock.setIcon(icon)
-  }
-
-  app.dock.show()
-}
-
-function configureApplicationMenu() {
-  if (process.platform !== 'darwin') {
-    Menu.setApplicationMenu(null)
-
-    return
-  }
-
-  Menu.setApplicationMenu(
-    Menu.buildFromTemplate([
-      {
-        label: app.name,
-        submenu: [
-          { role: 'about' },
-          { type: 'separator' },
-          { role: 'hide' },
-          { role: 'hideOthers' },
-          { role: 'unhide' },
-          { type: 'separator' },
-          { role: 'quit' },
-        ],
-      },
-      {
-        label: 'Edit',
-        submenu: [{ role: 'copy' }, { role: 'selectAll' }],
-      },
-      {
-        label: 'Window',
-        submenu: [{ role: 'minimize' }, { role: 'close' }],
-      },
-    ]),
-  )
-}
-
 async function createToolbarWindow() {
   toolbarWindow = new BrowserWindow({
     width: 620,
@@ -135,7 +72,7 @@ async function createToolbarWindow() {
     alwaysOnTop: true,
     skipTaskbar: false,
     title: 'MediaBridge',
-    icon: getRuntimeIcon(),
+    icon: getRuntimeIcon(appRoot),
     trafficLightPosition: { x: 12, y: 12 },
     webPreferences: {
       preload: join(__dirname, 'preload.cjs'),
@@ -664,7 +601,7 @@ if (!hasSingleInstanceLock) {
 
   app.whenReady().then(async () => {
     configureApplicationMenu()
-    configureDockIcon()
+    configureDockIcon(appRoot)
     configureAutoUpdater()
     addLog('info', 'App', `MediaBridge ${app.getVersion()} started.`)
     await createToolbarWindow()
