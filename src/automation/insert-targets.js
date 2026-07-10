@@ -16,12 +16,12 @@
  * Missing filenames are skipped instead of failing the whole run.
  *
  * @param {import('playwright').Page} mediaPage
- * @param {ArticleEditorTarget} link
+ * @param {ArticleEditorTarget} target
  * @param {LinkingMode} linkingMode
  * @returns {Promise<boolean>} true when the media server target was inserted.
  */
-export async function insertMediaLink(mediaPage, link, linkingMode) {
-  const file = mediaPage.locator('div.p-3').filter({ hasText: link.filename }).first()
+export async function insertMediaLink(mediaPage, target, linkingMode) {
+  const file = mediaPage.locator('div.p-3').filter({ hasText: target.filename }).first()
 
   if ((await file.count()) === 0) {
     return false
@@ -31,7 +31,7 @@ export async function insertMediaLink(mediaPage, link, linkingMode) {
   await mediaPage.getByText(getInsertActionLabel(linkingMode)).click()
 
   if (linkingMode.targetType !== 'image') {
-    await mediaPage.getByPlaceholder('Enter display name').fill(link.displayName)
+    await mediaPage.getByPlaceholder('Enter display name').fill(target.displayName)
     await mediaPage.getByText('Insert').click()
   }
 
@@ -43,11 +43,11 @@ export async function insertMediaLink(mediaPage, link, linkingMode) {
  * article ID. Missing search results are skipped so the run can continue.
  *
  * @param {import('playwright').Page} articlePage
- * @param {ArticleEditorTarget} link
+ * @param {ArticleEditorTarget} target
  * @param {ArticleDialogLocators} editorLocators
  * @returns {Promise<boolean>} true when the article was linked.
  */
-export async function insertArticleLink(articlePage, link, editorLocators) {
+export async function insertArticleLink(articlePage, target, editorLocators) {
   const { linkArticleButton, selectLinkArticleModal } = editorLocators
 
   await linkArticleButton.click()
@@ -59,10 +59,10 @@ export async function insertArticleLink(articlePage, link, editorLocators) {
     })
     .click()
 
-  await selectLinkArticleModal.locator('.css-1uw98w5 input').fill(link.articleId)
+  await selectLinkArticleModal.locator('.css-1uw98w5 input').fill(target.articleId)
   await articlePage.keyboard.press('Enter')
 
-  const result = selectLinkArticleModal.getByText(link.articleId, { exact: true })
+  const result = selectLinkArticleModal.getByText(target.articleId, { exact: true })
 
   try {
     await result.waitFor({ state: 'visible', timeout: 10000 })

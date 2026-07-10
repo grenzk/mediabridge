@@ -20,21 +20,21 @@
  *
  * @param {import('playwright').Page} articlePage
  * @param {import('playwright').Locator} sourceEditor
- * @param {ArticleEditorTarget[]} links
+ * @param {ArticleEditorTarget[]} targets
  * @param {LinkingMode} linkingMode
  */
-export async function restoreLinkedTargets(articlePage, sourceEditor, links, linkingMode) {
+export async function restoreLinkedTargets(articlePage, sourceEditor, targets, linkingMode) {
   const html = await sourceEditor.inputValue()
 
   if (linkingMode.targetType === 'image') {
-    const updatedHtml = await restoreImageTargets(articlePage, html, links)
+    const updatedHtml = await restoreImageTargets(articlePage, html, targets)
 
     await setSourceEditorHtml(sourceEditor, updatedHtml)
 
     return
   }
 
-  const updatedHtml = await restoreLinkTargets(articlePage, html, links, linkingMode)
+  const updatedHtml = await restoreLinkTargets(articlePage, html, targets, linkingMode)
 
   await setSourceEditorHtml(sourceEditor, updatedHtml)
 }
@@ -132,13 +132,13 @@ async function restoreImageTargets(articlePage, html, images) {
 /**
  * @param {import('playwright').Page} articlePage
  * @param {string} html
- * @param {ArticleEditorTarget[]} links
+ * @param {ArticleEditorTarget[]} targets
  * @param {LinkingMode} linkingMode
  * @returns {Promise<string>}
  */
-async function restoreLinkTargets(articlePage, html, links, linkingMode) {
+async function restoreLinkTargets(articlePage, html, targets, linkingMode) {
   return articlePage.evaluate(
-    ({ html, links, className, preservedClassNames }) => {
+    ({ html, targets, className, preservedClassNames }) => {
       const template = document.createElement('template')
       template.innerHTML = html
 
@@ -147,7 +147,7 @@ async function restoreLinkTargets(articlePage, html, links, linkingMode) {
       const modifierClassNameSet = new Set(preservedClassNames.modifiers)
       const replacementClassNameSet = new Set(preservedClassNames.replacements)
 
-      links.forEach(articleLink => {
+      targets.forEach(articleLink => {
         let matchingIndex = -1
 
         if (anchors[articleLink.sourceIndex] && !updatedLinks.has(articleLink.sourceIndex)) {
@@ -190,7 +190,7 @@ async function restoreLinkTargets(articlePage, html, links, linkingMode) {
     {
       className: linkingMode.className,
       html,
-      links,
+      targets,
       preservedClassNames: linkingMode.preservedClassNames ?? {
         modifiers: [],
         replacements: [],

@@ -275,15 +275,15 @@ ipcMain.handle('session:get-link-count', async (_event, mode = 'pdf') => {
     addLog(
       'success',
       'Counter',
-      `Found ${result.documentLinks.length} unlinked ${result.mode.label} target(s).`,
+      `Found ${result.unlinkedTargets.length} unlinked ${result.mode.label} target(s).`,
       result.articlePage.url(),
     )
 
     return {
       ok: true,
-      count: result.links.length,
-      documentCount: result.documentLinks.length,
-      linkedCount: result.linkedLinks.length,
+      count: result.targets.length,
+      documentCount: result.unlinkedTargets.length,
+      linkedCount: result.linkedTargets.length,
       mode: result.mode.label,
       articleUrl: result.articlePage.url(),
     }
@@ -313,8 +313,8 @@ ipcMain.handle('session:run-media-linking', async (_event, mode = 'pdf') => {
 
     return {
       ok: true,
-      count: result.links.length,
-      documentCount: result.documentLinks.length,
+      count: result.targets.length,
+      documentCount: result.unlinkedTargets.length,
       mode: result.mode.label,
       processedCount: result.processedCount,
       skippedCount: result.skippedCount,

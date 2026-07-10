@@ -15,22 +15,22 @@ const LINKED_ARTICLE_CLASS_NAME = 'eGainArticleLink'
  */
 
 /**
- * @param {ArticleEditorTarget[]} links
+ * @param {ArticleEditorTarget[]} targets
  * @param {string} mode
  * @returns {ArticleEditorTarget[]}
  */
-export function filterLinksByMode(links, mode = 'pdf') {
+export function filterTargetsByMode(targets, mode = 'pdf') {
   const { className, extensions = [], preservedClassNames, targetType } = getLinkingMode(mode)
 
   if (targetType === 'article') {
-    return links.filter(link => link.articleId || link.classNames?.includes(LINKED_ARTICLE_CLASS_NAME))
+    return targets.filter(target => target.articleId || target.classNames?.includes(LINKED_ARTICLE_CLASS_NAME))
   }
 
   const modeClassNames = [className, ...(preservedClassNames?.replacements ?? [])].filter(Boolean)
 
-  return links.filter(link => {
-    const filename = link.filename.toLowerCase()
-    const hasModeClassName = link.classNames?.some(linkClassName => modeClassNames.includes(linkClassName))
+  return targets.filter(target => {
+    const filename = target.filename.toLowerCase()
+    const hasModeClassName = target.classNames?.some(className => modeClassNames.includes(className))
 
     return hasModeClassName || extensions.some(extension => filename.endsWith(extension))
   })
@@ -39,13 +39,13 @@ export function filterLinksByMode(links, mode = 'pdf') {
 /**
  * Keeps targets whose linked state matches the requested value.
  *
- * @param {ArticleEditorTarget[]} links
+ * @param {ArticleEditorTarget[]} targets
  * @param {LinkingMode} linkingMode
  * @param {boolean} isLinked
  * @returns {ArticleEditorTarget[]}
  */
-export function filterLinksByLinkedState(links, linkingMode, isLinked) {
-  return links.filter(link => isLinkedTarget(link, linkingMode) === isLinked)
+export function filterTargetsByLinkedState(targets, linkingMode, isLinked) {
+  return targets.filter(target => isLinkedTarget(target, linkingMode) === isLinked)
 }
 
 /**
@@ -93,24 +93,24 @@ function isLinkedMediaUrl(value = '') {
 }
 
 /**
- * @param {ArticleEditorTarget} link
+ * @param {ArticleEditorTarget} target
  * @returns {string}
  */
-function getLinkUrl(link) {
-  return link.href ?? link.src ?? ''
+function getTargetUrl(target) {
+  return target.href ?? target.src ?? ''
 }
 
 /**
  * Checks whether a target has already been linked by eGain.
  *
- * @param {ArticleEditorTarget} link
+ * @param {ArticleEditorTarget} target
  * @param {LinkingMode} linkingMode
  * @returns {boolean}
  */
-function isLinkedTarget(link, linkingMode) {
+function isLinkedTarget(target, linkingMode) {
   if (linkingMode.targetType === 'article') {
-    return link.classNames?.includes(LINKED_ARTICLE_CLASS_NAME) ?? false
+    return target.classNames?.includes(LINKED_ARTICLE_CLASS_NAME) ?? false
   }
 
-  return isLinkedMediaUrl(getLinkUrl(link))
+  return isLinkedMediaUrl(getTargetUrl(target))
 }

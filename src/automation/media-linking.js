@@ -6,7 +6,7 @@ import { highlightArticleImage } from '../helpers/highlight-article-image.js'
 import { highlightArticleLink } from '../helpers/highlight-article-link.js'
 import { getEditorLocators } from '../editor/get-editor-locators.js'
 import { insertArticleLink, insertMediaLink } from './insert-targets.js'
-import { filterLinksByLinkedState, filterLinksByMode } from './linked-targets.js'
+import { filterTargetsByLinkedState, filterTargetsByMode } from './linked-targets.js'
 import { getLinkingMode } from './linking-modes.js'
 import { findRequiredPage } from './required-pages.js'
 import { restoreLinkedTargets } from './restore-linked-targets.js'
@@ -44,7 +44,7 @@ import { restoreLinkedTargets } from './restore-linked-targets.js'
  * @param {LinkingMode} linkingMode
  * @returns {Promise<ArticleEditorTarget[]>}
  */
-async function extractLinksForMode(articlePage, linkingMode) {
+async function extractTargetsForMode(articlePage, linkingMode) {
   if (linkingMode.targetType === 'image') {
     return extractArticleImages(articlePage)
   }
@@ -91,12 +91,12 @@ function getMediaDisplayName(text, filename) {
 export async function analyzeArticleLinks(pages, mode = 'pdf') {
   const articlePage = findRequiredPage(pages, '/article/', 'an article page')
   const linkingMode = getLinkingMode(mode)
-  const links = await extractLinksForMode(articlePage, linkingMode)
-  const modeLinks = filterLinksByMode(links, mode)
-  const documentLinks = filterLinksByLinkedState(modeLinks, linkingMode, false)
-  const linkedLinks = filterLinksByLinkedState(modeLinks, linkingMode, true)
+  const targets = await extractTargetsForMode(articlePage, linkingMode)
+  const modeTargets = filterTargetsByMode(targets, mode)
+  const unlinkedTargets = filterTargetsByLinkedState(modeTargets, linkingMode, false)
+  const linkedTargets = filterTargetsByLinkedState(modeTargets, linkingMode, true)
 
-  return { articlePage, documentLinks, linkedLinks, links, mode: linkingMode }
+  return { articlePage, linkedTargets, mode: linkingMode, targets, unlinkedTargets }
 }
 
 /**
@@ -114,54 +114,54 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
   const editorLocators = getEditorLocators(articlePage)
   const { sourceEditor, editorBody, sourceButton } = editorLocators
 
-  const links = await extractLinksForMode(articlePage, linkingMode)
-  const modeLinks = filterLinksByMode(links, mode)
-  const unlinkedLinks = filterLinksByLinkedState(modeLinks, linkingMode, false)
-  const documentLinks = unlinkedLinks.map(link => {
+  const targets = await extractTargetsForMode(articlePage, linkingMode)
+  const modeTargets = filterTargetsByMode(targets, mode)
+  const unlinkedTargets = filterTargetsByLinkedState(modeTargets, linkingMode, false)
+  const preparedTargets = unlinkedTargets.map(target => {
     if (linkingMode.targetType === 'image' || linkingMode.targetType === 'article') {
-      return link
+      return target
     }
 
     return {
-      ...link,
-      displayName: getMediaDisplayName(link.text, link.filename),
+      ...target,
+      displayName: getMediaDisplayName(target.text, target.filename),
     }
   })
 
   await sourceButton.click()
 
   let processedCount = 0
-  const processedLinks = []
+  const processedTargets = []
   const skippedTargets = []
 
-  for (const link of documentLinks) {
+  for (const target of preparedTargets) {
     if (linkingMode.targetType === 'image') {
-      await highlightArticleImage(editorBody, link)
+      await highlightArticleImage(editorBody, target)
     } else {
-      await highlightArticleLink(editorBody, link)
+      await highlightArticleLink(editorBody, target)
     }
 
     const inserted =
       linkingMode.targetType === 'article'
-        ? await insertArticleLink(articlePage, link, editorLocators)
-        : await insertMediaLink(mediaPage, link, linkingMode)
+        ? await insertArticleLink(articlePage, target, editorLocators)
+        : await insertMediaLink(mediaPage, target, linkingMode)
 
     if (inserted) {
-      processedLinks.push(link)
+      processedTargets.push(target)
       processedCount++
     } else {
-      skippedTargets.push(link)
+      skippedTargets.push(target)
     }
   }
 
   await sourceButton.click()
-  await restoreLinkedTargets(articlePage, sourceEditor, processedLinks, linkingMode)
+  await restoreLinkedTargets(articlePage, sourceEditor, processedTargets, linkingMode)
 
   return {
-    documentLinks,
-    links,
     mode: linkingMode,
     processedCount,
+    targets,
+    unlinkedTargets: preparedTargets,
     skippedCount: skippedTargets.length,
     skippedTargets,
   }
