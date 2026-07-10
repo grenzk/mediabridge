@@ -1,6 +1,5 @@
 import 'dotenv/config'
-import { app, BrowserWindow, dialog, ipcMain } from 'electron'
-import electronUpdater from 'electron-updater'
+import { app, BrowserWindow, ipcMain } from 'electron'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
@@ -9,6 +8,8 @@ import { analyzeArticleLinks, runMediaLinking } from '../src/automation/media-li
 import { connectToBrowser } from '../src/browser.js'
 import { getCdpPort, getDefaultCdpUrl } from '../src/config/runtime.js'
 import { configureApplicationMenu } from './app-menu.js'
+import { checkForUpdates, configureAutoUpdater } from './auto-updater.js'
+import { getErrorDetail, getErrorMessage } from './error-format.js'
 import { configureDockIcon, getRuntimeIcon } from './runtime-icon.js'
 import { formatSkippedTargetsDetail } from './skipped-target-logs.js'
 
@@ -22,7 +23,6 @@ let logsWindow
 let browserProcess
 let launchedCdpUrl
 let nextLogId = 1
-let lastUpdateDownloadLogPercent = 0
 let shouldFocusToolbarOnReady = false
 const logs = []
 const maxLogEntries = 500
@@ -45,10 +45,6 @@ function focusToolbarWindow() {
   toolbarWindow.focus()
   toolbarWindow.moveTop()
   shouldFocusToolbarOnReady = false
-}
-
-function getAutoUpdater() {
-  return electronUpdater.autoUpdater
 }
 
 function isDev() {
@@ -275,122 +271,6 @@ function addLog(level, scope, message, detail = '') {
   publishLogs()
 }
 
-function formatUpdateVersion(updateInfo) {
-  return updateInfo?.version ? `MediaBridge ${updateInfo.version}` : 'MediaBridge'
-}
-
-function shouldCheckForUpdates() {
-  return app.isPackaged && process.platform === 'win32'
-}
-
-function configureAutoUpdater() {
-  if (!app.isPackaged) {
-    addLog('info', 'Updates', 'Skipping update check in development.')
-
-    return
-  }
-
-  if (!shouldCheckForUpdates()) {
-    addLog('info', 'Updates', 'Skipping update check outside Windows.')
-
-    return
-  }
-
-  const autoUpdater = getAutoUpdater()
-
-  autoUpdater.autoDownload = true
-  autoUpdater.autoInstallOnAppQuit = true
-
-  autoUpdater.on('checking-for-update', () => {
-    addLog('info', 'Updates', 'Checking for updates...')
-  })
-
-  autoUpdater.on('update-available', updateInfo => {
-    lastUpdateDownloadLogPercent = 0
-    addLog(
-      'info',
-      'Updates',
-      `${formatUpdateVersion(updateInfo)} is available.`,
-      'Downloading update in the background.',
-    )
-  })
-
-  autoUpdater.on('update-not-available', updateInfo => {
-    addLog('success', 'Updates', `${formatUpdateVersion(updateInfo)} is up to date.`)
-  })
-
-  autoUpdater.on('download-progress', progress => {
-    const percent = Math.floor(progress.percent)
-
-    if (percent < lastUpdateDownloadLogPercent + 25 && percent < 100) {
-      return
-    }
-
-    lastUpdateDownloadLogPercent = percent
-    addLog('info', 'Updates', `Downloading update: ${percent}%.`)
-  })
-
-  autoUpdater.on('update-downloaded', async updateInfo => {
-    const version = formatUpdateVersion(updateInfo)
-
-    addLog('success', 'Updates', `${version} is ready to install.`, 'Restart MediaBridge to complete the update.')
-
-    const { response } = await dialog.showMessageBox({
-      type: 'question',
-      title: 'Update Ready',
-      message: `${version} is ready to install.`,
-      detail: 'Restart MediaBridge now?',
-      buttons: ['Restart Now', 'Later'],
-      defaultId: 0,
-      cancelId: 1,
-    })
-
-    if (response === 0) {
-      autoUpdater.quitAndInstall()
-    }
-  })
-
-  autoUpdater.on('error', error => {
-    addLog('error', 'Updates', getErrorMessage(error), getErrorDetail(error))
-  })
-}
-
-function checkForUpdates() {
-  if (!shouldCheckForUpdates()) {
-    return
-  }
-
-  getAutoUpdater()
-    .checkForUpdates()
-    .catch(error => {
-      addLog('error', 'Updates', getErrorMessage(error), getErrorDetail(error))
-    })
-}
-
-/**
- * @param {unknown} error
- * @returns {string}
- */
-function getErrorDetail(error) {
-  if (error instanceof Error) {
-    return error.stack ?? error.message
-  }
-
-  return String(error)
-}
-
-/**
- * @param {unknown} error
- * @returns {string}
- */
-function getErrorMessage(error) {
-  if (error instanceof Error) {
-    return error.message
-  }
-
-  return String(error)
-}
-
 ipcMain.handle('session:get-app-version', () => {
   return app.getVersion()
 })
@@ -542,10 +422,10 @@ if (!hasSingleInstanceLock) {
   app.whenReady().then(async () => {
     configureApplicationMenu()
     configureDockIcon(appRoot)
-    configureAutoUpdater()
+    configureAutoUpdater(addLog)
     addLog('info', 'App', `MediaBridge ${app.getVersion()} started.`)
     await createToolbarWindow()
-    checkForUpdates()
+    checkForUpdates(addLog)
   })
 }
 
