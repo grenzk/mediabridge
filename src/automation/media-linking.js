@@ -8,6 +8,7 @@ import { getEditorLocators } from '../editor/get-editor-locators.js'
 import { insertArticleLink, insertMediaLink } from './insert-targets.js'
 import { filterLinksByLinkedState, filterLinksByMode } from './linked-targets.js'
 import { getLinkingMode } from './linking-modes.js'
+import { findRequiredPage } from './required-pages.js'
 import { restoreLinkedTargets } from './restore-linked-targets.js'
 
 /**
@@ -35,29 +36,6 @@ import { restoreLinkedTargets } from './restore-linked-targets.js'
  *
  * @typedef {ArticleEditorLink | ArticleEditorImage} ArticleEditorTarget
  */
-
-/**
- * @param {import('playwright').Page[]} pages
- * @param {string} urlPart
- * @param {string} pageName
- * @returns {import('playwright').Page}
- */
-function findRequiredPage(pages, urlPart, pageName) {
-  const page = pages.find(candidatePage => candidatePage.url().includes(urlPart))
-
-  if (!page) {
-    const openUrls = pages
-      .map(candidatePage => candidatePage.url())
-      .filter(Boolean)
-      .join(', ')
-
-    throw new Error(
-      `Could not find ${pageName}. Open a tab with "${urlPart}" in the controlled browser. Open tabs: ${openUrls || 'none'}`,
-    )
-  }
-
-  return page
-}
 
 /**
  * Reads the source editor targets that match the selected automation mode.
