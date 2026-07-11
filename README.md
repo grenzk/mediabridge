@@ -31,6 +31,24 @@ npm run script:media-linking
 
 That command connects to `MEDIABRIDGE_CDP_PORT`, or port `9222` by default.
 
+## Testing
+
+Run the focused automation unit tests with:
+
+```sh
+npm test
+```
+
+To display every individual test in the terminal, run:
+
+```sh
+npm run test:verbose
+```
+
+The suite covers linking mode configuration, target classification, linked-state
+detection, and skipped-target log formatting. Browser-driven eGain workflows
+still require manual testing against the controlled browser.
+
 ## Desktop Builds
 
 ```sh
