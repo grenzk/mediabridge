@@ -43,25 +43,28 @@ const linkingModes = /** @type {import('../mediabridge').MediaBridgeLinkingMode[
  */
 export function useMediaLinking({ errorMessage, isBusy, runAction, status }) {
   /** @type {import('vue').Ref<null | number>} */
-  const linkCount = ref(null)
+  const targetCount = ref(null)
   /** @type {import('vue').Ref<null | number>} */
-  const documentCount = ref(null)
+  const unlinkedTargetCount = ref(null)
   /** @type {import('vue').Ref<null | number>} */
-  const doneCount = ref(null)
+  const linkedTargetCount = ref(null)
+  /** @type {import('vue').Ref<null | number>} */
+  const processedTargetCount = ref(null)
   /** @type {import('vue').Ref<import('../mediabridge').MediaBridgeLinkingMode>} */
   const selectedLinkingType = ref('pdf')
   const isLinkingTypeMenuOpen = ref(false)
 
-  const linkLabel = computed(() => {
+  const targetLabel = computed(() => {
     if (selectedLinkingType.value === 'image') {
-      return linkCount.value === 1 ? 'Image' : 'Images'
+      return targetCount.value === 1 ? 'Image' : 'Images'
     }
 
-    return linkCount.value === 1 ? 'Link' : 'Links'
+    return targetCount.value === 1 ? 'Link' : 'Links'
   })
+  const doneTargetCount = computed(() => processedTargetCount.value ?? linkedTargetCount.value)
   const selectedLinkingTypeConfig = computed(() => linkingTypes[selectedLinkingType.value])
-  const selectedTargetLabel = computed(() => (selectedLinkingType.value === 'image' ? 'images' : 'links'))
-  const selectedCountLabel = computed(() => (selectedLinkingType.value === 'image' ? 'image' : 'link'))
+  const targetPluralLabel = computed(() => (selectedLinkingType.value === 'image' ? 'images' : 'links'))
+  const targetSingularLabel = computed(() => (selectedLinkingType.value === 'image' ? 'image' : 'link'))
   const linkingOptions = computed(() =>
     linkingModes.map(value => {
       const linkingType = linkingTypes[value]
@@ -79,9 +82,10 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }) {
   }
 
   function resetCounts() {
-    linkCount.value = null
-    documentCount.value = null
-    doneCount.value = null
+    targetCount.value = null
+    unlinkedTargetCount.value = null
+    linkedTargetCount.value = null
+    processedTargetCount.value = null
   }
 
   /**
@@ -90,40 +94,40 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }) {
    * @param {import('../mediabridge').MediaBridgeActionResult} result
    */
   function updateCounts(result) {
-    if (result.count !== undefined) {
-      linkCount.value = result.count
+    if (result.targetCount !== undefined) {
+      targetCount.value = result.targetCount
     }
 
-    if (result.documentCount !== undefined) {
-      documentCount.value = result.documentCount
+    if (result.unlinkedTargetCount !== undefined) {
+      unlinkedTargetCount.value = result.unlinkedTargetCount
     }
 
     if (result.processedCount !== undefined) {
-      doneCount.value = result.processedCount
+      processedTargetCount.value = result.processedCount
     }
 
-    if (result.linkedCount !== undefined) {
-      doneCount.value = result.linkedCount
+    if (result.linkedTargetCount !== undefined) {
+      linkedTargetCount.value = result.linkedTargetCount
     }
   }
 
   /** @returns {Promise<void>} */
-  function refreshLinkCount() {
+  function refreshTargetCount() {
     resetCounts()
     closeLinkingTypeMenu()
 
     return runAction(
-      `Counting ${selectedTargetLabel.value}`,
-      () => window.mediabridge.getLinkCount(selectedLinkingType.value),
+      `Counting ${targetPluralLabel.value}`,
+      () => window.mediabridge.getTargetCount(selectedLinkingType.value),
       result => {
         const noun =
           selectedLinkingType.value === 'image'
-            ? result.documentCount === 1
+            ? result.unlinkedTargetCount === 1
               ? 'image'
               : 'images'
-            : `${result.mode} ${result.documentCount === 1 ? 'link' : 'links'}`
+            : `${result.mode} ${result.unlinkedTargetCount === 1 ? 'link' : 'links'}`
 
-        return `${result.documentCount} ${noun} ready`
+        return `${result.unlinkedTargetCount} ${noun} ready`
       },
       updateCounts,
     )
@@ -177,17 +181,17 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }) {
   return {
     chooseLinkingType,
     closeLinkingTypeMenu,
-    documentCount,
-    doneCount,
+    doneTargetCount,
     isLinkingTypeMenuOpen,
-    linkCount,
-    linkLabel,
     linkingOptions,
-    refreshLinkCount,
+    refreshTargetCount,
     runMediaLinking,
-    selectedCountLabel,
     selectedLinkingType,
     selectedLinkingTypeConfig,
+    targetCount,
+    targetLabel,
+    targetSingularLabel,
     toggleLinkingTypeMenu,
+    unlinkedTargetCount,
   }
 }

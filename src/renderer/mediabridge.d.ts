@@ -3,13 +3,13 @@ export type MediaBridgeLogLevel = 'info' | 'success' | 'error'
 
 export type MediaBridgeActionResult = {
   articleUrl?: string
-  count?: number
-  documentCount?: number
-  linkedCount?: number
+  linkedTargetCount?: number
   mode?: string
   ok: boolean
   processedCount?: number
   skippedCount?: number
+  targetCount?: number
+  unlinkedTargetCount?: number
 }
 
 export type MediaBridgeOkResult = {
@@ -29,7 +29,7 @@ export type MediaBridgeApi = {
   clearLogs: () => Promise<MediaBridgeOkResult>
   closeToolbar: () => Promise<void>
   getAppVersion: () => Promise<string>
-  getLinkCount: (mode: MediaBridgeLinkingMode) => Promise<MediaBridgeActionResult>
+  getTargetCount: (mode: MediaBridgeLinkingMode) => Promise<MediaBridgeActionResult>
   getLogs: () => Promise<MediaBridgeLogEntry[]>
   launchBrowser: () => Promise<MediaBridgeActionResult>
   minimizeToolbar: () => Promise<void>

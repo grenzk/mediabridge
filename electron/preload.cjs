@@ -6,13 +6,13 @@ const { contextBridge, ipcRenderer } = require('electron')
  *
  * @typedef {{
  *   articleUrl?: string,
- *   count?: number,
- *   documentCount?: number,
- *   linkedCount?: number,
+ *   linkedTargetCount?: number,
  *   mode?: string,
  *   ok: boolean,
  *   processedCount?: number,
  *   skippedCount?: number,
+ *   targetCount?: number,
+ *   unlinkedTargetCount?: number,
  * }} MediaBridgeActionResult
  *
  * @typedef {{ ok: boolean }} MediaBridgeOkResult
@@ -42,7 +42,7 @@ contextBridge.exposeInMainWorld('mediabridge', {
    * @param {MediaBridgeLinkingMode} mode
    * @returns {Promise<MediaBridgeActionResult>}
    */
-  getLinkCount: mode => ipcRenderer.invoke('session:get-link-count', mode),
+  getTargetCount: mode => ipcRenderer.invoke('session:get-target-count', mode),
 
   /**
    * @returns {Promise<MediaBridgeLogEntry[]>}

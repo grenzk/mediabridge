@@ -98,7 +98,7 @@ button {
 
 .toolbar .p-button,
 .run-button,
-.link-counter {
+.target-counter {
   font-family: inherit;
   font-size: 0.82rem;
   font-weight: 700;
@@ -186,7 +186,7 @@ button {
   transform: rotate(180deg);
 }
 
-.link-counter {
+.target-counter {
   display: grid;
   grid-template-columns: auto 1fr;
   align-items: center;
@@ -201,19 +201,19 @@ button {
   cursor: pointer;
 }
 
-.link-counter:hover {
+.target-counter:hover {
   background: rgb(255 255 255 / 16%);
 }
 
-.link-counter:hover .counter-label {
+.target-counter:hover .counter-label {
   color: #f8fafc;
 }
 
-.link-counter:hover .counter-number {
+.target-counter:hover .counter-number {
   background: #fde16a;
 }
 
-.link-counter:disabled {
+.target-counter:disabled {
   cursor: default;
   opacity: 0.72;
 }

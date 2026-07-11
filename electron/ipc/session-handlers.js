@@ -33,7 +33,7 @@ export function registerSessionHandlers({ addLog, browserProcessController }) {
     }
   })
 
-  ipcMain.handle('session:get-link-count', async (_event, mode = 'pdf') => {
+  ipcMain.handle('session:get-target-count', async (_event, mode = 'pdf') => {
     let session
 
     try {
@@ -49,9 +49,9 @@ export function registerSessionHandlers({ addLog, browserProcessController }) {
 
       return {
         ok: true,
-        count: result.targets.length,
-        documentCount: result.unlinkedTargets.length,
-        linkedCount: result.linkedTargets.length,
+        targetCount: result.targets.length,
+        unlinkedTargetCount: result.unlinkedTargets.length,
+        linkedTargetCount: result.linkedTargets.length,
         mode: result.mode.label,
         articleUrl: result.articlePage.url(),
       }
@@ -81,8 +81,8 @@ export function registerSessionHandlers({ addLog, browserProcessController }) {
 
       return {
         ok: true,
-        count: result.targets.length,
-        documentCount: result.unlinkedTargets.length,
+        targetCount: result.targets.length,
+        unlinkedTargetCount: result.unlinkedTargets.length,
         mode: result.mode.label,
         processedCount: result.processedCount,
         skippedCount: result.skippedCount,

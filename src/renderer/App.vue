@@ -11,18 +11,18 @@ const { busyAction, currentMessage, errorMessage, isBusy, reportActionError, run
 const {
   chooseLinkingType,
   closeLinkingTypeMenu,
-  documentCount,
-  doneCount,
+  doneTargetCount,
   isLinkingTypeMenuOpen,
-  linkCount,
-  linkLabel,
   linkingOptions,
-  refreshLinkCount,
+  refreshTargetCount,
   runMediaLinking,
-  selectedCountLabel,
   selectedLinkingType,
   selectedLinkingTypeConfig,
+  targetCount,
+  targetLabel,
+  targetSingularLabel,
   toggleLinkingTypeMenu,
+  unlinkedTargetCount,
 } = useMediaLinking(toolbarActions)
 
 /**
@@ -116,14 +116,14 @@ onBeforeMount(async () => await showAppVersion())
       </div>
 
       <button
-        v-tooltip.bottom="`Refresh ${selectedCountLabel} count`"
-        class="link-counter"
+        v-tooltip.bottom="`Refresh ${targetSingularLabel} count`"
+        class="target-counter"
         type="button"
         :disabled="isBusy"
-        @click="refreshLinkCount"
+        @click="refreshTargetCount"
       >
-        <span class="counter-number">{{ linkCount ?? '--' }}</span>
-        <span class="counter-label">{{ linkLabel }}</span>
+        <span class="counter-number">{{ targetCount ?? '--' }}</span>
+        <span class="counter-label">{{ targetLabel }}</span>
       </button>
 
       <div class="divider" aria-hidden="true" />
@@ -186,11 +186,11 @@ onBeforeMount(async () => await showAppVersion())
         <dl class="status-metrics">
           <div>
             <dt>Found</dt>
-            <dd>{{ documentCount ?? '--' }}</dd>
+            <dd>{{ unlinkedTargetCount ?? '--' }}</dd>
           </div>
           <div>
             <dt>Done</dt>
-            <dd>{{ doneCount ?? '--' }}</dd>
+            <dd>{{ doneTargetCount ?? '--' }}</dd>
           </div>
         </dl>
 
