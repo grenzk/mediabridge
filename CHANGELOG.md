@@ -8,7 +8,12 @@ Added
 
 Changed
 
+- Updated Vue, Vite, and Concurrently to their latest compatible patch releases.
 - Prepared release version 1.2.0.
+
+Fixed
+
+- Updated the transitive form-data dependency to its patched release to address a multipart header injection vulnerability.
 
 Refactored
 
