@@ -1,10 +1,14 @@
 MediaBridge Changelog
 
-1.1.4 - July 11, 2026
+1.2.0 - July 11, 2026
+
+Added
+
+- Added PowerPoint linking support for PPT and PPTX files from the media server.
 
 Changed
 
-- Prepared release version 1.1.4.
+- Prepared release version 1.2.0.
 
 Refactored
 
