@@ -116,8 +116,8 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
 
   const targets = await extractTargetsForMode(articlePage, linkingMode)
   const modeTargets = filterTargetsByMode(targets, mode)
-  const unlinkedTargets = filterTargetsByLinkedState(modeTargets, linkingMode, false)
-  const preparedTargets = unlinkedTargets.map(target => {
+  const unlinkedTargetsBeforeRun = filterTargetsByLinkedState(modeTargets, linkingMode, false)
+  const preparedTargets = unlinkedTargetsBeforeRun.map(target => {
     if (linkingMode.targetType === 'image' || linkingMode.targetType === 'article') {
       return target
     }
@@ -132,7 +132,7 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
 
   let processedCount = 0
   const processedTargets = []
-  const skippedTargets = []
+  const unlinkedTargets = []
 
   for (const target of preparedTargets) {
     if (linkingMode.targetType === 'image') {
@@ -150,7 +150,7 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
       processedTargets.push(target)
       processedCount++
     } else {
-      skippedTargets.push(target)
+      unlinkedTargets.push(target)
     }
   }
 
@@ -161,9 +161,9 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
     mode: linkingMode,
     processedCount,
     targets,
-    unlinkedTargets: preparedTargets,
-    skippedCount: skippedTargets.length,
-    skippedTargets,
+    unlinkedTargetCount: preparedTargets.length,
+    unlinkedTargets,
+    skippedCount: unlinkedTargets.length,
   }
 }
 

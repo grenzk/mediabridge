@@ -2,7 +2,7 @@ import { app, ipcMain } from 'electron'
 import { analyzeArticleLinks, runMediaLinking } from '../../src/automation/media-linking.js'
 import { connectToBrowser } from '../../src/browser.js'
 import { getErrorDetail, getErrorMessage } from '../error-format.js'
-import { formatSkippedTargetsDetail } from '../skipped-target-logs.js'
+import { formatUnlinkedTargetsDetail } from '../unlinked-target-logs.js'
 
 /**
  * @typedef {(level: 'info' | 'success' | 'error', scope: string, message: string, detail?: string) => void} AddLog
@@ -44,7 +44,7 @@ export function registerSessionHandlers({ addLog, browserProcessController }) {
         'success',
         'Counter',
         `Found ${result.unlinkedTargets.length} unlinked ${result.mode.label} target(s).`,
-        result.articlePage.url(),
+        formatUnlinkedTargetsDetail(result),
       )
 
       return {
@@ -76,13 +76,13 @@ export function registerSessionHandlers({ addLog, browserProcessController }) {
         'success',
         'Linking',
         `Inserted ${result.processedCount} ${result.mode.label} target(s).`,
-        formatSkippedTargetsDetail(result),
+        formatUnlinkedTargetsDetail(result),
       )
 
       return {
         ok: true,
         targetCount: result.targets.length,
-        unlinkedTargetCount: result.unlinkedTargets.length,
+        unlinkedTargetCount: result.unlinkedTargetCount,
         mode: result.mode.label,
         processedCount: result.processedCount,
         skippedCount: result.skippedCount,

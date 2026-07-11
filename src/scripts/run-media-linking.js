@@ -6,5 +6,5 @@ const { LINKING_MODE = 'pdf' } = process.env
 
 const result = await runMediaLinkingFromCdp(getDefaultCdpUrl(), LINKING_MODE)
 console.log(
-  `Processed ${result.processedCount} ${result.mode.label} target(s) out of ${result.unlinkedTargets.length} matching target(s).`,
+  `Processed ${result.processedCount} ${result.mode.label} target(s) out of ${result.unlinkedTargetCount} matching target(s).`,
 )
