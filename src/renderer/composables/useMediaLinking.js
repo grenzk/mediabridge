@@ -31,6 +31,7 @@ const linkingTypes = {
   pdf: { label: 'PDF', statusLabel: 'PDF' },
   word: { label: 'Word', statusLabel: 'Word' },
   excel: { label: 'Excel', statusLabel: 'Excel' },
+  powerpoint: { label: 'PowerPoint', statusLabel: 'PowerPoint' },
   image: { label: 'Image', statusLabel: 'Image' },
   article: { label: 'Article', statusLabel: 'Article' },
 }

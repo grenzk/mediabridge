@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require('electron')
 
 /**
- * @typedef {'pdf' | 'word' | 'excel' | 'image' | 'article'} MediaBridgeLinkingMode
+ * @typedef {'pdf' | 'word' | 'excel' | 'powerpoint' | 'image' | 'article'} MediaBridgeLinkingMode
  * @typedef {'info' | 'success' | 'error'} MediaBridgeLogLevel
  *
  * @typedef {{

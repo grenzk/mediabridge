@@ -34,6 +34,12 @@ export const LINKING_MODES = {
     label: 'Excel',
     targetType: 'link',
   },
+  powerpoint: {
+    className: 'ppt',
+    extensions: ['.ppt', '.pptx'],
+    label: 'PowerPoint',
+    targetType: 'link',
+  },
   image: {
     extensions: ['.gif', '.jpeg', '.jpg', '.png'],
     label: 'Image',

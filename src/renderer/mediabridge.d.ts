@@ -1,4 +1,4 @@
-export type MediaBridgeLinkingMode = 'pdf' | 'word' | 'excel' | 'image' | 'article'
+export type MediaBridgeLinkingMode = 'pdf' | 'word' | 'excel' | 'powerpoint' | 'image' | 'article'
 export type MediaBridgeLogLevel = 'info' | 'success' | 'error'
 
 export type MediaBridgeActionResult = {
