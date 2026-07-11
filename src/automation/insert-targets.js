@@ -1,10 +1,12 @@
 /**
  * @typedef {import('./linking-modes.js').LinkingMode} LinkingMode
  * @typedef {{
- *   articleId?: string,
  *   displayName?: string,
  *   filename: string,
- * }} ArticleEditorTarget
+ * }} MediaTarget
+ * @typedef {{
+ *   articleId: string,
+ * }} ArticleReferenceTarget
  * @typedef {{
  *   linkArticleButton: import('playwright').Locator,
  *   selectLinkArticleModal: import('playwright').Locator,
@@ -16,7 +18,7 @@
  * Missing filenames are skipped instead of failing the whole run.
  *
  * @param {import('playwright').Page} mediaPage
- * @param {ArticleEditorTarget} target
+ * @param {MediaTarget} target
  * @param {LinkingMode} linkingMode
  * @returns {Promise<boolean>} true when the media server target was inserted.
  */
@@ -43,7 +45,7 @@ export async function insertMediaLink(mediaPage, target, linkingMode) {
  * article ID. Missing search results are skipped so the run can continue.
  *
  * @param {import('playwright').Page} articlePage
- * @param {ArticleEditorTarget} target
+ * @param {ArticleReferenceTarget} target
  * @param {ArticleDialogLocators} editorLocators
  * @returns {Promise<boolean>} true when the article was linked.
  */
