@@ -5,7 +5,8 @@ MediaBridge Changelog
 Added
 
 - Added PowerPoint linking support for PPT and PPTX files from the media server.
-- Added Vitest unit coverage for linking modes, target classification, linked-state detection, and skipped-target logs.
+- Added unlinked filenames and article IDs to the counter log details.
+- Added Vitest unit coverage for linking modes, target classification, linked-state detection, and unlinked-target logs.
 
 Changed
 
@@ -22,6 +23,7 @@ Refactored
 - Reorganized the automation workflow into focused modules for target extraction, insertion, restoration, mode handling, and required-page lookup.
 - Separated Electron browser management, window creation, auto-update handling, application setup, and IPC registration from the main process entry point.
 - Extracted renderer composables for toolbar action state and media-linking behavior.
+- Clarified media and article insertion target type definitions.
 - Standardized shared count and automation terminology around targets across Electron, preload, and renderer code.
 
 1.1.3 - June 22, 2026
