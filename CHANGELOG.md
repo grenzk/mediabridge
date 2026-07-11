@@ -5,9 +5,11 @@ MediaBridge Changelog
 Added
 
 - Added PowerPoint linking support for PPT and PPTX files from the media server.
+- Added Vitest unit coverage for linking modes, target classification, linked-state detection, and skipped-target logs.
 
 Changed
 
+- Added standard and verbose test commands with testing guidance in the README.
 - Updated Vue, Vite, and Concurrently to their latest compatible patch releases.
 - Prepared release version 1.2.0.
 
