@@ -11,12 +11,14 @@ Added
 Changed
 
 - Added standard and verbose test commands with testing guidance in the README.
+- Explicitly allowed the required Electron and esbuild installation scripts.
 - Updated Vue, Vite, and Concurrently to their latest compatible patch releases.
 - Prepared release version 1.2.0.
 
 Fixed
 
 - Updated the transitive form-data dependency to its patched release to address a multipart header injection vulnerability.
+- Removed the toolbar shadow that caused sharp outer corners on Windows.
 
 Refactored
 
