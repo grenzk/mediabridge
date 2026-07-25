@@ -5,11 +5,21 @@ import { join } from 'node:path'
 import { getCdpPort, getDefaultCdpUrl } from '../src/config/runtime.js'
 
 /**
+ * @typedef {'idle' | 'launching' | 'connected' | 'disconnected' | 'error'} BrowserConnectionState
+ *
+ * @typedef {{
+ *   state: BrowserConnectionState,
+ *   message?: string,
+ * }} BrowserStatus
+ *
  * @typedef {{
  *   getCdpUrl: () => string,
+ *   getStatus: () => BrowserStatus,
  *   launch: () => Promise<string>,
+ *   refreshStatus: () => Promise<BrowserStatus>,
+ *   subscribe: (listener: (status: BrowserStatus) => void) => () => void,
  *   close: () => void,
- * }} BrowserProcessController
+ * }} BrowserService
  */
 
 /**
@@ -17,31 +27,49 @@ import { getCdpPort, getDefaultCdpUrl } from '../src/config/runtime.js'
  *   appRoot: string,
  *   startupTimeout: number,
  * }} options
- * @returns {BrowserProcessController}
+ * @returns {BrowserService}
  */
-export function createBrowserProcessController({ appRoot, startupTimeout }) {
+export function createBrowserService({ appRoot, startupTimeout }) {
   let browserProcess
+  let launchPromise
   let launchedCdpUrl
+  /** @type {BrowserStatus} */
+  let status = { state: 'idle' }
+  /** @type {Set<(status: BrowserStatus) => void>} */
+  const listeners = new Set()
 
-  return {
-    getCdpUrl() {
-      return launchedCdpUrl ?? getDefaultCdpUrl()
-    },
+  function getCdpUrl() {
+    return launchedCdpUrl ?? getDefaultCdpUrl()
+  }
 
-    async launch() {
-      const cdpUrl = getDefaultCdpUrl()
+  /**
+   * @param {BrowserStatus} nextStatus
+   */
+  function updateStatus(nextStatus) {
+    if (status.state === nextStatus.state && status.message === nextStatus.message) {
+      return
+    }
+
+    status = { ...nextStatus }
+    listeners.forEach(listener => listener({ ...status }))
+  }
+
+  async function performLaunch() {
+    const cdpUrl = getDefaultCdpUrl()
+    updateStatus({ state: 'launching' })
+
+    try {
+      if (await isBrowserConnectionReady(cdpUrl)) {
+        launchedCdpUrl = cdpUrl
+        updateStatus({ state: 'connected' })
+
+        return launchedCdpUrl
+      }
 
       if (!browserProcess || browserProcess.killed) {
-        if (await isBrowserConnectionReady(cdpUrl)) {
-          launchedCdpUrl = cdpUrl
-
-          return launchedCdpUrl
-        }
-
         const port = getCdpPort()
         const userDataDir = join(app.getPath('userData'), 'browser-profile')
-
-        browserProcess = spawn(
+        const spawnedBrowser = spawn(
           getBrowserExecutable(appRoot),
           [`--remote-debugging-port=${port}`, `--user-data-dir=${userDataDir}`, '--disable-infobars'],
           {
@@ -50,23 +78,83 @@ export function createBrowserProcessController({ appRoot, startupTimeout }) {
           },
         )
 
-        browserProcess.unref()
-        browserProcess.once('exit', () => {
+        browserProcess = spawnedBrowser
+        spawnedBrowser.unref()
+        spawnedBrowser.once('exit', () => {
+          if (browserProcess !== spawnedBrowser) {
+            return
+          }
+
           browserProcess = undefined
           launchedCdpUrl = undefined
+          updateStatus({ state: 'disconnected' })
         })
         launchedCdpUrl = cdpUrl
       }
 
       await waitForBrowserConnection(launchedCdpUrl, startupTimeout)
+      updateStatus({ state: 'connected' })
 
       return launchedCdpUrl
+    } catch (error) {
+      updateStatus({
+        state: 'error',
+        message: error instanceof Error ? error.message : String(error),
+      })
+      throw error
+    }
+  }
+
+  return {
+    getCdpUrl,
+
+    getStatus() {
+      return { ...status }
+    },
+
+    launch() {
+      if (!launchPromise) {
+        launchPromise = performLaunch().finally(() => {
+          launchPromise = undefined
+        })
+      }
+
+      return launchPromise
+    },
+
+    async refreshStatus() {
+      if (launchPromise) {
+        return { ...status }
+      }
+
+      const isConnected = await isBrowserConnectionReady(getCdpUrl())
+
+      if (isConnected) {
+        updateStatus({ state: 'connected' })
+      } else {
+        updateStatus({
+          state: status.state === 'connected' ? 'disconnected' : 'idle',
+        })
+      }
+
+      return { ...status }
+    },
+
+    subscribe(listener) {
+      listeners.add(listener)
+
+      return () => listeners.delete(listener)
     },
 
     close() {
       if (browserProcess && !browserProcess.killed) {
-        browserProcess.kill()
+        const runningBrowser = browserProcess
+        browserProcess = undefined
+        launchedCdpUrl = undefined
+        runningBrowser.kill()
       }
+
+      updateStatus({ state: 'idle' })
     },
   }
 }

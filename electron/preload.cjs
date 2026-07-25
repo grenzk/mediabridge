@@ -27,6 +27,12 @@ const { contextBridge, ipcRenderer } = require('electron')
  * }} MediaBridgeLogEntry
  *
  * @typedef {'mediabridge'} KnowledgeWorksTool
+ * @typedef {'idle' | 'launching' | 'connected' | 'disconnected' | 'error'} KnowledgeWorksBrowserState
+ *
+ * @typedef {{
+ *   state: KnowledgeWorksBrowserState,
+ *   message?: string,
+ * }} KnowledgeWorksBrowserStatus
  */
 
 contextBridge.exposeInMainWorld('knowledgeworks', {
@@ -34,6 +40,28 @@ contextBridge.exposeInMainWorld('knowledgeworks', {
    * @returns {Promise<string>}
    */
   getAppVersion: () => ipcRenderer.invoke('app:get-version'),
+
+  /**
+   * @returns {Promise<KnowledgeWorksBrowserStatus>}
+   */
+  getBrowserStatus: () => ipcRenderer.invoke('browser:get-status'),
+
+  /**
+   * @returns {Promise<MediaBridgeOkResult>}
+   */
+  launchBrowser: () => ipcRenderer.invoke('browser:launch'),
+
+  /**
+   * @param {(status: KnowledgeWorksBrowserStatus) => void} callback
+   * @returns {() => void}
+   */
+  onBrowserStatusChanged: callback => {
+    const listener = (_event, status) => callback(status)
+
+    ipcRenderer.on('browser:status-changed', listener)
+
+    return () => ipcRenderer.removeListener('browser:status-changed', listener)
+  },
 
   /**
    * @returns {Promise<MediaBridgeOkResult>}

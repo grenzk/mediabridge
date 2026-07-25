@@ -1,6 +1,12 @@
 export type MediaBridgeLinkingMode = 'pdf' | 'word' | 'excel' | 'powerpoint' | 'image' | 'article'
 export type MediaBridgeLogLevel = 'info' | 'success' | 'error'
 export type KnowledgeWorksTool = 'mediabridge'
+export type KnowledgeWorksBrowserState = 'idle' | 'launching' | 'connected' | 'disconnected' | 'error'
+
+export type KnowledgeWorksBrowserStatus = {
+  state: KnowledgeWorksBrowserState
+  message?: string
+}
 
 export type MediaBridgeActionResult = {
   articleUrl?: string
@@ -47,6 +53,9 @@ export type MediaBridgeApi = {
 
 export type KnowledgeWorksApi = {
   getAppVersion: () => Promise<string>
+  getBrowserStatus: () => Promise<KnowledgeWorksBrowserStatus>
+  launchBrowser: () => Promise<MediaBridgeOkResult>
+  onBrowserStatusChanged: (callback: (status: KnowledgeWorksBrowserStatus) => void) => () => void
   openLogs: () => Promise<MediaBridgeOkResult>
   openTool: (tool: KnowledgeWorksTool) => Promise<MediaBridgeOkResult>
 }

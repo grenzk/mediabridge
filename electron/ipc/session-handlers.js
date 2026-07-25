@@ -11,34 +11,23 @@ import { formatUnlinkedTargetsDetail } from '../unlinked-target-logs.js'
 /**
  * @param {{
  *   addLog: AddLog,
- *   browserProcessController: { getCdpUrl: () => string, launch: () => Promise<string> },
+ *   browserService: { getCdpUrl: () => string },
+ *   launchBrowser: () => Promise<{ ok: boolean }>,
  * }} dependencies
  */
-export function registerSessionHandlers({ addLog, browserProcessController }) {
+export function registerSessionHandlers({ addLog, browserService, launchBrowser }) {
   ipcMain.handle('session:get-app-version', () => {
     return app.getVersion()
   })
 
-  ipcMain.handle('session:launch-browser', async () => {
-    addLog('info', 'Browser', 'Opening controlled browser.')
-
-    try {
-      const cdpUrl = await browserProcessController.launch()
-      addLog('success', 'Browser', `Connected to ${cdpUrl}.`)
-
-      return { ok: true }
-    } catch (error) {
-      addLog('error', 'Browser', getErrorMessage(error), getErrorDetail(error))
-      throw error
-    }
-  })
+  ipcMain.handle('session:launch-browser', () => launchBrowser())
 
   ipcMain.handle('session:get-target-count', async (_event, mode = 'pdf') => {
     let session
 
     try {
       addLog('info', 'Counter', `Counting ${mode} targets.`)
-      session = await getSession(browserProcessController)
+      session = await getSession(browserService)
       const result = await analyzeArticleLinks(session.pages, mode)
       addLog(
         'success',
@@ -70,7 +59,7 @@ export function registerSessionHandlers({ addLog, browserProcessController }) {
 
     try {
       addLog('info', 'Linking', `Running ${mode} linking.`)
-      session = await getSession(browserProcessController)
+      session = await getSession(browserService)
       const result = await runMediaLinking(session, mode)
       addLog(
         'success',
@@ -99,10 +88,10 @@ export function registerSessionHandlers({ addLog, browserProcessController }) {
 }
 
 /**
- * @param {{ getCdpUrl: () => string }} browserProcessController
+ * @param {{ getCdpUrl: () => string }} browserService
  */
-async function getSession(browserProcessController) {
-  const cdpUrl = browserProcessController.getCdpUrl()
+async function getSession(browserService) {
+  const cdpUrl = browserService.getCdpUrl()
 
   return {
     ...(await connectToBrowser(cdpUrl)),

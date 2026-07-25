@@ -4,8 +4,10 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { configureApplicationMenu } from './app-menu.js'
 import { checkForUpdates, configureAutoUpdater } from './auto-updater.js'
-import { createBrowserProcessController } from './browser-process.js'
+import { createBrowserService } from './browser-service.js'
+import { getErrorDetail, getErrorMessage } from './error-format.js'
 import { registerAppHandlers } from './ipc/app-handlers.js'
+import { registerBrowserHandlers } from './ipc/browser-handlers.js'
 import { registerLogHandlers } from './ipc/log-handlers.js'
 import { registerSessionHandlers } from './ipc/session-handlers.js'
 import { registerToolbarHandlers } from './ipc/toolbar-handlers.js'
@@ -16,7 +18,7 @@ const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
 const browserStartupTimeout = Number(process.env.MEDIABRIDGE_BROWSER_STARTUP_TIMEOUT_MS) || 30000
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
-const browserProcessController = createBrowserProcessController({
+const browserService = createBrowserService({
   appRoot,
   startupTimeout: browserStartupTimeout,
 })
@@ -24,6 +26,7 @@ const browserProcessController = createBrowserProcessController({
 let toolbarWindow
 let logsWindow
 let hubWindow
+let launchBrowserPromise
 let nextLogId = 1
 let shouldFocusToolbarOnReady = false
 const logs = []
@@ -147,6 +150,28 @@ function minimizeToolbar() {
   toolbarWindow?.minimize()
 }
 
+function launchBrowser() {
+  if (!launchBrowserPromise) {
+    addLog('info', 'Browser', 'Opening controlled browser.')
+    launchBrowserPromise = browserService
+      .launch()
+      .then(cdpUrl => {
+        addLog('success', 'Browser', `Connected to ${cdpUrl}.`)
+
+        return { ok: true }
+      })
+      .catch(error => {
+        addLog('error', 'Browser', getErrorMessage(error), getErrorDetail(error))
+        throw error
+      })
+      .finally(() => {
+        launchBrowserPromise = undefined
+      })
+  }
+
+  return launchBrowserPromise
+}
+
 registerAppHandlers({
   getAppVersion: () => app.getVersion(),
   openTool: async tool => {
@@ -156,9 +181,15 @@ registerAppHandlers({
   },
 })
 
+registerBrowserHandlers({
+  browserService,
+  launchBrowser,
+})
+
 registerSessionHandlers({
   addLog,
-  browserProcessController,
+  browserService,
+  launchBrowser,
 })
 
 registerLogHandlers({
@@ -195,7 +226,7 @@ if (!hasSingleInstanceLock) {
 
 app.on('window-all-closed', () => {
   if (process.env.MEDIABRIDGE_CLOSE_BROWSER_ON_EXIT === '1') {
-    browserProcessController.close()
+    browserService.close()
   }
 
   app.quit()

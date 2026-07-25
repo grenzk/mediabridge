@@ -1,11 +1,43 @@
 <script setup>
-import { onBeforeMount, ref } from 'vue'
+import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue'
 
 /** @type {import('vue').Ref<null | string>} */
 const appVersion = ref(null)
 /** @type {import('vue').Ref<null | string>} */
 const errorMessage = ref(null)
+/** @type {import('vue').Ref<import('./mediabridge').KnowledgeWorksBrowserStatus>} */
+const browserStatus = ref({ state: 'idle' })
 const isOpeningMediaBridge = ref(false)
+/** @type {undefined | (() => void)} */
+let removeBrowserStatusListener
+/** @type {undefined | ReturnType<typeof setInterval>} */
+let browserStatusTimer
+
+const browserButtonLabel = computed(() => {
+  const labels = {
+    connected: 'Connected',
+    disconnected: 'Reconnect',
+    error: 'Try Again',
+    idle: 'Launch',
+    launching: 'Launching',
+  }
+
+  return labels[browserStatus.value.state]
+})
+
+const browserStatusLabel = computed(() => {
+  const labels = {
+    connected: 'Browser connected',
+    disconnected: 'Browser disconnected',
+    error: 'Browser connection failed',
+    idle: 'Browser offline',
+    launching: 'Connecting to browser',
+  }
+
+  return labels[browserStatus.value.state]
+})
+
+const isBrowserActionDisabled = computed(() => ['connected', 'launching'].includes(browserStatus.value.state))
 
 /**
  * Opens or focuses the MediaBridge toolbar.
@@ -41,6 +73,21 @@ async function openLogs() {
 }
 
 /**
+ * Launches or reconnects to the shared controlled browser.
+ *
+ * @returns {Promise<void>}
+ */
+async function launchBrowser() {
+  errorMessage.value = null
+
+  try {
+    await window.knowledgeworks.launchBrowser()
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : String(error)
+  }
+}
+
+/**
  * Reads the installed suite version.
  *
  * @returns {Promise<void>}
@@ -49,7 +96,35 @@ async function showAppVersion() {
   appVersion.value = await window.knowledgeworks.getAppVersion()
 }
 
-onBeforeMount(showAppVersion)
+/**
+ * Refreshes the browser connection state without launching a browser.
+ *
+ * @returns {Promise<void>}
+ */
+async function refreshBrowserStatus() {
+  try {
+    browserStatus.value = await window.knowledgeworks.getBrowserStatus()
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : String(error)
+  }
+}
+
+onBeforeMount(async () => {
+  removeBrowserStatusListener = window.knowledgeworks.onBrowserStatusChanged(status => {
+    browserStatus.value = status
+  })
+
+  await Promise.all([showAppVersion(), refreshBrowserStatus()])
+  browserStatusTimer = setInterval(refreshBrowserStatus, 5000)
+})
+
+onBeforeUnmount(() => {
+  removeBrowserStatusListener?.()
+
+  if (browserStatusTimer) {
+    clearInterval(browserStatusTimer)
+  }
+})
 </script>
 
 <template>
@@ -65,10 +140,12 @@ onBeforeMount(showAppVersion)
       <Button
         class="browser-button"
         icon="pi pi-external-link"
-        label="Launch Browser"
+        :label="browserButtonLabel"
         severity="secondary"
         text
-        disabled
+        :loading="browserStatus.state === 'launching'"
+        :disabled="isBrowserActionDisabled"
+        @click="launchBrowser"
       />
 
       <Button
@@ -115,7 +192,10 @@ onBeforeMount(showAppVersion)
     </section>
 
     <footer class="hub-footer" :class="{ error: errorMessage }" aria-live="polite">
-      <span class="hub-status">{{ errorMessage ?? 'Foundation preview' }}</span>
+      <span class="hub-status">
+        <span v-if="!errorMessage" class="status-dot" :class="browserStatus.state" aria-hidden="true"></span>
+        {{ errorMessage ?? browserStatusLabel }}
+      </span>
       <span v-if="appVersion" class="hub-version">v{{ appVersion }}</span>
     </footer>
   </main>
@@ -200,7 +280,7 @@ onBeforeMount(showAppVersion)
 }
 
 .browser-button:disabled {
-  opacity: 0.48;
+  opacity: 0.72;
 }
 
 .hub-icon-button {
@@ -332,9 +412,33 @@ onBeforeMount(showAppVersion)
 }
 
 .hub-status {
+  display: flex;
   overflow: hidden;
+  align-items: center;
+  gap: 6px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: #69727d;
+}
+
+.status-dot.launching {
+  background: #5ea5e8;
+}
+
+.status-dot.connected {
+  background: #54b87a;
+}
+
+.status-dot.disconnected,
+.status-dot.error {
+  background: #e18383;
 }
 
 .hub-version {
