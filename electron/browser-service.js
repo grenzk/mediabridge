@@ -60,6 +60,7 @@ export function createBrowserService({ appRoot, startupTimeout }) {
 
     try {
       if (await isBrowserConnectionReady(cdpUrl)) {
+        await activateBrowserTarget(cdpUrl)
         launchedCdpUrl = cdpUrl
         updateStatus({ state: 'connected' })
 
@@ -156,6 +157,36 @@ export function createBrowserService({ appRoot, startupTimeout }) {
 
       updateStatus({ state: 'idle' })
     },
+  }
+}
+
+/**
+ * Brings an existing controlled browser page to the foreground.
+ *
+ * @param {string} cdpUrl
+ * @returns {Promise<void>}
+ */
+async function activateBrowserTarget(cdpUrl) {
+  const response = await fetch(`${cdpUrl}/json/list`)
+
+  if (!response.ok) {
+    throw new Error(`Could not inspect controlled browser tabs (${response.status}).`)
+  }
+
+  /** @type {Array<{ id?: string, type?: string, url?: string }>} */
+  const targets = await response.json()
+  const pageTarget =
+    targets.find(target => target.type === 'page' && target.url && !target.url.startsWith('chrome://')) ??
+    targets.find(target => target.type === 'page')
+
+  if (!pageTarget?.id) {
+    return
+  }
+
+  const activateResponse = await fetch(`${cdpUrl}/json/activate/${encodeURIComponent(pageTarget.id)}`)
+
+  if (!activateResponse.ok) {
+    throw new Error(`Could not open the controlled browser (${activateResponse.status}).`)
   }
 }
 

@@ -66,7 +66,16 @@ describe('browser service', () => {
   })
 
   test('reuses an existing CDP connection without spawning a browser', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }))
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true })
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => [{ id: 'article-page', type: 'page', url: 'https://example.com/article/123' }],
+      })
+      .mockResolvedValueOnce({ ok: true })
+
+    vi.stubGlobal('fetch', fetch)
 
     const browserService = createBrowserService({
       appRoot: '/project',
@@ -76,6 +85,7 @@ describe('browser service', () => {
     await browserService.launch()
 
     expect(spawn).not.toHaveBeenCalled()
+    expect(fetch).toHaveBeenCalledWith('http://127.0.0.1:9222/json/activate/article-page')
     expect(browserService.getStatus()).toEqual({ state: 'connected' })
   })
 })
