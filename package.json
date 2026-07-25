@@ -18,7 +18,9 @@
     "preview": "vite preview",
     "script:media-linking": "node src/scripts/run-media-linking.js",
     "test": "vitest run",
-    "test:verbose": "vitest run --reporter=verbose"
+    "test:verbose": "vitest run --reporter=verbose",
+    "typecheck": "npm run typecheck:articleflow",
+    "typecheck:articleflow": "vue-tsc --noEmit -p tsconfig.articleflow.json"
   },
   "build": {
     "appId": "com.mediabridge.toolbar",
@@ -102,8 +104,10 @@
     "concurrently": "^9.2.4",
     "electron": "^39.8.10",
     "electron-builder": "^26.15.3",
+    "typescript": "^6.0.3",
     "vite": "^7.3.6",
     "vitest": "^4.1.10",
+    "vue-tsc": "^3.3.8",
     "wait-on": "^9.0.10"
   },
   "allowScripts": {

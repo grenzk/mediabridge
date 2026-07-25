@@ -51,6 +51,12 @@ To display every individual test in the terminal, run:
 npm run test:verbose
 ```
 
+ArticleFlow uses an isolated strict TypeScript configuration:
+
+```sh
+npm run typecheck:articleflow
+```
+
 The suite covers linking mode configuration, target classification, linked-state
 detection, and skipped-target log formatting. Browser-driven eGain workflows
 still require manual testing against the controlled browser.
