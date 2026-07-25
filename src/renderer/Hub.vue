@@ -15,14 +15,26 @@ let browserStatusTimer
 
 const browserButtonLabel = computed(() => {
   const labels = {
-    connected: 'Connected',
+    connected: 'Browser ready',
     disconnected: 'Reconnect',
-    error: 'Try Again',
-    idle: 'Launch',
-    launching: 'Launching',
+    error: 'Retry',
+    idle: 'Launch browser',
+    launching: 'Connecting',
   }
 
   return labels[browserStatus.value.state]
+})
+
+const browserButtonIcon = computed(() => {
+  const icons = {
+    connected: 'pi pi-check-circle',
+    disconnected: 'pi pi-refresh',
+    error: 'pi pi-refresh',
+    idle: 'pi pi-external-link',
+    launching: 'pi pi-spinner pi-spin',
+  }
+
+  return icons[browserStatus.value.state]
 })
 
 const browserStatusLabel = computed(() => {
@@ -139,10 +151,9 @@ onBeforeUnmount(() => {
 
       <Button
         class="browser-button"
-        icon="pi pi-external-link"
+        :class="browserStatus.state"
+        :icon="browserButtonIcon"
         :label="browserButtonLabel"
-        severity="secondary"
-        text
         :loading="browserStatus.state === 'launching'"
         :disabled="isBrowserActionDisabled"
         @click="launchBrowser"
@@ -160,16 +171,15 @@ onBeforeUnmount(() => {
     </header>
 
     <section class="hub-tools" aria-labelledby="hub-tools-title">
-      <h1 id="hub-tools-title">Tools</h1>
+      <h1 id="hub-tools-title">Automation tools</h1>
 
       <article class="tool-row">
         <span class="tool-mark media-mark" aria-hidden="true">MB</span>
         <div class="tool-copy">
-          <div class="tool-name">
-            <strong>MediaBridge</strong>
-            <span>Linking toolbar</span>
-          </div>
+          <strong>MediaBridge</strong>
+          <span>Link files and articles in eGain</span>
         </div>
+        <span class="status-chip ready"><span aria-hidden="true"></span>Ready</span>
         <Button
           class="open-tool-button"
           icon="pi pi-arrow-up-right"
@@ -182,12 +192,18 @@ onBeforeUnmount(() => {
       <article class="tool-row unavailable">
         <span class="tool-mark article-mark" aria-hidden="true">AF</span>
         <div class="tool-copy">
-          <div class="tool-name">
-            <strong>ArticleFlow</strong>
-            <span>Article workspace</span>
-          </div>
+          <strong>ArticleFlow</strong>
+          <span>Create and manage eGain articles</span>
         </div>
-        <Button class="open-tool-button" icon="pi pi-lock" label="Soon" severity="secondary" disabled />
+        <span class="status-chip">Coming soon</span>
+        <Button
+          v-tooltip.bottom="'ArticleFlow is planned for a future release'"
+          class="open-tool-button"
+          icon="pi pi-lock"
+          label="Soon"
+          severity="secondary"
+          disabled
+        />
       </article>
     </section>
 
@@ -204,48 +220,59 @@ onBeforeUnmount(() => {
 <style scoped>
 .hub-shell {
   display: grid;
-  grid-template-rows: auto 1fr 30px;
+  grid-template-rows: 76px 1fr 40px;
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background: #111418;
-  color: #f6f7f8;
+  color: var(--kw-text-light);
+  background: var(--kw-quiet-surface);
 }
 
 .hub-header {
   display: grid;
-  grid-template-columns: minmax(158px, 1fr) 126px 36px;
+  grid-template-columns: minmax(190px, 1fr) 156px 44px;
   align-items: center;
-  gap: 7px;
-  min-height: 58px;
-  padding: 9px 12px;
-  border-bottom: 1px solid rgb(255 255 255 / 10%);
-  background: #171b20;
+  gap: 8px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--kw-border-subtle);
+  background: var(--kw-quiet-header);
 }
 
 .hub-brand {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 9px;
+  gap: 12px;
 }
 
 .hub-brand-mark,
 .tool-mark {
+  position: relative;
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  color: #111418;
-  font-weight: 850;
+  font-weight: 700;
   line-height: 1;
 }
 
 .hub-brand-mark {
-  width: 36px;
-  height: 36px;
+  width: 44px;
+  height: 44px;
+  color: var(--kw-text-light);
+  border: 2px solid var(--kw-primary);
   border-radius: 8px;
-  background: #dce4ec;
-  font-size: 0.78rem;
+  background: var(--kw-surface);
+  font-size: 0.9rem;
+}
+
+.hub-brand-mark::after {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  content: '';
+  background: var(--kw-accent);
 }
 
 .hub-title {
@@ -254,143 +281,201 @@ onBeforeUnmount(() => {
 
 .hub-title strong {
   overflow: hidden;
-  font-size: 0.88rem;
-  font-weight: 750;
+  font-size: 1.1rem;
+  font-weight: 650;
+  line-height: 1.5rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .hub-header :deep(.p-button) {
-  height: 36px;
-  border-radius: 7px;
-  color: #f8fafc;
-  background: rgb(255 255 255 / 7%);
-  border: 1px solid rgb(255 255 255 / 12%);
-  font-size: 0.72rem;
-  font-weight: 700;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out;
 }
 
-.hub-header :deep(.p-button:enabled:hover) {
-  background: rgb(255 255 255 / 13%);
-  border-color: rgb(255 255 255 / 18%);
+.hub-header :deep(.p-button:focus-visible),
+.open-tool-button:focus-visible {
+  outline: 2px solid var(--kw-focus);
+  outline-offset: 2px;
 }
 
 .browser-button {
-  width: 126px;
+  width: 156px;
+  color: var(--kw-text-light);
+  border-color: var(--kw-primary);
+  background: var(--kw-primary);
 }
 
-.browser-button:disabled {
-  opacity: 0.72;
+.browser-button:enabled:hover {
+  border-color: var(--kw-primary-hover);
+  background: var(--kw-primary-hover);
 }
 
-.hub-icon-button {
-  width: 36px;
+.browser-button:enabled:active {
+  border-color: var(--kw-primary-pressed);
+  background: var(--kw-primary-pressed);
+}
+
+.browser-button.connected {
+  color: var(--kw-success);
+  border-color: var(--kw-border);
+  background: transparent;
+  opacity: 1;
+}
+
+.browser-button.connected :deep(.p-button-icon) {
+  color: var(--kw-success);
+}
+
+:deep(.hub-icon-button.p-button) {
+  width: 44px;
   padding: 0;
+  color: var(--kw-text-light);
+  border: 1px solid var(--kw-border);
+  background: transparent;
+}
+
+:deep(.hub-icon-button.p-button:enabled:hover) {
+  border-color: var(--kw-text-muted);
+  background: var(--kw-surface-hover);
 }
 
 .hub-tools {
   display: grid;
   align-content: start;
-  gap: 8px;
+  gap: 12px;
   min-height: 0;
-  padding: 12px;
+  padding: 20px;
 }
 
 .hub-tools h1 {
-  margin: 0 0 1px;
-  color: rgb(255 255 255 / 56%);
-  font-size: 0.68rem;
-  font-weight: 700;
-  line-height: 1;
-  text-transform: uppercase;
+  margin: 0;
+  color: var(--kw-text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  line-height: 1.25rem;
 }
 
 .tool-row {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) 76px;
+  grid-template-columns: 48px minmax(0, 1fr) auto 84px;
   align-items: center;
-  gap: 10px;
-  min-height: 58px;
-  padding: 8px 10px;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 8px;
-  background: rgb(255 255 255 / 5%);
+  gap: 12px;
+  min-height: 92px;
+  padding: 12px 16px;
+  border: 1px solid var(--kw-border);
+  border-radius: 10px;
+  background: var(--kw-surface);
 }
 
 .tool-row.unavailable {
-  background: rgb(255 255 255 / 3%);
+  border-color: var(--kw-border-subtle);
 }
 
 .tool-mark {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
+  color: var(--kw-text-light);
+  border: 1px solid var(--kw-border);
   border-radius: 8px;
-  font-size: 0.74rem;
+  background: var(--kw-quiet-surface);
+  font-size: 0.8rem;
 }
 
 .media-mark {
-  background: #f7d54a;
+  color: var(--kw-focus);
+  border-color: var(--kw-primary);
 }
 
 .article-mark {
-  color: #e8eef7;
-  background: #395f88;
+  color: var(--kw-text-disabled);
 }
 
 .tool-copy {
+  display: grid;
   min-width: 0;
+  gap: 2px;
 }
 
-.tool-name {
-  display: flex;
-  min-width: 0;
-  align-items: center;
-  gap: 7px;
-}
-
-.tool-name strong {
+.tool-copy strong,
+.tool-copy span {
   overflow: hidden;
-  font-size: 0.8rem;
-  font-weight: 750;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.tool-name span {
-  flex: 0 0 auto;
-  padding: 3px 5px;
-  color: rgb(255 255 255 / 55%);
-  border-radius: 4px;
-  background: rgb(255 255 255 / 7%);
-  font-size: 0.58rem;
-  font-weight: 700;
-  line-height: 1;
+.tool-copy strong {
+  color: var(--kw-text-light);
+  font-size: 0.95rem;
+  font-weight: 600;
+  line-height: 1.35rem;
+}
+
+.tool-copy span {
+  color: var(--kw-text-muted);
+  font-size: 0.76rem;
+  line-height: 1.1rem;
+}
+
+.status-chip {
+  display: inline-flex;
+  min-height: 28px;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  color: var(--kw-text-disabled);
+  border: 1px solid var(--kw-border);
+  border-radius: 6px;
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1rem;
+  white-space: nowrap;
+}
+
+.status-chip > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+.status-chip.ready {
+  color: var(--kw-success);
+  border-color: var(--kw-success);
+}
+
+.status-chip.ready > span {
+  background: var(--kw-success);
 }
 
 .open-tool-button {
-  width: 76px;
-  height: 34px;
-  border-radius: 7px;
-  font-size: 0.7rem;
-  font-weight: 750;
+  width: 84px;
+  height: 44px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
 }
 
 .tool-row:not(.unavailable) .open-tool-button {
-  color: #111418;
-  background: #f7d54a;
-  border-color: #f7d54a;
+  color: var(--kw-text-light);
+  border-color: var(--kw-primary);
+  background: var(--kw-primary);
 }
 
 .tool-row:not(.unavailable) .open-tool-button:enabled:hover {
-  color: #111418;
-  background: #fde16a;
-  border-color: #fde16a;
+  border-color: var(--kw-primary-hover);
+  background: var(--kw-primary-hover);
 }
 
 .tool-row.unavailable .open-tool-button {
-  color: rgb(255 255 255 / 45%);
-  background: rgb(255 255 255 / 5%);
-  border-color: rgb(255 255 255 / 8%);
+  color: var(--kw-text-disabled);
+  border-color: var(--kw-border-subtle);
+  background: var(--kw-quiet-surface);
+  opacity: 1;
 }
 
 .hub-footer {
@@ -398,50 +483,52 @@ onBeforeUnmount(() => {
   min-width: 0;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  padding: 0 12px;
-  color: rgb(255 255 255 / 45%);
-  border-top: 1px solid rgb(255 255 255 / 8%);
-  background: #0d1014;
-  font-size: 0.64rem;
-  font-weight: 650;
+  gap: 12px;
+  padding: 0 20px;
+  color: var(--kw-text-muted);
+  border-top: 1px solid var(--kw-border-subtle);
+  background: var(--kw-canvas);
+  font-size: 0.72rem;
+  font-weight: 500;
 }
 
 .hub-footer.error {
-  color: #fecaca;
+  color: var(--kw-danger);
 }
 
 .hub-status {
   display: flex;
+  min-width: 0;
   overflow: hidden;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .status-dot {
-  width: 6px;
-  height: 6px;
+  width: 7px;
+  height: 7px;
   flex: 0 0 auto;
   border-radius: 50%;
-  background: #69727d;
+  background: var(--kw-text-disabled);
 }
 
 .status-dot.launching {
-  background: #5ea5e8;
+  background: var(--kw-primary);
 }
 
 .status-dot.connected {
-  background: #54b87a;
+  background: var(--kw-success);
 }
 
 .status-dot.disconnected,
 .status-dot.error {
-  background: #e18383;
+  background: var(--kw-danger);
 }
 
 .hub-version {
   flex: 0 0 auto;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
 }
 </style>

@@ -132,13 +132,13 @@ export async function createHubBrowserWindow({
   }
 
   const hubWindow = new BrowserWindow({
-    width: 460,
-    height: 280,
-    minWidth: 420,
-    minHeight: 260,
+    width: 560,
+    height: 420,
+    minWidth: 520,
+    minHeight: 400,
     resizable: false,
     title: 'KnowledgeWorks',
-    backgroundColor: '#111418',
+    backgroundColor: '#202426',
     icon: getRuntimeIcon(appRoot),
     webPreferences: {
       preload: join(electronDirectory, 'preload.cjs'),

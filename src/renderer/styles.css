@@ -1,6 +1,23 @@
 @import 'primeicons/primeicons.css';
 
 :root {
+  --kw-canvas: #101617;
+  --kw-surface: #171d1e;
+  --kw-surface-hover: #1d2526;
+  --kw-quiet-surface: #202426;
+  --kw-quiet-header: #282d2f;
+  --kw-primary: #0757e8;
+  --kw-primary-hover: #1768f2;
+  --kw-primary-pressed: #0647bf;
+  --kw-accent: #f05a16;
+  --kw-success: #44d487;
+  --kw-danger: #f05d62;
+  --kw-text-light: #f4f2ec;
+  --kw-text-muted: #b4b8b5;
+  --kw-text-disabled: #747a7b;
+  --kw-border: #485052;
+  --kw-border-subtle: #303839;
+  --kw-focus: #6ea0ff;
   color-scheme: dark;
   font-family:
     Inter,
