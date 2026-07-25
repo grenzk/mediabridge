@@ -15,11 +15,11 @@ let browserStatusTimer
 
 const browserButtonLabel = computed(() => {
   const labels = {
-    connected: 'Browser ready',
+    connected: 'Open browser',
     disconnected: 'Reconnect',
-    error: 'Retry',
+    error: 'Try again',
     idle: 'Launch browser',
-    launching: 'Connecting',
+    launching: 'Launching...',
   }
 
   return labels[browserStatus.value.state]
@@ -27,7 +27,7 @@ const browserButtonLabel = computed(() => {
 
 const browserButtonIcon = computed(() => {
   const icons = {
-    connected: 'pi pi-check-circle',
+    connected: 'pi pi-external-link',
     disconnected: 'pi pi-refresh',
     error: 'pi pi-refresh',
     idle: 'pi pi-external-link',
@@ -37,19 +37,31 @@ const browserButtonIcon = computed(() => {
   return icons[browserStatus.value.state]
 })
 
+const browserStatusIcon = computed(() => {
+  const icons = {
+    connected: 'pi pi-circle-fill',
+    disconnected: 'pi pi-circle-fill',
+    error: 'pi pi-exclamation-circle',
+    idle: 'pi pi-circle',
+    launching: 'pi pi-spinner pi-spin',
+  }
+
+  return icons[browserStatus.value.state]
+})
+
 const browserStatusLabel = computed(() => {
   const labels = {
-    connected: 'Connected',
-    disconnected: 'Disconnected',
-    error: 'Connection failed',
-    idle: 'Offline',
-    launching: 'Connecting',
+    connected: 'Browser connected',
+    disconnected: 'Browser disconnected',
+    error: 'Launch failed',
+    idle: 'Browser not connected',
+    launching: 'Connecting...',
   }
 
   return labels[browserStatus.value.state]
 })
 
-const isBrowserActionDisabled = computed(() => ['connected', 'launching'].includes(browserStatus.value.state))
+const isBrowserActionDisabled = computed(() => browserStatus.value.state === 'launching')
 
 /**
  * Opens or focuses the MediaBridge toolbar.
@@ -207,7 +219,13 @@ onBeforeUnmount(() => {
 
     <footer class="hub-footer" :class="{ error: errorMessage }" aria-live="polite">
       <span class="hub-status">
-        <span>{{ errorMessage ? 'System' : 'Browser' }}:</span>
+        <i
+          :class="[
+            errorMessage ? 'pi pi-exclamation-circle' : browserStatusIcon,
+            errorMessage ? 'error' : browserStatus.state,
+          ]"
+          aria-hidden="true"
+        />
         <strong class="hub-status-value" :class="errorMessage ? 'error' : browserStatus.state">
           {{ errorMessage ?? browserStatusLabel }}
         </strong>
@@ -319,17 +337,6 @@ onBeforeUnmount(() => {
 .browser-button:enabled:active {
   border-color: var(--kw-primary-pressed);
   background: var(--kw-primary-pressed);
-}
-
-.browser-button.connected {
-  color: var(--kw-success);
-  border-color: var(--kw-border);
-  background: transparent;
-  opacity: 1;
-}
-
-.browser-button.connected :deep(.p-button-icon) {
-  color: var(--kw-success);
 }
 
 :deep(.hub-icon-button.p-button) {
@@ -483,14 +490,26 @@ onBeforeUnmount(() => {
   text-overflow: ellipsis;
 }
 
+.hub-status > i {
+  width: 14px;
+  flex: 0 0 auto;
+  color: var(--kw-text-disabled);
+  font-size: 0.78rem;
+  text-align: center;
+}
+
+.hub-status > i.launching,
 .hub-status-value.launching {
   color: var(--kw-focus);
 }
 
+.hub-status > i.connected,
 .hub-status-value.connected {
   color: var(--kw-success);
 }
 
+.hub-status > i.disconnected,
+.hub-status > i.error,
 .hub-status-value.disconnected,
 .hub-status-value.error {
   color: var(--kw-danger);
