@@ -31,7 +31,7 @@ function focusWindow(window) {
  */
 export async function createToolbarBrowserWindow({ appRoot, devServerUrl, electronDirectory }) {
   const toolbarWindow = new BrowserWindow({
-    width: 620,
+    width: 530,
     height: 116,
     minWidth: 520,
     minHeight: 108,
