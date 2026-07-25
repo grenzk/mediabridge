@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { app, BrowserWindow } from 'electron'
+import { app } from 'electron'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { configureApplicationMenu } from './app-menu.js'
@@ -29,17 +29,16 @@ const addLog = logService.add
 let toolbarWindow
 let logsWindow
 let hubWindow
+let toolbarWindowPromise
 let logsWindowPromise
+let hubWindowPromise
 let launchBrowserPromise
-let shouldFocusToolbarOnReady = false
 
 /**
- * Restores and focuses the existing toolbar after another launch attempt.
+ * Restores and focuses the existing toolbar.
  */
 function focusToolbarWindow() {
   if (!toolbarWindow || toolbarWindow.isDestroyed()) {
-    shouldFocusToolbarOnReady = true
-
     return
   }
 
@@ -50,7 +49,6 @@ function focusToolbarWindow() {
   toolbarWindow.show()
   toolbarWindow.focus()
   toolbarWindow.moveTop()
-  shouldFocusToolbarOnReady = false
 }
 
 function getDevServerUrl() {
@@ -66,25 +64,45 @@ async function createToolbarWindow() {
     return
   }
 
-  toolbarWindow = await createToolbarBrowserWindow({
-    appRoot,
-    devServerUrl: getDevServerUrl(),
-    electronDirectory: __dirname,
-    focusToolbarWindow,
-    shouldFocusOnReady: shouldFocusToolbarOnReady,
-  })
+  if (!toolbarWindowPromise) {
+    toolbarWindowPromise = createToolbarBrowserWindow({
+      appRoot,
+      devServerUrl: getDevServerUrl(),
+      electronDirectory: __dirname,
+    })
+      .then(createdWindow => {
+        toolbarWindow = createdWindow
+      })
+      .finally(() => {
+        toolbarWindowPromise = undefined
+      })
+  }
+
+  return toolbarWindowPromise
 }
 
 async function createHubWindow() {
-  hubWindow = await createHubBrowserWindow({
-    appRoot,
-    devServerUrl: getDevServerUrl(),
-    electronDirectory: __dirname,
-    existingWindow: hubWindow,
-    onClosed: () => {
-      hubWindow = undefined
-    },
-  })
+  if (!hubWindowPromise) {
+    hubWindowPromise = createHubBrowserWindow({
+      appRoot,
+      devServerUrl: getDevServerUrl(),
+      electronDirectory: __dirname,
+      existingWindow: hubWindow,
+      onClosed: closedWindow => {
+        if (hubWindow === closedWindow) {
+          hubWindow = undefined
+        }
+      },
+    })
+      .then(createdWindow => {
+        hubWindow = createdWindow
+      })
+      .finally(() => {
+        hubWindowPromise = undefined
+      })
+  }
+
+  return hubWindowPromise
 }
 
 async function createLogsWindow() {
@@ -117,7 +135,6 @@ logService.subscribe(logs => {
 })
 
 function closeToolbar() {
-  logsWindow?.close()
   toolbarWindow?.close()
 }
 
@@ -180,18 +197,14 @@ registerToolbarHandlers({
 if (!hasSingleInstanceLock) {
   app.quit()
 } else {
-  app.on('second-instance', focusToolbarWindow)
+  app.on('second-instance', createHubWindow)
 
   app.whenReady().then(async () => {
     configureApplicationMenu()
     configureDockIcon(appRoot)
     configureAutoUpdater(addLog)
-    addLog('info', 'App', `MediaBridge ${app.getVersion()} started.`)
-    await createToolbarWindow()
-
-    if (process.argv.includes('--show-hub')) {
-      await createHubWindow()
-    }
+    addLog('info', 'App', `KnowledgeWorks ${app.getVersion()} started.`)
+    await createHubWindow()
 
     checkForUpdates(addLog)
   })
@@ -206,7 +219,5 @@ app.on('window-all-closed', () => {
 })
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createToolbarWindow()
-  }
+  createHubWindow()
 })

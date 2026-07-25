@@ -1,11 +1,13 @@
-# MediaBridge
+# KnowledgeWorks
 
-MediaBridge is an Electron toolbar for running the media-linking automation
-against an open article editor and media library.
+KnowledgeWorks is a desktop automation hub for eGain workflows. Its first tool,
+MediaBridge, links documents, images, and articles from source systems into the
+eGain article editor.
 
 ## What It Does
 
-- Opens a controlled Chromium browser for the pages you want to automate.
+- Opens a shared controlled Chromium browser for KnowledgeWorks tools.
+- Opens or focuses MediaBridge from a compact tool hub.
 - Counts links in the article editor source, including matching document links.
 - Runs the existing media-linking workflow that inserts media-library document
   links into matching article text and adds the selected document class to those
@@ -20,15 +22,9 @@ npm install
 npm run dev
 ```
 
-Use the browser button in the toolbar, then open the article page and media page
-in that browser before counting links or running the script.
-
-The KnowledgeWorks hub is being developed alongside the existing MediaBridge
-startup flow. To open both MediaBridge and the optional hub in development, run:
-
-```sh
-npm run dev:hub
-```
+Use the browser button in the KnowledgeWorks Hub, then open MediaBridge. Open the
+article page and media page in the controlled browser before counting links or
+running the script.
 
 The planned architecture and incremental migration are documented in
 [KnowledgeWorks Design](docs/KNOWLEDGEWORKS_DESIGN.md).

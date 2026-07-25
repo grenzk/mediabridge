@@ -26,18 +26,10 @@ function focusWindow(window) {
  *   appRoot: string,
  *   devServerUrl?: string,
  *   electronDirectory: string,
- *   focusToolbarWindow: () => void,
- *   shouldFocusOnReady: boolean,
  * }} options
  * @returns {Promise<BrowserWindow>}
  */
-export async function createToolbarBrowserWindow({
-  appRoot,
-  devServerUrl,
-  electronDirectory,
-  focusToolbarWindow,
-  shouldFocusOnReady,
-}) {
+export async function createToolbarBrowserWindow({ appRoot, devServerUrl, electronDirectory }) {
   const toolbarWindow = new BrowserWindow({
     width: 620,
     height: 116,
@@ -68,10 +60,6 @@ export async function createToolbarBrowserWindow({
     await toolbarWindow.loadURL(devServerUrl)
   } else {
     await toolbarWindow.loadFile(join(electronDirectory, '../dist/renderer/index.html'))
-  }
-
-  if (shouldFocusOnReady) {
-    focusToolbarWindow()
   }
 
   return toolbarWindow
@@ -126,7 +114,7 @@ export async function createLogsBrowserWindow({ devServerUrl, electronDirectory,
  *   devServerUrl?: string,
  *   electronDirectory: string,
  *   existingWindow?: BrowserWindow,
- *   onClosed: () => void,
+ *   onClosed: (closedWindow: BrowserWindow) => void,
  * }} options
  * @returns {Promise<BrowserWindow>}
  */
@@ -159,7 +147,7 @@ export async function createHubBrowserWindow({
     },
   })
 
-  hubWindow.once('closed', onClosed)
+  hubWindow.once('closed', () => onClosed(hubWindow))
 
   if (devServerUrl) {
     await hubWindow.loadURL(`${devServerUrl}?view=hub`)

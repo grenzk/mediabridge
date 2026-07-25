@@ -6,11 +6,9 @@ import { useToolbarActions } from './composables/useToolbarActions.js'
 /** @type {import('vue').Ref<null | string>} */
 const appVersion = ref(null)
 const toolbarActions = useToolbarActions()
-const { busyAction, currentMessage, errorMessage, isBusy, reportActionError, runAction, showProgressDots } =
-  toolbarActions
+const { currentMessage, errorMessage, isBusy, reportActionError, showProgressDots } = toolbarActions
 const {
   chooseLinkingType,
-  closeLinkingTypeMenu,
   doneTargetCount,
   isLinkingTypeMenuOpen,
   linkingOptions,
@@ -24,21 +22,6 @@ const {
   toggleLinkingTypeMenu,
   unlinkedTargetCount,
 } = useMediaLinking(toolbarActions)
-
-/**
- * Opens or connects to the controlled browser.
- *
- * @returns {Promise<void>}
- */
-function launchBrowser() {
-  closeLinkingTypeMenu()
-
-  return runAction(
-    'Opening browser',
-    () => window.mediabridge.launchBrowser(),
-    () => 'Browser open',
-  )
-}
 
 /**
  * Reads the packaged app version for the status badge.
@@ -74,18 +57,6 @@ onBeforeMount(async () => await showAppVersion())
       <div class="brand" aria-label="MediaBridge">
         <span class="brand-mark">MB</span>
       </div>
-
-      <Button
-        v-tooltip.bottom="'Launch controlled browser'"
-        class="launch-button"
-        icon="pi pi-external-link"
-        label="Launch"
-        severity="secondary"
-        text
-        :loading="busyAction === 'Opening browser'"
-        aria-label="Launch browser"
-        @click="launchBrowser"
-      />
 
       <div
         v-tooltip.bottom="`Run ${selectedLinkingTypeConfig.label}`"
