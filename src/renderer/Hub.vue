@@ -39,11 +39,11 @@ const browserButtonIcon = computed(() => {
 
 const browserStatusLabel = computed(() => {
   const labels = {
-    connected: 'Browser connected',
-    disconnected: 'Browser disconnected',
-    error: 'Browser connection failed',
-    idle: 'Browser offline',
-    launching: 'Connecting to browser',
+    connected: 'Connected',
+    disconnected: 'Disconnected',
+    error: 'Connection failed',
+    idle: 'Offline',
+    launching: 'Connecting',
   }
 
   return labels[browserStatus.value.state]
@@ -179,7 +179,6 @@ onBeforeUnmount(() => {
           <strong>MediaBridge</strong>
           <span>Link files and articles in eGain</span>
         </div>
-        <span class="status-chip ready"><span aria-hidden="true"></span>Ready</span>
         <Button
           class="open-tool-button"
           icon="pi pi-arrow-up-right"
@@ -195,7 +194,6 @@ onBeforeUnmount(() => {
           <strong>ArticleFlow</strong>
           <span>Create and manage eGain articles</span>
         </div>
-        <span class="status-chip">Coming soon</span>
         <Button
           v-tooltip.bottom="'ArticleFlow is planned for a future release'"
           class="open-tool-button"
@@ -209,8 +207,10 @@ onBeforeUnmount(() => {
 
     <footer class="hub-footer" :class="{ error: errorMessage }" aria-live="polite">
       <span class="hub-status">
-        <span v-if="!errorMessage" class="status-dot" :class="browserStatus.state" aria-hidden="true"></span>
-        {{ errorMessage ?? browserStatusLabel }}
+        <span>{{ errorMessage ? 'System' : 'Browser' }}:</span>
+        <strong class="hub-status-value" :class="errorMessage ? 'error' : browserStatus.state">
+          {{ errorMessage ?? browserStatusLabel }}
+        </strong>
       </span>
       <span v-if="appVersion" class="hub-version">v{{ appVersion }}</span>
     </footer>
@@ -307,12 +307,12 @@ onBeforeUnmount(() => {
 .browser-button {
   width: 156px;
   color: var(--kw-text-light);
-  border-color: var(--kw-primary);
+  border-color: var(--kw-focus);
   background: var(--kw-primary);
 }
 
 .browser-button:enabled:hover {
-  border-color: var(--kw-primary-hover);
+  border-color: var(--kw-text-light);
   background: var(--kw-primary-hover);
 }
 
@@ -363,7 +363,7 @@ onBeforeUnmount(() => {
 
 .tool-row {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) auto 84px;
+  grid-template-columns: 48px minmax(0, 1fr) 84px;
   align-items: center;
   gap: 12px;
   min-height: 92px;
@@ -422,36 +422,6 @@ onBeforeUnmount(() => {
   line-height: 1.1rem;
 }
 
-.status-chip {
-  display: inline-flex;
-  min-height: 28px;
-  align-items: center;
-  gap: 6px;
-  padding: 0 8px;
-  color: var(--kw-text-disabled);
-  border: 1px solid var(--kw-border);
-  border-radius: 6px;
-  font-size: 0.68rem;
-  font-weight: 500;
-  line-height: 1rem;
-  white-space: nowrap;
-}
-
-.status-chip > span {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-}
-
-.status-chip.ready {
-  color: var(--kw-success);
-  border-color: var(--kw-success);
-}
-
-.status-chip.ready > span {
-  background: var(--kw-success);
-}
-
 .open-tool-button {
   width: 84px;
   height: 44px;
@@ -462,12 +432,12 @@ onBeforeUnmount(() => {
 
 .tool-row:not(.unavailable) .open-tool-button {
   color: var(--kw-text-light);
-  border-color: var(--kw-primary);
+  border-color: var(--kw-focus);
   background: var(--kw-primary);
 }
 
 .tool-row:not(.unavailable) .open-tool-button:enabled:hover {
-  border-color: var(--kw-primary-hover);
+  border-color: var(--kw-text-light);
   background: var(--kw-primary-hover);
 }
 
@@ -506,25 +476,24 @@ onBeforeUnmount(() => {
   white-space: nowrap;
 }
 
-.status-dot {
-  width: 7px;
-  height: 7px;
-  flex: 0 0 auto;
-  border-radius: 50%;
-  background: var(--kw-text-disabled);
+.hub-status-value {
+  overflow: hidden;
+  color: var(--kw-text-light);
+  font-weight: 500;
+  text-overflow: ellipsis;
 }
 
-.status-dot.launching {
-  background: var(--kw-primary);
+.hub-status-value.launching {
+  color: var(--kw-focus);
 }
 
-.status-dot.connected {
-  background: var(--kw-success);
+.hub-status-value.connected {
+  color: var(--kw-success);
 }
 
-.status-dot.disconnected,
-.status-dot.error {
-  background: var(--kw-danger);
+.hub-status-value.disconnected,
+.hub-status-value.error {
+  color: var(--kw-danger);
 }
 
 .hub-version {
