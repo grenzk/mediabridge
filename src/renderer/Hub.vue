@@ -39,8 +39,8 @@ const browserButtonIcon = computed(() => {
 
 const browserStatusIcon = computed(() => {
   const icons = {
-    connected: 'pi pi-circle-fill',
-    disconnected: 'pi pi-circle-fill',
+    connected: 'pi pi-check-circle',
+    disconnected: 'pi pi-times-circle',
     error: 'pi pi-exclamation-circle',
     idle: 'pi pi-circle',
     launching: 'pi pi-spinner pi-spin',
