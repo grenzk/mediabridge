@@ -82,7 +82,7 @@ export async function createToolbarBrowserWindow({
  *   devServerUrl?: string,
  *   electronDirectory: string,
  *   existingWindow?: BrowserWindow,
- *   onClosed: () => void,
+ *   onClosed: (closedWindow: BrowserWindow) => void,
  * }} options
  * @returns {Promise<BrowserWindow>}
  */
@@ -98,7 +98,7 @@ export async function createLogsBrowserWindow({ devServerUrl, electronDirectory,
     height: 460,
     minWidth: 560,
     minHeight: 340,
-    title: 'MediaBridge Logs',
+    title: 'KnowledgeWorks Logs',
     backgroundColor: '#080b10',
     webPreferences: {
       preload: join(electronDirectory, 'preload.cjs'),
@@ -107,7 +107,7 @@ export async function createLogsBrowserWindow({ devServerUrl, electronDirectory,
     },
   })
 
-  logsWindow.once('closed', onClosed)
+  logsWindow.once('closed', () => onClosed(logsWindow))
 
   if (devServerUrl) {
     await logsWindow.loadURL(`${devServerUrl}?view=logs`)

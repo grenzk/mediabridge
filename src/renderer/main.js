@@ -16,7 +16,7 @@ const views = {
   },
   logs: {
     component: LogConsole,
-    title: 'MediaBridge Logs',
+    title: 'KnowledgeWorks Logs',
   },
   mediabridge: {
     component: App,

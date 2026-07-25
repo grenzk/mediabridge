@@ -11,6 +11,7 @@ import { registerBrowserHandlers } from './ipc/browser-handlers.js'
 import { registerLogHandlers } from './ipc/log-handlers.js'
 import { registerSessionHandlers } from './ipc/session-handlers.js'
 import { registerToolbarHandlers } from './ipc/toolbar-handlers.js'
+import { createLogService } from './log-service.js'
 import { configureDockIcon } from './runtime-icon.js'
 import { createHubBrowserWindow, createLogsBrowserWindow, createToolbarBrowserWindow } from './windows.js'
 
@@ -22,15 +23,15 @@ const browserService = createBrowserService({
   appRoot,
   startupTimeout: browserStartupTimeout,
 })
+const logService = createLogService()
+const addLog = logService.add
 
 let toolbarWindow
 let logsWindow
 let hubWindow
+let logsWindowPromise
 let launchBrowserPromise
-let nextLogId = 1
 let shouldFocusToolbarOnReady = false
-const logs = []
-const maxLogEntries = 500
 
 /**
  * Restores and focuses the existing toolbar after another launch attempt.
@@ -87,59 +88,33 @@ async function createHubWindow() {
 }
 
 async function createLogsWindow() {
-  logsWindow = await createLogsBrowserWindow({
-    devServerUrl: getDevServerUrl(),
-    electronDirectory: __dirname,
-    existingWindow: logsWindow,
-    onClosed: () => {
-      logsWindow = undefined
-    },
-  })
+  if (!logsWindowPromise) {
+    logsWindowPromise = createLogsBrowserWindow({
+      devServerUrl: getDevServerUrl(),
+      electronDirectory: __dirname,
+      existingWindow: logsWindow,
+      onClosed: closedWindow => {
+        if (logsWindow === closedWindow) {
+          logsWindow = undefined
+        }
+      },
+    })
+      .then(createdWindow => {
+        logsWindow = createdWindow
+      })
+      .finally(() => {
+        logsWindowPromise = undefined
+      })
+  }
+
+  return logsWindowPromise
 }
 
-function getLogTimestamp() {
-  return new Date().toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  })
-}
-
-function publishLogs() {
+logService.subscribe(logs => {
   if (logsWindow && !logsWindow.isDestroyed()) {
     logsWindow.webContents.send('logs:updated', logs)
   }
-}
-
-/**
- * @param {'info' | 'success' | 'error'} level
- * @param {string} scope
- * @param {string} message
- * @param {string} [detail]
- */
-function addLog(level, scope, message, detail = '') {
-  logs.push({
-    id: nextLogId,
-    timestamp: getLogTimestamp(),
-    level,
-    scope,
-    message,
-    detail,
-  })
-  nextLogId += 1
-
-  if (logs.length > maxLogEntries) {
-    logs.splice(0, logs.length - maxLogEntries)
-  }
-
-  publishLogs()
-}
-
-function clearLogs() {
-  logs.splice(0)
-  publishLogs()
-}
+})
 
 function closeToolbar() {
   logsWindow?.close()
@@ -193,10 +168,8 @@ registerSessionHandlers({
 })
 
 registerLogHandlers({
-  addLog,
-  clearLogs,
   createLogsWindow,
-  getLogs: () => logs,
+  logService,
 })
 
 registerToolbarHandlers({

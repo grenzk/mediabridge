@@ -1,5 +1,6 @@
 export type MediaBridgeLinkingMode = 'pdf' | 'word' | 'excel' | 'powerpoint' | 'image' | 'article'
-export type MediaBridgeLogLevel = 'info' | 'success' | 'error'
+export type KnowledgeWorksLogLevel = 'info' | 'success' | 'error'
+export type MediaBridgeLogLevel = KnowledgeWorksLogLevel
 export type KnowledgeWorksTool = 'mediabridge'
 export type KnowledgeWorksBrowserState = 'idle' | 'launching' | 'connected' | 'disconnected' | 'error'
 
@@ -23,14 +24,16 @@ export type MediaBridgeOkResult = {
   ok: boolean
 }
 
-export type MediaBridgeLogEntry = {
+export type KnowledgeWorksLogEntry = {
   detail?: string
   id: number
-  level: MediaBridgeLogLevel
+  level: KnowledgeWorksLogLevel
   message: string
   scope: string
   timestamp: string
 }
+
+export type MediaBridgeLogEntry = KnowledgeWorksLogEntry
 
 export type MediaBridgeApi = {
   clearLogs: () => Promise<MediaBridgeOkResult>
@@ -52,12 +55,21 @@ export type MediaBridgeApi = {
 }
 
 export type KnowledgeWorksApi = {
+  clearLogs: () => Promise<MediaBridgeOkResult>
   getAppVersion: () => Promise<string>
   getBrowserStatus: () => Promise<KnowledgeWorksBrowserStatus>
+  getLogs: () => Promise<KnowledgeWorksLogEntry[]>
   launchBrowser: () => Promise<MediaBridgeOkResult>
   onBrowserStatusChanged: (callback: (status: KnowledgeWorksBrowserStatus) => void) => () => void
+  onLogsUpdated: (callback: (logs: KnowledgeWorksLogEntry[]) => void) => () => void
   openLogs: () => Promise<MediaBridgeOkResult>
   openTool: (tool: KnowledgeWorksTool) => Promise<MediaBridgeOkResult>
+  writeLog: (
+    level: KnowledgeWorksLogLevel,
+    scope: string,
+    message: string,
+    detail?: string,
+  ) => Promise<MediaBridgeOkResult>
 }
 
 declare global {

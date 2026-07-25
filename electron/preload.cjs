@@ -2,7 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 /**
  * @typedef {'pdf' | 'word' | 'excel' | 'powerpoint' | 'image' | 'article'} MediaBridgeLinkingMode
- * @typedef {'info' | 'success' | 'error'} MediaBridgeLogLevel
+ * @typedef {'info' | 'success' | 'error'} KnowledgeWorksLogLevel
  *
  * @typedef {{
  *   articleUrl?: string,
@@ -20,11 +20,11 @@ const { contextBridge, ipcRenderer } = require('electron')
  * @typedef {{
  *   detail?: string,
  *   id: number,
- *   level: MediaBridgeLogLevel,
+ *   level: KnowledgeWorksLogLevel,
  *   message: string,
  *   scope: string,
  *   timestamp: string,
- * }} MediaBridgeLogEntry
+ * }} KnowledgeWorksLogEntry
  *
  * @typedef {'mediabridge'} KnowledgeWorksTool
  * @typedef {'idle' | 'launching' | 'connected' | 'disconnected' | 'error'} KnowledgeWorksBrowserState
@@ -35,7 +35,37 @@ const { contextBridge, ipcRenderer } = require('electron')
  * }} KnowledgeWorksBrowserStatus
  */
 
+/** @returns {Promise<MediaBridgeOkResult>} */
+const clearLogs = () => ipcRenderer.invoke('logs:clear')
+/** @returns {Promise<KnowledgeWorksLogEntry[]>} */
+const getLogs = () => ipcRenderer.invoke('logs:get')
+/** @returns {Promise<MediaBridgeOkResult>} */
+const openLogs = () => ipcRenderer.invoke('logs:open')
+
+/**
+ * @param {(logs: KnowledgeWorksLogEntry[]) => void} callback
+ * @returns {() => void}
+ */
+function onLogsUpdated(callback) {
+  const listener = (_event, logs) => callback(logs)
+
+  ipcRenderer.on('logs:updated', listener)
+
+  return () => ipcRenderer.removeListener('logs:updated', listener)
+}
+
+/**
+ * @param {KnowledgeWorksLogLevel} level
+ * @param {string} scope
+ * @param {string} message
+ * @param {string} [detail]
+ * @returns {Promise<MediaBridgeOkResult>}
+ */
+const writeLog = (level, scope, message, detail) => ipcRenderer.invoke('logs:write', level, scope, message, detail)
+
 contextBridge.exposeInMainWorld('knowledgeworks', {
+  clearLogs,
+
   /**
    * @returns {Promise<string>}
    */
@@ -45,6 +75,8 @@ contextBridge.exposeInMainWorld('knowledgeworks', {
    * @returns {Promise<KnowledgeWorksBrowserStatus>}
    */
   getBrowserStatus: () => ipcRenderer.invoke('browser:get-status'),
+
+  getLogs,
 
   /**
    * @returns {Promise<MediaBridgeOkResult>}
@@ -63,23 +95,21 @@ contextBridge.exposeInMainWorld('knowledgeworks', {
     return () => ipcRenderer.removeListener('browser:status-changed', listener)
   },
 
-  /**
-   * @returns {Promise<MediaBridgeOkResult>}
-   */
-  openLogs: () => ipcRenderer.invoke('logs:open'),
+  onLogsUpdated,
+
+  openLogs,
 
   /**
    * @param {KnowledgeWorksTool} tool
    * @returns {Promise<MediaBridgeOkResult>}
    */
   openTool: tool => ipcRenderer.invoke('app:open-tool', tool),
+
+  writeLog,
 })
 
 contextBridge.exposeInMainWorld('mediabridge', {
-  /**
-   * @returns {Promise<MediaBridgeOkResult>}
-   */
-  clearLogs: () => ipcRenderer.invoke('logs:clear'),
+  clearLogs,
 
   /**
    * @returns {Promise<void>}
@@ -92,10 +122,7 @@ contextBridge.exposeInMainWorld('mediabridge', {
    */
   getTargetCount: mode => ipcRenderer.invoke('session:get-target-count', mode),
 
-  /**
-   * @returns {Promise<MediaBridgeLogEntry[]>}
-   */
-  getLogs: () => ipcRenderer.invoke('logs:get'),
+  getLogs,
 
   /**
    * @returns {Promise<MediaBridgeActionResult>}
@@ -107,22 +134,9 @@ contextBridge.exposeInMainWorld('mediabridge', {
    */
   minimizeToolbar: () => ipcRenderer.invoke('toolbar:minimize'),
 
-  /**
-   * @param {(logs: MediaBridgeLogEntry[]) => void} callback
-   * @returns {() => void}
-   */
-  onLogsUpdated: callback => {
-    const listener = (_event, logs) => callback(logs)
+  onLogsUpdated,
 
-    ipcRenderer.on('logs:updated', listener)
-
-    return () => ipcRenderer.removeListener('logs:updated', listener)
-  },
-
-  /**
-   * @returns {Promise<MediaBridgeOkResult>}
-   */
-  openLogs: () => ipcRenderer.invoke('logs:open'),
+  openLogs,
 
   /**
    * @param {MediaBridgeLinkingMode} mode
@@ -135,12 +149,5 @@ contextBridge.exposeInMainWorld('mediabridge', {
    */
   getAppVersion: () => ipcRenderer.invoke('session:get-app-version'),
 
-  /**
-   * @param {MediaBridgeLogLevel} level
-   * @param {string} scope
-   * @param {string} message
-   * @param {string} [detail]
-   * @returns {Promise<MediaBridgeOkResult>}
-   */
-  writeLog: (level, scope, message, detail) => ipcRenderer.invoke('logs:write', level, scope, message, detail),
+  writeLog,
 })

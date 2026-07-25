@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
-/** @type {import('vue').Ref<import('./mediabridge').MediaBridgeLogEntry[]>} */
+/** @type {import('vue').Ref<import('./mediabridge').KnowledgeWorksLogEntry[]>} */
 const logs = ref([])
 /** @type {import('vue').Ref<HTMLElement | null>} */
 const consoleBody = ref(null)
@@ -26,7 +26,7 @@ async function scrollToBottom() {
 /**
  * Replaces the visible logs with entries from the shared Electron log store.
  *
- * @param {import('./mediabridge').MediaBridgeLogEntry[]} nextLogs
+ * @param {import('./mediabridge').KnowledgeWorksLogEntry[]} nextLogs
  */
 function setLogs(nextLogs) {
   logs.value = nextLogs
@@ -39,7 +39,7 @@ function setLogs(nextLogs) {
  * @returns {Promise<void>}
  */
 async function loadLogs() {
-  setLogs(await window.mediabridge.getLogs())
+  setLogs(await window.knowledgeworks.getLogs())
 }
 
 /**
@@ -48,13 +48,13 @@ async function loadLogs() {
  * @returns {Promise<void>}
  */
 async function clearLogs() {
-  await window.mediabridge.clearLogs()
+  await window.knowledgeworks.clearLogs()
 }
 
 /**
  * Formats the log level for terminal-style display.
  *
- * @param {import('./mediabridge').MediaBridgeLogLevel} level
+ * @param {import('./mediabridge').KnowledgeWorksLogLevel} level
  * @returns {string}
  */
 function getLevelLabel(level) {
@@ -63,7 +63,7 @@ function getLevelLabel(level) {
 
 onMounted(async () => {
   await loadLogs()
-  unsubscribeLogs = window.mediabridge.onLogsUpdated(setLogs)
+  unsubscribeLogs = window.knowledgeworks.onLogsUpdated(setLogs)
 })
 
 onBeforeUnmount(() => {
@@ -85,7 +85,7 @@ onBeforeUnmount(() => {
         @click="clearLogs"
       />
 
-      <p v-if="!hasLogs" class="log-empty">No logs yet. Run an action from the toolbar to start capturing output.</p>
+      <p v-if="!hasLogs" class="log-empty">No logs yet. Run an action in KnowledgeWorks to start capturing output.</p>
 
       <article v-for="entry in logs" v-else :key="entry.id" class="log-entry" :class="entry.level">
         <div class="log-entry-line">
