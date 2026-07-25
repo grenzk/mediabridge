@@ -153,7 +153,7 @@ onBeforeMount(async () => await showAppVersion())
         </span>
       </div>
 
-      <div class="status-tray">
+      <div v-if="!isLinkingTypeMenuOpen" class="status-tray">
         <dl class="status-metrics">
           <div>
             <dt>Found</dt>
