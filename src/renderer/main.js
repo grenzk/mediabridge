@@ -3,6 +3,7 @@ import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
 import Button from 'primevue/button'
 import Tooltip from 'primevue/tooltip'
+import ArticleFlow from '../article-flow/renderer/ArticleFlow.vue'
 import App from './App.vue'
 import Hub from './Hub.vue'
 import LogConsole from './LogConsole.vue'
@@ -10,6 +11,10 @@ import './styles.css'
 
 const params = new URLSearchParams(window.location.search)
 const views = {
+  'article-flow': {
+    component: ArticleFlow,
+    title: 'ArticleFlow',
+  },
   hub: {
     component: Hub,
     title: 'KnowledgeWorks',
