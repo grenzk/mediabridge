@@ -3,6 +3,25 @@ import { join } from 'node:path'
 import { getRuntimeIcon } from './runtime-icon.js'
 
 /**
+ * @param {BrowserWindow | undefined} window
+ * @returns {BrowserWindow | undefined}
+ */
+function focusWindow(window) {
+  if (!window || window.isDestroyed()) {
+    return undefined
+  }
+
+  if (window.isMinimized()) {
+    window.restore()
+  }
+
+  window.show()
+  window.focus()
+
+  return window
+}
+
+/**
  * @param {{
  *   appRoot: string,
  *   devServerUrl?: string,
@@ -68,11 +87,10 @@ export async function createToolbarBrowserWindow({
  * @returns {Promise<BrowserWindow>}
  */
 export async function createLogsBrowserWindow({ devServerUrl, electronDirectory, existingWindow, onClosed }) {
-  if (existingWindow && !existingWindow.isDestroyed()) {
-    existingWindow.show()
-    existingWindow.focus()
+  const focusedWindow = focusWindow(existingWindow)
 
-    return existingWindow
+  if (focusedWindow) {
+    return focusedWindow
   }
 
   const logsWindow = new BrowserWindow({
@@ -100,4 +118,56 @@ export async function createLogsBrowserWindow({ devServerUrl, electronDirectory,
   }
 
   return logsWindow
+}
+
+/**
+ * @param {{
+ *   appRoot: string,
+ *   devServerUrl?: string,
+ *   electronDirectory: string,
+ *   existingWindow?: BrowserWindow,
+ *   onClosed: () => void,
+ * }} options
+ * @returns {Promise<BrowserWindow>}
+ */
+export async function createHubBrowserWindow({
+  appRoot,
+  devServerUrl,
+  electronDirectory,
+  existingWindow,
+  onClosed,
+}) {
+  const focusedWindow = focusWindow(existingWindow)
+
+  if (focusedWindow) {
+    return focusedWindow
+  }
+
+  const hubWindow = new BrowserWindow({
+    width: 460,
+    height: 280,
+    minWidth: 420,
+    minHeight: 260,
+    resizable: false,
+    title: 'KnowledgeWorks',
+    backgroundColor: '#111418',
+    icon: getRuntimeIcon(appRoot),
+    webPreferences: {
+      preload: join(electronDirectory, 'preload.cjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  })
+
+  hubWindow.once('closed', onClosed)
+
+  if (devServerUrl) {
+    await hubWindow.loadURL(`${devServerUrl}?view=hub`)
+  } else {
+    await hubWindow.loadFile(join(electronDirectory, '../dist/renderer/index.html'), {
+      query: { view: 'hub' },
+    })
+  }
+
+  return hubWindow
 }

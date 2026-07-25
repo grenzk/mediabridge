@@ -25,7 +25,27 @@ const { contextBridge, ipcRenderer } = require('electron')
  *   scope: string,
  *   timestamp: string,
  * }} MediaBridgeLogEntry
+ *
+ * @typedef {'mediabridge'} KnowledgeWorksTool
  */
+
+contextBridge.exposeInMainWorld('knowledgeworks', {
+  /**
+   * @returns {Promise<string>}
+   */
+  getAppVersion: () => ipcRenderer.invoke('app:get-version'),
+
+  /**
+   * @returns {Promise<MediaBridgeOkResult>}
+   */
+  openLogs: () => ipcRenderer.invoke('logs:open'),
+
+  /**
+   * @param {KnowledgeWorksTool} tool
+   * @returns {Promise<MediaBridgeOkResult>}
+   */
+  openTool: tool => ipcRenderer.invoke('app:open-tool', tool),
+})
 
 contextBridge.exposeInMainWorld('mediabridge', {
   /**

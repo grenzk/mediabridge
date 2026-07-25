@@ -23,6 +23,16 @@ npm run dev
 Use the browser button in the toolbar, then open the article page and media page
 in that browser before counting links or running the script.
 
+The KnowledgeWorks hub is being developed alongside the existing MediaBridge
+startup flow. To open both MediaBridge and the optional hub in development, run:
+
+```sh
+npm run dev:hub
+```
+
+The planned architecture and incremental migration are documented in
+[KnowledgeWorks Design](docs/KNOWLEDGEWORKS_DESIGN.md).
+
 You can still run the original command-line automation with:
 
 ```sh

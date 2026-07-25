@@ -9,6 +9,7 @@
   "scripts": {
     "start": "npm run build && electron .",
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron . --dev-server=http://127.0.0.1:5173\"",
+    "dev:hub": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron . --dev-server=http://127.0.0.1:5173 --show-hub\"",
     "build": "vite build",
     "package": "npm run build && electron-builder --dir",
     "dist:mac": "npm run build && electron-builder --mac",

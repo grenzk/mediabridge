@@ -1,5 +1,6 @@
 export type MediaBridgeLinkingMode = 'pdf' | 'word' | 'excel' | 'powerpoint' | 'image' | 'article'
 export type MediaBridgeLogLevel = 'info' | 'success' | 'error'
+export type KnowledgeWorksTool = 'mediabridge'
 
 export type MediaBridgeActionResult = {
   articleUrl?: string
@@ -44,8 +45,15 @@ export type MediaBridgeApi = {
   ) => Promise<MediaBridgeOkResult>
 }
 
+export type KnowledgeWorksApi = {
+  getAppVersion: () => Promise<string>
+  openLogs: () => Promise<MediaBridgeOkResult>
+  openTool: (tool: KnowledgeWorksTool) => Promise<MediaBridgeOkResult>
+}
+
 declare global {
   interface Window {
+    knowledgeworks: KnowledgeWorksApi
     mediabridge: MediaBridgeApi
   }
 }

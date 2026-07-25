@@ -5,11 +5,12 @@ import { fileURLToPath } from 'node:url'
 import { configureApplicationMenu } from './app-menu.js'
 import { checkForUpdates, configureAutoUpdater } from './auto-updater.js'
 import { createBrowserProcessController } from './browser-process.js'
+import { registerAppHandlers } from './ipc/app-handlers.js'
 import { registerLogHandlers } from './ipc/log-handlers.js'
 import { registerSessionHandlers } from './ipc/session-handlers.js'
 import { registerToolbarHandlers } from './ipc/toolbar-handlers.js'
 import { configureDockIcon } from './runtime-icon.js'
-import { createLogsBrowserWindow, createToolbarBrowserWindow } from './windows.js'
+import { createHubBrowserWindow, createLogsBrowserWindow, createToolbarBrowserWindow } from './windows.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
@@ -22,6 +23,7 @@ const browserProcessController = createBrowserProcessController({
 
 let toolbarWindow
 let logsWindow
+let hubWindow
 let nextLogId = 1
 let shouldFocusToolbarOnReady = false
 const logs = []
@@ -54,12 +56,30 @@ function getDevServerUrl() {
 }
 
 async function createToolbarWindow() {
+  if (toolbarWindow && !toolbarWindow.isDestroyed()) {
+    focusToolbarWindow()
+
+    return
+  }
+
   toolbarWindow = await createToolbarBrowserWindow({
     appRoot,
     devServerUrl: getDevServerUrl(),
     electronDirectory: __dirname,
     focusToolbarWindow,
     shouldFocusOnReady: shouldFocusToolbarOnReady,
+  })
+}
+
+async function createHubWindow() {
+  hubWindow = await createHubBrowserWindow({
+    appRoot,
+    devServerUrl: getDevServerUrl(),
+    electronDirectory: __dirname,
+    existingWindow: hubWindow,
+    onClosed: () => {
+      hubWindow = undefined
+    },
   })
 }
 
@@ -127,6 +147,15 @@ function minimizeToolbar() {
   toolbarWindow?.minimize()
 }
 
+registerAppHandlers({
+  getAppVersion: () => app.getVersion(),
+  openTool: async tool => {
+    if (tool === 'mediabridge') {
+      await createToolbarWindow()
+    }
+  },
+})
+
 registerSessionHandlers({
   addLog,
   browserProcessController,
@@ -155,6 +184,11 @@ if (!hasSingleInstanceLock) {
     configureAutoUpdater(addLog)
     addLog('info', 'App', `MediaBridge ${app.getVersion()} started.`)
     await createToolbarWindow()
+
+    if (process.argv.includes('--show-hub')) {
+      await createHubWindow()
+    }
+
     checkForUpdates(addLog)
   })
 }

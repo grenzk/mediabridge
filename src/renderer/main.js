@@ -4,12 +4,30 @@ import Aura from '@primeuix/themes/aura'
 import Button from 'primevue/button'
 import Tooltip from 'primevue/tooltip'
 import App from './App.vue'
+import Hub from './Hub.vue'
 import LogConsole from './LogConsole.vue'
 import './styles.css'
 
 const params = new URLSearchParams(window.location.search)
-const rootComponent = params.get('view') === 'logs' ? LogConsole : App
+const views = {
+  hub: {
+    component: Hub,
+    title: 'KnowledgeWorks',
+  },
+  logs: {
+    component: LogConsole,
+    title: 'MediaBridge Logs',
+  },
+  mediabridge: {
+    component: App,
+    title: 'MediaBridge',
+  },
+}
+const currentView = views[params.get('view')] ?? views.mediabridge
+const rootComponent = currentView.component
 const app = createApp(rootComponent)
+
+document.title = currentView.title
 
 app.use(PrimeVue, {
   theme: {
