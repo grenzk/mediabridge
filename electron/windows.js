@@ -87,7 +87,7 @@ export async function createLogsBrowserWindow({ devServerUrl, electronDirectory,
     minWidth: 560,
     minHeight: 340,
     title: 'KnowledgeWorks Logs',
-    backgroundColor: '#080b10',
+    backgroundColor: '#101617',
     webPreferences: {
       preload: join(electronDirectory, 'preload.cjs'),
       nodeIntegration: false,
