@@ -16,6 +16,7 @@
     "install:packaging": "npm install --include=peer",
     "dist:win": "npm run build && electron-builder --win --x64",
     "preview": "vite preview",
+    "script:articleflow": "node src/tools/articleflow/scripts/run-article-flow.ts",
     "script:media-linking": "node src/tools/mediabridge/scripts/run-media-linking.ts",
     "test": "vitest run",
     "test:verbose": "vitest run --reporter=verbose",
