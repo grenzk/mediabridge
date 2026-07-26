@@ -1,6 +1,6 @@
 # KnowledgeWorks Design
 
-Status: Proposed
+Status: In progress
 
 ## Summary
 
@@ -310,40 +310,69 @@ It does not initially apply to:
 
 TypeScript 7 should be reconsidered after its compiler API and Vue tooling integration are stable enough to avoid a side-by-side TypeScript 6 setup.
 
-## Proposed Code Organization
+## Code Organization
 
-This is a target direction, not an immediate file-moving task.
+KnowledgeWorks uses a modular monolith: one application and installer with explicit ownership boundaries for the suite, shared integrations, and each tool.
 
 ```text
 electron/
 |-- ipc/
 |   |-- browser-handlers.js
 |   |-- log-handlers.js
-|   |-- mediabridge-handlers.js
-|   `-- articleflow-handlers.js
-|-- services/
+|   |-- app-handlers.js
+|   `-- toolbar-handlers.js
+|-- platform/
+|   |-- app-menu.js
+|   |-- auto-updater.js
 |   |-- browser-service.js
 |   |-- log-service.js
-|   `-- window-registry.js
-|-- windows.js
+|   |-- runtime-icon.js
+|   `-- windows.js
+|-- tools/
+|   `-- mediabridge/
+|       |-- handlers.js
+|       `-- unlinked-target-logs.js
+|-- preload.cjs
 `-- main.js
 
 src/
-|-- renderer/
-|   |-- hub/
-|   |-- mediabridge/
-|   `-- logs/
-|-- article-flow/
-|   |-- automation/
-|   |-- renderer/
+|-- app/
+|   `-- renderer/
+|       |-- Hub.vue
+|       |-- LogConsole.vue
+|       |-- main.js
+|       `-- styles.css
+|-- shared/
+|   |-- browser/
+|   |-- config/
+|   |-- egain/
+|   |   `-- editor/
 |   `-- types/
-|-- automation/
-|-- config/
-|-- editor/
-`-- helpers/
+`-- tools/
+    |-- articleflow/
+    |   `-- renderer/
+    `-- mediabridge/
+        |-- automation/
+        |-- helpers/
+        |-- renderer/
+        `-- scripts/
+
+tests/
+|-- electron/
+|   `-- platform/
+`-- tools/
+    `-- mediabridge/
 ```
 
-Existing files should move only when the move supports an implemented boundary. Avoid a repository-wide rename before the hub works.
+### Dependency Rules
+
+- `src/app` may compose tool renderers and shared contracts.
+- A tool may depend on `src/shared`, but tools must not import from one another.
+- `src/shared` must not depend on a specific tool.
+- `electron/platform` owns suite-wide desktop services and must not contain tool workflows.
+- Tool-specific IPC orchestration belongs under `electron/tools/<tool>`.
+- Tests mirror the production ownership boundary they verify.
+- Code moves to `shared` only after it represents a stable suite-level integration or is used by more than one tool.
 
 ## Packaging and Portability
 
