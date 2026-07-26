@@ -9,7 +9,7 @@ eGain article editor.
 - Opens a shared controlled Chromium browser for KnowledgeWorks tools.
 - Opens or focuses MediaBridge from a compact tool hub.
 - Counts links in the article editor source, including matching document links.
-- Runs the existing media-linking workflow that inserts media-library document
+- Runs the existing media-linking workflow that inserts media server document
   links into matching article text and adds the selected document class to those
   anchors.
 - Provides a compact floating toolbar inspired by QuickTime and snipping-tool
@@ -51,11 +51,17 @@ To display every individual test in the terminal, run:
 npm run test:verbose
 ```
 
-ArticleFlow uses an isolated strict TypeScript configuration:
+MediaBridge and ArticleFlow use isolated strict TypeScript configurations:
 
 ```sh
+npm run typecheck
+npm run typecheck:mediabridge
 npm run typecheck:articleflow
 ```
+
+Use Node.js 22.18 or newer when running the MediaBridge command-line automation
+directly from source. Packaged applications use the Node.js runtime embedded in
+Electron.
 
 The suite covers linking mode configuration, target classification, linked-state
 detection, and skipped-target log formatting. Browser-driven eGain workflows

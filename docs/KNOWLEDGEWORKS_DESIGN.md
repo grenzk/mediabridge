@@ -8,7 +8,7 @@ KnowledgeWorks will turn the existing MediaBridge desktop application into a mod
 
 The suite will remain one Electron application, one installer per operating system, and one running main process. Each tool will keep its own window, user interface, IPC namespace, and automation workflow.
 
-The migration will be incremental. MediaBridge must continue to work throughout development and will remain JavaScript with JSDoc. ArticleFlow will be the first tool written in TypeScript 6.
+The migration is incremental. MediaBridge behavior must remain stable while its renderer and linking core move to TypeScript 6. ArticleFlow also uses TypeScript 6 from its first implementation.
 
 ## Product Structure
 
@@ -43,7 +43,7 @@ KnowledgeWorks
 
 ## Non-Goals
 
-- Rewriting MediaBridge in TypeScript.
+- Rewriting shared Electron platform services solely for language consistency.
 - Implementing ArticleFlow automation during the hub foundation work.
 - Splitting the tools into separate installers or repositories.
 - Renaming every existing IPC channel and file in one change.
@@ -275,7 +275,7 @@ Existing `session:*` and `toolbar:*` channels can remain during migration. They 
 
 ## TypeScript Strategy
 
-MediaBridge remains JavaScript with JSDoc. TypeScript adoption begins with ArticleFlow after the hub and shared services are stable.
+MediaBridge and ArticleFlow use strict, isolated TypeScript configurations. Shared Electron platform services can remain JavaScript until converting a service provides a concrete maintenance benefit.
 
 ### Initial Toolchain
 
@@ -287,24 +287,27 @@ MediaBridge remains JavaScript with JSDoc. TypeScript adoption begins with Artic
 
 ### Scope
 
-TypeScript initially applies to:
+TypeScript applies to:
 
+- MediaBridge renderer components and composables.
+- MediaBridge linking automation, helpers, domain types, and tool-specific IPC handlers.
 - ArticleFlow renderer components and composables.
 - ArticleFlow domain models and validation.
 - ArticleFlow IPC request and result contracts.
 - ArticleFlow automation modules when a main-process TypeScript build target is introduced.
 
-It does not initially apply to:
+It does not currently require conversion of:
 
-- Existing MediaBridge renderer components.
-- Existing MediaBridge automation.
-- Existing Electron main-process modules.
-- Existing JavaScript helpers with stable JSDoc contracts.
+- Suite-wide Electron platform services with stable JavaScript contracts.
+- The CommonJS preload boundary.
+- KnowledgeWorks Hub and log renderers.
 
 ### Interoperability
 
-- JavaScript may import emitted ArticleFlow JavaScript.
-- ArticleFlow may consume existing JavaScript modules through their JSDoc or declaration files.
+- Electron 39 uses Node.js 22 type stripping to execute MediaBridge's erasable TypeScript modules directly.
+- MediaBridge runtime imports use explicit `.ts` extensions and avoid TypeScript syntax that requires code generation.
+- ArticleFlow TypeScript continues to be transpiled through Vite.
+- Type checking remains a build requirement even though Electron can strip types at runtime.
 - Shared types should be created only for contracts used by at least two modules.
 - Do not duplicate runtime constants as disconnected TypeScript unions; derive types from shared constants where practical.
 
@@ -511,7 +514,7 @@ The current decisions are:
 2. Use KnowledgeWorks as the suite name.
 3. Keep MediaBridge and ArticleFlow as separate tool windows.
 4. Make browser control and logging global.
-5. Keep MediaBridge JavaScript unchanged during the initial migration.
-6. Use TypeScript 6 for ArticleFlow.
+5. Keep MediaBridge behavior unchanged while migrating its owned modules incrementally to TypeScript.
+6. Use TypeScript 6 for MediaBridge and ArticleFlow with separate strict configurations.
 7. Preserve the existing app identity and update channel until migration testing is complete.
 8. Deliver the change through small, reversible phases.
