@@ -52,16 +52,18 @@ button {
 
 .toolbar-shell {
   display: grid;
-  grid-template-rows: 58px 28px;
+  grid-template-rows: 60px 32px;
   gap: 8px;
   width: 100vw;
   height: 100vh;
-  padding: 10px;
-  border: 1px solid rgb(255 255 255 / 20%);
-  border-radius: 14px;
-  background: linear-gradient(180deg, rgb(255 255 255 / 16%), rgb(255 255 255 / 5%)), rgb(22 24 27 / 90%);
-  backdrop-filter: blur(28px) saturate(1.25);
-  color: #f6f7f8;
+  padding: 6px;
+  color: var(--kw-text-light);
+  border: 2px solid var(--kw-border-subtle);
+  border-radius: 18px;
+  background: var(--kw-quiet-surface);
+  box-shadow:
+    0 10px 32px rgb(0 0 0 / 40%),
+    inset 0 0 0 1px rgb(255 255 255 / 12%);
 }
 
 .toolbar {
@@ -70,15 +72,20 @@ button {
   grid-template-columns: minmax(48px, 1fr) 104px 116px 1px 40px 40px 40px;
   align-items: center;
   gap: 5px;
-  height: 58px;
+  height: 60px;
   padding: 8px;
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--kw-border);
   border-radius: 10px;
-  background: rgb(255 255 255 / 6%);
+  background: var(--kw-quiet-header);
 }
 
 .toolbar :is(button, .p-button) {
   -webkit-app-region: no-drag;
+}
+
+.toolbar :is(button, .p-button):focus-visible {
+  outline: 2px solid var(--kw-focus);
+  outline-offset: 2px;
 }
 
 .brand {
@@ -89,25 +96,37 @@ button {
 }
 
 .brand-mark {
+  position: relative;
   display: grid;
   place-items: center;
   width: 40px;
   height: 40px;
-  color: #101419;
-  border-radius: 9px;
-  background: #f7d54a;
+  color: var(--kw-text-light);
+  border: 2px solid var(--kw-primary);
+  border-radius: 8px;
+  background: var(--kw-surface);
   font-size: 1rem;
-  font-weight: 900;
+  font-weight: 700;
   line-height: 1;
+}
+
+.brand-mark::after {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  content: '';
+  background: var(--kw-accent);
 }
 
 .toolbar .p-button {
   width: 40px;
   height: 40px;
+  color: var(--kw-text-light) !important;
+  border: 1px solid var(--kw-border) !important;
   border-radius: 8px;
-  color: #f8fafc !important;
-  background: rgb(255 255 255 / 8%) !important;
-  border: 1px solid rgb(255 255 255 / 14%) !important;
+  background: var(--kw-surface) !important;
 }
 
 .toolbar .p-button,
@@ -124,7 +143,13 @@ button {
 }
 
 .toolbar .p-button:hover {
-  background: rgb(255 255 255 / 16%) !important;
+  border-color: var(--kw-text-muted) !important;
+  background: var(--kw-surface-hover) !important;
+}
+
+.toolbar .close-button:hover,
+.toolbar .close-button:focus-visible {
+  border-color: var(--kw-danger) !important;
 }
 
 .run-control {
@@ -134,9 +159,18 @@ button {
   width: 104px;
   height: 40px;
   overflow: hidden;
-  border: 1px solid rgb(255 255 255 / 14%);
+  border: 1px solid var(--kw-focus);
   border-radius: 8px;
-  background: rgb(255 255 255 / 8%);
+  background: var(--kw-primary);
+}
+
+.run-control:has(button:focus-visible) {
+  outline: 2px solid var(--kw-focus);
+  outline-offset: 2px;
+}
+
+.run-control button:focus-visible {
+  outline: 0;
 }
 
 .run-button {
@@ -146,14 +180,18 @@ button {
   gap: 4px;
   height: 100%;
   padding: 0 7px;
-  color: #f8fafc;
+  color: var(--kw-text-light);
   border: 0;
   background: transparent;
   cursor: pointer;
 }
 
 .run-button:hover {
-  background: rgb(255 255 255 / 12%);
+  background: var(--kw-primary-hover);
+}
+
+.run-button:active {
+  background: var(--kw-primary-pressed);
 }
 
 .run-button:disabled,
@@ -172,19 +210,23 @@ button {
   height: 100%;
   padding: 0;
   border: 0;
-  border-left: 1px solid rgb(255 255 255 / 12%);
+  border-left: 1px solid var(--kw-focus);
   background: transparent;
-  color: #f8fafc;
+  color: var(--kw-text-light);
   cursor: pointer;
   outline: none;
 }
 
 .run-mode-button:hover {
-  background: rgb(255 255 255 / 10%);
+  background: var(--kw-primary-hover);
+}
+
+.run-mode-button:active {
+  background: var(--kw-primary-pressed);
 }
 
 .run-chevron {
-  color: #f8fafc;
+  color: var(--kw-text-light);
   font-size: 0.72rem;
   pointer-events: none;
   transition: transform 140ms ease;
@@ -202,23 +244,24 @@ button {
   min-width: 0;
   height: 40px;
   padding: 0 8px;
-  color: #f8fafc;
-  border: 1px solid rgb(255 255 255 / 14%);
+  color: var(--kw-text-light);
+  border: 1px solid var(--kw-border);
   border-radius: 8px;
-  background: rgb(255 255 255 / 8%);
+  background: var(--kw-surface);
   cursor: pointer;
 }
 
 .target-counter:hover {
-  background: rgb(255 255 255 / 16%);
+  border-color: var(--kw-focus);
+  background: var(--kw-surface-hover);
 }
 
 .target-counter:hover .counter-label {
-  color: #f8fafc;
+  color: var(--kw-text-light);
 }
 
 .target-counter:hover .counter-number {
-  background: #fde16a;
+  border-color: var(--kw-focus);
 }
 
 .target-counter:disabled {
@@ -232,9 +275,10 @@ button {
   min-width: 30px;
   height: 28px;
   padding: 0 7px;
-  color: #111827;
-  background: #f7d54a;
-  border-radius: 7px;
+  color: var(--kw-focus);
+  border: 1px solid var(--kw-primary);
+  border-radius: 6px;
+  background: var(--kw-canvas);
   font-size: 0.9rem;
   font-weight: 800;
   line-height: 1;
@@ -242,7 +286,7 @@ button {
 
 .counter-label {
   overflow: hidden;
-  color: rgb(255 255 255 / 84%);
+  color: var(--kw-text-muted);
   text-overflow: ellipsis;
   white-space: nowrap;
   line-height: 1.5;
@@ -251,7 +295,7 @@ button {
 .divider {
   width: 1px;
   height: 30px;
-  background: rgb(255 255 255 / 18%);
+  background: var(--kw-border);
 }
 
 .status-panel {
@@ -260,12 +304,12 @@ button {
   min-width: 0;
   align-items: center;
   gap: 10px;
-  height: 28px;
+  height: 32px;
   padding: 0 10px;
-  color: rgb(255 255 255 / 78%);
-  border: 1px solid rgb(255 255 255 / 10%);
+  color: var(--kw-text-muted);
+  border: 1px solid var(--kw-border-subtle);
   border-radius: 8px;
-  background: rgb(0 0 0 / 18%);
+  background: var(--kw-canvas);
 }
 
 .status-message {
@@ -287,7 +331,7 @@ button {
   grid-template-columns: repeat(3, 0.45em);
   flex: 0 0 auto;
   margin-left: 1px;
-  color: #f8fafc;
+  color: var(--kw-text-light);
 }
 
 .progress-dots span {
@@ -330,10 +374,10 @@ button {
   height: 20px;
   min-width: 44px;
   padding: 0 8px;
-  color: rgb(255 255 255 / 76%);
-  border: 1px solid rgb(255 255 255 / 12%);
+  color: var(--kw-text-muted);
+  border: 1px solid var(--kw-border);
   border-radius: 6px;
-  background: rgb(255 255 255 / 6%);
+  background: var(--kw-surface);
   font-size: 0.67rem;
   font-weight: 750;
   line-height: 1;
@@ -341,20 +385,20 @@ button {
 }
 
 .linking-type-option:hover {
-  color: #f8fafc;
-  background: rgb(255 255 255 / 14%);
+  color: var(--kw-text-light);
+  background: var(--kw-surface-hover);
 }
 
 .linking-type-option.selected {
-  color: #111827;
-  border-color: rgb(247 213 74 / 88%);
-  background: #f7d54a;
+  color: var(--kw-text-light);
+  border-color: var(--kw-focus);
+  background: var(--kw-primary);
 }
 
 .linking-type-option:disabled {
-  color: rgb(255 255 255 / 34%);
-  border-color: rgb(255 255 255 / 8%);
-  background: rgb(255 255 255 / 4%);
+  color: var(--kw-text-disabled);
+  border-color: var(--kw-border-subtle);
+  background: var(--kw-canvas);
   cursor: default;
 }
 
@@ -379,7 +423,8 @@ button {
   height: 20px;
   padding: 0 7px;
   border-radius: 6px;
-  background: rgb(255 255 255 / 8%);
+  border: 1px solid var(--kw-border-subtle);
+  background: var(--kw-surface);
 }
 
 .status-metrics dt,
@@ -391,11 +436,11 @@ button {
 }
 
 .status-metrics dt {
-  color: rgb(255 255 255 / 52%);
+  color: var(--kw-text-muted);
 }
 
 .status-metrics dd {
-  color: #f8fafc;
+  color: var(--kw-text-light);
 }
 
 .version-badge {
@@ -403,9 +448,10 @@ button {
   align-items: center;
   height: 20px;
   padding: 0 7px;
-  color: rgb(255 255 255 / 62%);
+  color: var(--kw-text-muted);
+  border: 1px solid var(--kw-border-subtle);
   border-radius: 6px;
-  background: rgb(255 255 255 / 6%);
+  background: var(--kw-surface);
   font-size: 0.67rem;
   font-weight: 750;
   line-height: 1;
@@ -423,14 +469,15 @@ button {
 }
 
 .status-panel.error {
-  color: #fecaca;
+  color: var(--kw-danger);
 }
 
 .p-tooltip .p-tooltip-text {
   padding: 6px 8px;
+  color: var(--kw-text-light);
+  border: 1px solid var(--kw-border);
   border-radius: 6px;
-  background: rgb(12 14 18 / 94%);
-  color: #f8fafc;
+  background: var(--kw-surface);
   font-size: 0.72rem;
   font-weight: 650;
   box-shadow: 0 10px 28px rgb(0 0 0 / 30%);

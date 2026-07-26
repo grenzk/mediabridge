@@ -119,6 +119,7 @@ onBeforeMount(async () => await showAppVersion())
 
       <Button
         v-tooltip.bottom="'Close toolbar'"
+        class="close-button"
         icon="pi pi-times"
         severity="secondary"
         text
