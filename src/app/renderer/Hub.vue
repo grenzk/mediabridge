@@ -5,7 +5,7 @@ import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue'
 const appVersion = ref(null)
 /** @type {import('vue').Ref<null | string>} */
 const errorMessage = ref(null)
-/** @type {import('vue').Ref<import('./mediabridge').KnowledgeWorksBrowserStatus>} */
+/** @type {import('vue').Ref<import('../../shared/types/knowledgeworks').KnowledgeWorksBrowserStatus>} */
 const browserStatus = ref({ state: 'idle' })
 const isOpeningMediaBridge = ref(false)
 /** @type {undefined | (() => void)} */

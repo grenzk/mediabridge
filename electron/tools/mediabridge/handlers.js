@@ -1,8 +1,8 @@
 import { app, ipcMain } from 'electron'
-import { analyzeArticleLinks, runMediaLinking } from '../../src/automation/media-linking.js'
-import { connectToBrowser } from '../../src/browser.js'
-import { getErrorDetail, getErrorMessage } from '../error-format.js'
-import { formatUnlinkedTargetsDetail } from '../unlinked-target-logs.js'
+import { connectToBrowser } from '../../../src/shared/browser/connect-to-browser.js'
+import { analyzeArticleLinks, runMediaLinking } from '../../../src/tools/mediabridge/automation/media-linking.js'
+import { getErrorDetail, getErrorMessage } from '../../platform/error-format.js'
+import { formatUnlinkedTargetsDetail } from './unlinked-target-logs.js'
 
 /**
  * @typedef {(level: 'info' | 'success' | 'error', scope: string, message: string, detail?: string) => void} AddLog
@@ -15,7 +15,7 @@ import { formatUnlinkedTargetsDetail } from '../unlinked-target-logs.js'
  *   launchBrowser: () => Promise<{ ok: boolean }>,
  * }} dependencies
  */
-export function registerSessionHandlers({ addLog, browserService, launchBrowser }) {
+export function registerMediaBridgeHandlers({ addLog, browserService, launchBrowser }) {
   ipcMain.handle('session:get-app-version', () => {
     return app.getVersion()
   })

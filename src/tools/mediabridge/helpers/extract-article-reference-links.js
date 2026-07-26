@@ -1,4 +1,4 @@
-import { getEditorLocators } from '../editor/get-editor-locators.js'
+import { getArticleEditorLocators } from '../../../shared/egain/editor/get-article-editor-locators.js'
 
 const ARTICLE_ID_PREFIX = 'ECV3'
 
@@ -10,7 +10,7 @@ const ARTICLE_ID_PREFIX = 'ECV3'
  * @returns {Promise<{ articleId: string, classNames: string[], filename: string, href: string, sourceIndex: number, text: string }[]>}
  */
 export async function extractArticleReferenceLinks(articlePage) {
-  const { sourceEditor } = getEditorLocators(articlePage)
+  const { sourceEditor } = getArticleEditorLocators(articlePage)
 
   const html = await sourceEditor.inputValue()
 

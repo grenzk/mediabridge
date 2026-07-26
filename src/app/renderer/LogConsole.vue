@@ -1,7 +1,7 @@
 <script setup>
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
-/** @type {import('vue').Ref<import('./mediabridge').KnowledgeWorksLogEntry[]>} */
+/** @type {import('vue').Ref<import('../../shared/types/knowledgeworks').KnowledgeWorksLogEntry[]>} */
 const logs = ref([])
 /** @type {import('vue').Ref<HTMLElement | null>} */
 const consoleBody = ref(null)
@@ -26,7 +26,7 @@ async function scrollToBottom() {
 /**
  * Replaces the visible logs with entries from the shared Electron log store.
  *
- * @param {import('./mediabridge').KnowledgeWorksLogEntry[]} nextLogs
+ * @param {import('../../shared/types/knowledgeworks').KnowledgeWorksLogEntry[]} nextLogs
  */
 function setLogs(nextLogs) {
   logs.value = nextLogs
@@ -54,7 +54,7 @@ async function clearLogs() {
 /**
  * Formats the log level for terminal-style display.
  *
- * @param {import('./mediabridge').KnowledgeWorksLogLevel} level
+ * @param {import('../../shared/types/knowledgeworks').KnowledgeWorksLogLevel} level
  * @returns {string}
  */
 function getLevelLabel(level) {

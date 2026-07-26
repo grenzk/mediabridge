@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { filterTargetsByLinkedState, filterTargetsByMode } from '../../src/automation/linked-targets.js'
-import { getLinkingMode } from '../../src/automation/linking-modes.js'
+import {
+  filterTargetsByLinkedState,
+  filterTargetsByMode,
+} from '../../../src/tools/mediabridge/automation/linked-targets.js'
+import { getLinkingMode } from '../../../src/tools/mediabridge/automation/linking-modes.js'
 
 function target(filename, options = {}) {
   return { classNames: [], filename, ...options }

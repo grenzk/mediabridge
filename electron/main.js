@@ -2,18 +2,18 @@ import 'dotenv/config'
 import { app } from 'electron'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { configureApplicationMenu } from './app-menu.js'
-import { checkForUpdates, configureAutoUpdater } from './auto-updater.js'
-import { createBrowserService } from './browser-service.js'
-import { getErrorDetail, getErrorMessage } from './error-format.js'
 import { registerAppHandlers } from './ipc/app-handlers.js'
 import { registerBrowserHandlers } from './ipc/browser-handlers.js'
 import { registerLogHandlers } from './ipc/log-handlers.js'
-import { registerSessionHandlers } from './ipc/session-handlers.js'
 import { registerToolbarHandlers } from './ipc/toolbar-handlers.js'
-import { createLogService } from './log-service.js'
-import { configureDockIcon } from './runtime-icon.js'
-import { createHubBrowserWindow, createLogsBrowserWindow, createToolbarBrowserWindow } from './windows.js'
+import { configureApplicationMenu } from './platform/app-menu.js'
+import { checkForUpdates, configureAutoUpdater } from './platform/auto-updater.js'
+import { createBrowserService } from './platform/browser-service.js'
+import { getErrorDetail, getErrorMessage } from './platform/error-format.js'
+import { createLogService } from './platform/log-service.js'
+import { configureDockIcon } from './platform/runtime-icon.js'
+import { createHubBrowserWindow, createLogsBrowserWindow, createToolbarBrowserWindow } from './platform/windows.js'
+import { registerMediaBridgeHandlers } from './tools/mediabridge/handlers.js'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
@@ -178,7 +178,7 @@ registerBrowserHandlers({
   launchBrowser,
 })
 
-registerSessionHandlers({
+registerMediaBridgeHandlers({
   addLog,
   browserService,
   launchBrowser,

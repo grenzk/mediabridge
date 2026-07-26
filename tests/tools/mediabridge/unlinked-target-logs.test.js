@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatUnlinkedTargetsDetail } from '../../electron/unlinked-target-logs.js'
+import { formatUnlinkedTargetsDetail } from '../../../electron/tools/mediabridge/unlinked-target-logs.js'
 
 describe('formatUnlinkedTargetsDetail', () => {
   it.each([undefined, null, [], 'invalid'])('returns no detail for an empty unlinked target value', unlinkedTargets => {

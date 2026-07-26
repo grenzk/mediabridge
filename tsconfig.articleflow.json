@@ -12,5 +12,5 @@
     "types": ["vite/client"],
     "useDefineForClassFields": true
   },
-  "include": ["src/article-flow/**/*.ts", "src/article-flow/**/*.vue"]
+  "include": ["src/tools/articleflow/**/*.ts", "src/tools/articleflow/**/*.vue"]
 }

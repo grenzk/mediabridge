@@ -3,8 +3,8 @@ import PrimeVue from 'primevue/config'
 import Aura from '@primeuix/themes/aura'
 import Button from 'primevue/button'
 import Tooltip from 'primevue/tooltip'
-import ArticleFlow from '../article-flow/renderer/ArticleFlow.vue'
-import App from './App.vue'
+import ArticleFlow from '../../tools/articleflow/renderer/ArticleFlow.vue'
+import MediaBridge from '../../tools/mediabridge/renderer/MediaBridge.vue'
 import Hub from './Hub.vue'
 import LogConsole from './LogConsole.vue'
 import './styles.css'
@@ -24,7 +24,7 @@ const views = {
     title: 'KnowledgeWorks Logs',
   },
   mediabridge: {
-    component: App,
+    component: MediaBridge,
     title: 'MediaBridge',
   },
 }

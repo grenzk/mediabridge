@@ -1,4 +1,6 @@
 /**
+ * Returns the shared controls exposed by the eGain article editor.
+ *
  * @param {import('playwright').Page} articlePage
  * @returns {{
  *   sourceEditor: import('playwright').Locator,
@@ -8,7 +10,7 @@
  *   selectLinkArticleModal: import('playwright').Locator,
  * }}
  */
-export function getEditorLocators(articlePage) {
+export function getArticleEditorLocators(articlePage) {
   return {
     sourceEditor: articlePage.getByRole('textbox', { name: 'Editor' }),
 

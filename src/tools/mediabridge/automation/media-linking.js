@@ -1,10 +1,10 @@
-import { connectToBrowser } from '../browser.js'
+import { connectToBrowser } from '../../../shared/browser/connect-to-browser.js'
+import { getArticleEditorLocators } from '../../../shared/egain/editor/get-article-editor-locators.js'
 import { extractArticleImages } from '../helpers/extract-article-images.js'
 import { extractArticleLinks } from '../helpers/extract-article-links.js'
 import { extractArticleReferenceLinks } from '../helpers/extract-article-reference-links.js'
 import { highlightArticleImage } from '../helpers/highlight-article-image.js'
 import { highlightArticleLink } from '../helpers/highlight-article-link.js'
-import { getEditorLocators } from '../editor/get-editor-locators.js'
 import { insertArticleLink, insertMediaLink } from './insert-targets.js'
 import { filterTargetsByLinkedState, filterTargetsByMode } from './linked-targets.js'
 import { getLinkingMode } from './linking-modes.js'
@@ -111,7 +111,7 @@ export async function runMediaLinking({ pages }, mode = 'pdf') {
   const linkingMode = getLinkingMode(mode)
   const mediaPage = linkingMode.targetType === 'article' ? null : findRequiredPage(pages, '/media', 'a media page')
 
-  const editorLocators = getEditorLocators(articlePage)
+  const editorLocators = getArticleEditorLocators(articlePage)
   const { sourceEditor, editorBody, sourceButton } = editorLocators
 
   const targets = await extractTargetsForMode(articlePage, linkingMode)

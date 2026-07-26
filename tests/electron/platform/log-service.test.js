@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest'
-import { createLogService } from '../../electron/log-service.js'
+import { createLogService } from '../../../electron/platform/log-service.js'
 
 describe('log service', () => {
   test('stores entries with stable IDs and timestamps', () => {

@@ -17,7 +17,7 @@ vi.mock('electron', () => ({
 vi.mock('node:child_process', () => ({ spawn }))
 vi.mock('node:fs', () => ({ existsSync }))
 
-const { createBrowserService } = await import('../../electron/browser-service.js')
+const { createBrowserService } = await import('../../../electron/platform/browser-service.js')
 
 /**
  * @returns {EventEmitter & { killed: boolean, kill: ReturnType<typeof vi.fn>, unref: ReturnType<typeof vi.fn> }}

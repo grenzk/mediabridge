@@ -1,11 +1,11 @@
-import { getEditorLocators } from '../editor/get-editor-locators.js'
+import { getArticleEditorLocators } from '../../../shared/egain/editor/get-article-editor-locators.js'
 
 /**
  * @param {import('playwright').Page} articlePage
  * @returns {Promise<{ classNames: string[], filename: string, href: string, sourceIndex: number, text: string }[]>}
  */
 export async function extractArticleLinks(articlePage) {
-  const { sourceEditor } = getEditorLocators(articlePage)
+  const { sourceEditor } = getArticleEditorLocators(articlePage)
 
   const html = await sourceEditor.inputValue()
 

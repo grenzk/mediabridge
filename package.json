@@ -16,7 +16,7 @@
     "install:packaging": "npm install --include=peer",
     "dist:win": "npm run build && electron-builder --win --x64",
     "preview": "vite preview",
-    "script:media-linking": "node src/scripts/run-media-linking.js",
+    "script:media-linking": "node src/tools/mediabridge/scripts/run-media-linking.js",
     "test": "vitest run",
     "test:verbose": "vitest run --reporter=verbose",
     "typecheck": "npm run typecheck:articleflow",
@@ -38,11 +38,8 @@
     "files": [
       "dist/renderer/**/*",
       "electron/**/*",
-      "src/automation/**/*",
-      "src/config/**/*",
-      "src/browser.js",
-      "src/editor/**/*",
-      "src/helpers/**/*",
+      "src/shared/**/*",
+      "src/tools/mediabridge/**/*",
       "package.json"
     ],
     "extraResources": [

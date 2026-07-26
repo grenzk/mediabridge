@@ -1,4 +1,4 @@
-import { getEditorLocators } from '../editor/get-editor-locators.js'
+import { getArticleEditorLocators } from '../../../shared/egain/editor/get-article-editor-locators.js'
 
 /**
  * Reads image placeholders from the source editor. Content developers can use
@@ -8,7 +8,7 @@ import { getEditorLocators } from '../editor/get-editor-locators.js'
  * @returns {Promise<{ alt: string, filename: string, height: string, sourceIndex: number, src: string, style: string, width: string }[]>}
  */
 export async function extractArticleImages(articlePage) {
-  const { sourceEditor } = getEditorLocators(articlePage)
+  const { sourceEditor } = getArticleEditorLocators(articlePage)
 
   const html = await sourceEditor.inputValue()
 

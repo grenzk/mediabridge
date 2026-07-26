@@ -50,9 +50,9 @@ export function useToolbarActions() {
    * Runs an action while keeping toolbar status and busy state consistent.
    *
    * @param {string} name
-   * @param {() => Promise<import('../mediabridge').MediaBridgeActionResult>} action
-   * @param {(result: import('../mediabridge').MediaBridgeActionResult) => string} successMessage
-   * @param {(result: import('../mediabridge').MediaBridgeActionResult) => void} [updateState]
+   * @param {() => Promise<import('../../../../shared/types/knowledgeworks').MediaBridgeActionResult>} action
+   * @param {(result: import('../../../../shared/types/knowledgeworks').MediaBridgeActionResult) => string} successMessage
+   * @param {(result: import('../../../../shared/types/knowledgeworks').MediaBridgeActionResult) => void} [updateState]
    * @returns {Promise<void>}
    */
   async function runAction(name, action, successMessage, updateState) {

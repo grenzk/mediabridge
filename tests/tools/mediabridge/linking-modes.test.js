@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { LINKING_MODES, getLinkingMode } from '../../src/automation/linking-modes.js'
+import { LINKING_MODES, getLinkingMode } from '../../../src/tools/mediabridge/automation/linking-modes.js'
 
 describe('linking modes', () => {
   it.each([
