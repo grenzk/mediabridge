@@ -51,10 +51,12 @@ To display every individual test in the terminal, run:
 npm run test:verbose
 ```
 
-MediaBridge and ArticleFlow use isolated strict TypeScript configurations:
+The KnowledgeWorks renderer, MediaBridge, and ArticleFlow use isolated strict
+TypeScript configurations:
 
 ```sh
 npm run typecheck
+npm run typecheck:app
 npm run typecheck:mediabridge
 npm run typecheck:articleflow
 ```

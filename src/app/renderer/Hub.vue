@@ -1,72 +1,52 @@
-<script setup>
+<script setup lang="ts">
 import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue'
+import type { KnowledgeWorksBrowserState, KnowledgeWorksBrowserStatus } from '../../shared/types/knowledgeworks'
 
-/** @type {import('vue').Ref<null | string>} */
-const appVersion = ref(null)
-/** @type {import('vue').Ref<null | string>} */
-const errorMessage = ref(null)
-/** @type {import('vue').Ref<import('../../shared/types/knowledgeworks').KnowledgeWorksBrowserStatus>} */
-const browserStatus = ref({ state: 'idle' })
+const browserButtonLabels: Record<KnowledgeWorksBrowserState, string> = {
+  connected: 'Open browser',
+  disconnected: 'Reconnect',
+  error: 'Try again',
+  idle: 'Launch browser',
+  launching: 'Launching...',
+}
+const browserButtonIcons: Record<KnowledgeWorksBrowserState, string> = {
+  connected: 'pi pi-external-link',
+  disconnected: 'pi pi-refresh',
+  error: 'pi pi-refresh',
+  idle: 'pi pi-external-link',
+  launching: 'pi pi-spinner pi-spin',
+}
+const browserStatusIcons: Record<KnowledgeWorksBrowserState, string> = {
+  connected: 'pi pi-check-circle',
+  disconnected: 'pi pi-times-circle',
+  error: 'pi pi-exclamation-circle',
+  idle: 'pi pi-circle',
+  launching: 'pi pi-spinner pi-spin',
+}
+const browserStatusLabels: Record<KnowledgeWorksBrowserState, string> = {
+  connected: 'Browser connected',
+  disconnected: 'Browser disconnected',
+  error: 'Launch failed',
+  idle: 'Browser not connected',
+  launching: 'Connecting...',
+}
+
+const appVersion = ref<string | null>(null)
+const errorMessage = ref<string | null>(null)
+const browserStatus = ref<KnowledgeWorksBrowserStatus>({ state: 'idle' })
 const isOpeningMediaBridge = ref(false)
-/** @type {undefined | (() => void)} */
-let removeBrowserStatusListener
-/** @type {undefined | ReturnType<typeof setInterval>} */
-let browserStatusTimer
+let removeBrowserStatusListener: (() => void) | undefined
+let browserStatusTimer: ReturnType<typeof setInterval> | undefined
 
-const browserButtonLabel = computed(() => {
-  const labels = {
-    connected: 'Open browser',
-    disconnected: 'Reconnect',
-    error: 'Try again',
-    idle: 'Launch browser',
-    launching: 'Launching...',
-  }
-
-  return labels[browserStatus.value.state]
-})
-
-const browserButtonIcon = computed(() => {
-  const icons = {
-    connected: 'pi pi-external-link',
-    disconnected: 'pi pi-refresh',
-    error: 'pi pi-refresh',
-    idle: 'pi pi-external-link',
-    launching: 'pi pi-spinner pi-spin',
-  }
-
-  return icons[browserStatus.value.state]
-})
-
-const browserStatusIcon = computed(() => {
-  const icons = {
-    connected: 'pi pi-check-circle',
-    disconnected: 'pi pi-times-circle',
-    error: 'pi pi-exclamation-circle',
-    idle: 'pi pi-circle',
-    launching: 'pi pi-spinner pi-spin',
-  }
-
-  return icons[browserStatus.value.state]
-})
-
-const browserStatusLabel = computed(() => {
-  const labels = {
-    connected: 'Browser connected',
-    disconnected: 'Browser disconnected',
-    error: 'Launch failed',
-    idle: 'Browser not connected',
-    launching: 'Connecting...',
-  }
-
-  return labels[browserStatus.value.state]
-})
+const browserButtonLabel = computed(() => browserButtonLabels[browserStatus.value.state])
+const browserButtonIcon = computed(() => browserButtonIcons[browserStatus.value.state])
+const browserStatusIcon = computed(() => browserStatusIcons[browserStatus.value.state])
+const browserStatusLabel = computed(() => browserStatusLabels[browserStatus.value.state])
 
 const isBrowserActionDisabled = computed(() => browserStatus.value.state === 'launching')
 
 /**
  * Opens or focuses the MediaBridge toolbar.
- *
- * @returns {Promise<void>}
  */
 async function openMediaBridge() {
   errorMessage.value = null
@@ -75,7 +55,7 @@ async function openMediaBridge() {
   try {
     await window.knowledgeworks.openTool('mediabridge')
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error)
+    errorMessage.value = getErrorMessage(error)
   } finally {
     isOpeningMediaBridge.value = false
   }
@@ -83,8 +63,6 @@ async function openMediaBridge() {
 
 /**
  * Opens or focuses the shared log console.
- *
- * @returns {Promise<void>}
  */
 async function openLogs() {
   errorMessage.value = null
@@ -92,14 +70,12 @@ async function openLogs() {
   try {
     await window.knowledgeworks.openLogs()
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error)
+    errorMessage.value = getErrorMessage(error)
   }
 }
 
 /**
  * Launches or reconnects to the shared controlled browser.
- *
- * @returns {Promise<void>}
  */
 async function launchBrowser() {
   errorMessage.value = null
@@ -107,14 +83,12 @@ async function launchBrowser() {
   try {
     await window.knowledgeworks.launchBrowser()
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error)
+    errorMessage.value = getErrorMessage(error)
   }
 }
 
 /**
  * Reads the installed suite version.
- *
- * @returns {Promise<void>}
  */
 async function showAppVersion() {
   appVersion.value = await window.knowledgeworks.getAppVersion()
@@ -122,15 +96,17 @@ async function showAppVersion() {
 
 /**
  * Refreshes the browser connection state without launching a browser.
- *
- * @returns {Promise<void>}
  */
 async function refreshBrowserStatus() {
   try {
     browserStatus.value = await window.knowledgeworks.getBrowserStatus()
   } catch (error) {
-    errorMessage.value = error instanceof Error ? error.message : String(error)
+    errorMessage.value = getErrorMessage(error)
   }
+}
+
+function getErrorMessage(error: unknown) {
+  return error instanceof Error ? error.message : String(error)
 }
 
 onBeforeMount(async () => {
@@ -145,7 +121,7 @@ onBeforeMount(async () => {
 onBeforeUnmount(() => {
   removeBrowserStatusListener?.()
 
-  if (browserStatusTimer) {
+  if (browserStatusTimer !== undefined) {
     clearInterval(browserStatusTimer)
   }
 })

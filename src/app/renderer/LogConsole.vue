@@ -1,19 +1,15 @@
-<script setup>
+<script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import type { KnowledgeWorksLogEntry, KnowledgeWorksLogLevel } from '../../shared/types/knowledgeworks'
 
-/** @type {import('vue').Ref<import('../../shared/types/knowledgeworks').KnowledgeWorksLogEntry[]>} */
-const logs = ref([])
-/** @type {import('vue').Ref<HTMLElement | null>} */
-const consoleBody = ref(null)
-/** @type {undefined | (() => void)} */
-let unsubscribeLogs
+const logs = ref<KnowledgeWorksLogEntry[]>([])
+const consoleBody = ref<HTMLElement | null>(null)
+let unsubscribeLogs: (() => void) | undefined
 
 const hasLogs = computed(() => logs.value.length > 0)
 
 /**
  * Scrolls the console to the latest log after Vue flushes DOM updates.
- *
- * @returns {Promise<void>}
  */
 async function scrollToBottom() {
   await nextTick()
@@ -25,18 +21,14 @@ async function scrollToBottom() {
 
 /**
  * Replaces the visible logs with entries from the shared Electron log store.
- *
- * @param {import('../../shared/types/knowledgeworks').KnowledgeWorksLogEntry[]} nextLogs
  */
-function setLogs(nextLogs) {
+function setLogs(nextLogs: KnowledgeWorksLogEntry[]) {
   logs.value = nextLogs
-  scrollToBottom()
+  void scrollToBottom()
 }
 
 /**
  * Loads the current log history when the console window opens.
- *
- * @returns {Promise<void>}
  */
 async function loadLogs() {
   setLogs(await window.knowledgeworks.getLogs())
@@ -44,8 +36,6 @@ async function loadLogs() {
 
 /**
  * Clears logs from the shared Electron log store.
- *
- * @returns {Promise<void>}
  */
 async function clearLogs() {
   await window.knowledgeworks.clearLogs()
@@ -53,11 +43,8 @@ async function clearLogs() {
 
 /**
  * Formats the log level for terminal-style display.
- *
- * @param {import('../../shared/types/knowledgeworks').KnowledgeWorksLogLevel} level
- * @returns {string}
  */
-function getLevelLabel(level) {
+function getLevelLabel(level: KnowledgeWorksLogLevel) {
   return level.toUpperCase()
 }
 

@@ -28,9 +28,14 @@ const views = {
     title: 'MediaBridge',
   },
 }
-const currentView = views[params.get('view')] ?? views.mediabridge
+const requestedView = params.get('view')
+const currentView = isViewName(requestedView) ? views[requestedView] : views.mediabridge
 const rootComponent = currentView.component
 const app = createApp(rootComponent)
+
+function isViewName(value: string | null): value is keyof typeof views {
+  return value !== null && Object.hasOwn(views, value)
+}
 
 document.title = currentView.title
 

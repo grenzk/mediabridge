@@ -275,7 +275,7 @@ Existing `session:*` and `toolbar:*` channels can remain during migration. They 
 
 ## TypeScript Strategy
 
-MediaBridge and ArticleFlow use strict, isolated TypeScript configurations. Shared Electron platform services can remain JavaScript until converting a service provides a concrete maintenance benefit.
+The KnowledgeWorks application renderer, MediaBridge, and ArticleFlow use strict, isolated TypeScript configurations. Shared Electron platform services can remain JavaScript until converting a service provides a concrete maintenance benefit.
 
 ### Initial Toolchain
 
@@ -289,6 +289,7 @@ MediaBridge and ArticleFlow use strict, isolated TypeScript configurations. Shar
 
 TypeScript applies to:
 
+- KnowledgeWorks Hub, Log Console, and renderer composition.
 - MediaBridge renderer components and composables.
 - MediaBridge linking automation, helpers, domain types, and tool-specific IPC handlers.
 - ArticleFlow renderer components and composables.
@@ -300,7 +301,6 @@ It does not currently require conversion of:
 
 - Suite-wide Electron platform services with stable JavaScript contracts.
 - The CommonJS preload boundary.
-- KnowledgeWorks Hub and log renderers.
 
 ### Interoperability
 
@@ -343,7 +343,7 @@ src/
 |   `-- renderer/
 |       |-- Hub.vue
 |       |-- LogConsole.vue
-|       |-- main.js
+|       |-- main.ts
 |       `-- styles.css
 |-- shared/
 |   |-- browser/
@@ -515,6 +515,6 @@ The current decisions are:
 3. Keep MediaBridge and ArticleFlow as separate tool windows.
 4. Make browser control and logging global.
 5. Keep MediaBridge behavior unchanged while migrating its owned modules incrementally to TypeScript.
-6. Use TypeScript 6 for MediaBridge and ArticleFlow with separate strict configurations.
+6. Use TypeScript 6 for the KnowledgeWorks renderer, MediaBridge, and ArticleFlow with separate strict configurations.
 7. Preserve the existing app identity and update channel until migration testing is complete.
 8. Deliver the change through small, reversible phases.
