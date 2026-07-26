@@ -1,10 +1,6 @@
-/**
- * @param {import('playwright').Page[]} pages
- * @param {string} urlPart
- * @param {string} pageName
- * @returns {import('playwright').Page}
- */
-export function findRequiredPage(pages, urlPart, pageName) {
+import type { Page } from 'playwright'
+
+export function findRequiredPage(pages: Page[], urlPart: string, pageName: string): Page {
   const page = pages.find(candidatePage => candidatePage.url().includes(urlPart))
 
   if (!page) {

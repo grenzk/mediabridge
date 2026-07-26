@@ -1,4 +1,7 @@
 import { computed, ref } from 'vue'
+import type { MediaBridgeActionResult } from '../../../../shared/types/knowledgeworks'
+
+export type ToolbarActions = ReturnType<typeof useToolbarActions>
 
 /**
  * Owns the status, busy, and error state shared by toolbar actions.
@@ -16,18 +19,10 @@ export function useToolbarActions() {
    * Sends renderer-facing errors to the shared log window without masking the
    * toolbar's own fallback error display.
    *
-   * @param {string} scope
-   * @param {unknown} error
-   * @returns {Promise<void>}
    */
-  async function writeRendererErrorLog(scope, error) {
+  async function writeRendererErrorLog(scope: string, error: unknown) {
     try {
-      await window.mediabridge.writeLog(
-        'error',
-        scope,
-        'Renderer received an action error.',
-        getErrorMessage(error),
-      )
+      await window.mediabridge.writeLog('error', scope, 'Renderer received an action error.', getErrorMessage(error))
     } catch {
       // Keep toolbar errors visible even if the log bridge itself fails.
     }
@@ -36,11 +31,8 @@ export function useToolbarActions() {
   /**
    * Displays an action error in the toolbar and writes its detail to the log.
    *
-   * @param {string} scope
-   * @param {unknown} error
-   * @returns {Promise<void>}
    */
-  async function reportActionError(scope, error) {
+  async function reportActionError(scope: string, error: unknown) {
     await writeRendererErrorLog(scope, error)
     errorMessage.value = 'Needs attention. See logs.'
     status.value = 'Needs attention'
@@ -49,13 +41,13 @@ export function useToolbarActions() {
   /**
    * Runs an action while keeping toolbar status and busy state consistent.
    *
-   * @param {string} name
-   * @param {() => Promise<import('../../../../shared/types/knowledgeworks').MediaBridgeActionResult>} action
-   * @param {(result: import('../../../../shared/types/knowledgeworks').MediaBridgeActionResult) => string} successMessage
-   * @param {(result: import('../../../../shared/types/knowledgeworks').MediaBridgeActionResult) => void} [updateState]
-   * @returns {Promise<void>}
    */
-  async function runAction(name, action, successMessage, updateState) {
+  async function runAction(
+    name: string,
+    action: () => Promise<MediaBridgeActionResult>,
+    successMessage: (result: MediaBridgeActionResult) => string,
+    updateState?: (result: MediaBridgeActionResult) => void,
+  ) {
     busyAction.value = name
     errorMessage.value = ''
     status.value = name
@@ -75,10 +67,8 @@ export function useToolbarActions() {
   /**
    * Converts an unknown thrown value into readable log text.
    *
-   * @param {unknown} error
-   * @returns {string}
    */
-  function getErrorMessage(error) {
+  function getErrorMessage(error: unknown) {
     if (error instanceof Error) {
       return error.message
     }

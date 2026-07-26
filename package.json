@@ -10,17 +10,18 @@
     "start": "npm run build && electron .",
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron . --dev-server=http://127.0.0.1:5173\"",
     "dev:hub": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron . --dev-server=http://127.0.0.1:5173 --show-hub\"",
-    "build": "vite build",
+    "build": "npm run typecheck && vite build",
     "package": "npm run build && electron-builder --dir",
     "dist:mac": "npm run build && electron-builder --mac",
     "install:packaging": "npm install --include=peer",
     "dist:win": "npm run build && electron-builder --win --x64",
     "preview": "vite preview",
-    "script:media-linking": "node src/tools/mediabridge/scripts/run-media-linking.js",
+    "script:media-linking": "node src/tools/mediabridge/scripts/run-media-linking.ts",
     "test": "vitest run",
     "test:verbose": "vitest run --reporter=verbose",
-    "typecheck": "npm run typecheck:articleflow",
-    "typecheck:articleflow": "vue-tsc --noEmit -p tsconfig.articleflow.json"
+    "typecheck": "npm run typecheck:articleflow && npm run typecheck:mediabridge",
+    "typecheck:articleflow": "vue-tsc --noEmit -p tsconfig.articleflow.json",
+    "typecheck:mediabridge": "vue-tsc --noEmit -p tsconfig.mediabridge.json"
   },
   "build": {
     "appId": "com.mediabridge.toolbar",
@@ -97,6 +98,7 @@
     "vue": "^3.5.39"
   },
   "devDependencies": {
+    "@types/node": "^22.19.19",
     "@vitejs/plugin-vue": "^6.0.7",
     "concurrently": "^9.2.4",
     "electron": "^39.8.10",

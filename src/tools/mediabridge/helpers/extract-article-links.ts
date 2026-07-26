@@ -1,10 +1,8 @@
-import { getArticleEditorLocators } from '../../../shared/egain/editor/get-article-editor-locators.js'
+import type { Page } from 'playwright'
+import { getArticleEditorLocators } from '../../../shared/egain/editor/get-article-editor-locators.ts'
+import type { ArticleEditorLink } from '../types.ts'
 
-/**
- * @param {import('playwright').Page} articlePage
- * @returns {Promise<{ classNames: string[], filename: string, href: string, sourceIndex: number, text: string }[]>}
- */
-export async function extractArticleLinks(articlePage) {
+export async function extractArticleLinks(articlePage: Page): Promise<ArticleEditorLink[]> {
   const { sourceEditor } = getArticleEditorLocators(articlePage)
 
   const html = await sourceEditor.inputValue()
@@ -13,7 +11,7 @@ export async function extractArticleLinks(articlePage) {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
 
-    const decodeFilename = filename => {
+    const decodeFilename = (filename: string) => {
       try {
         return decodeURIComponent(filename)
       } catch {
@@ -24,7 +22,7 @@ export async function extractArticleLinks(articlePage) {
     return [...doc.querySelectorAll('a')].map((link, sourceIndex) => {
       const href = link.getAttribute('href') ?? link.href
       const url = new URL(href, window.location.href)
-      const filename = decodeFilename(url.pathname.split('/').pop())
+      const filename = decodeFilename(url.pathname.split('/').pop() ?? '')
 
       return {
         classNames: [...link.classList],

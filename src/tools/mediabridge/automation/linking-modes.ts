@@ -1,17 +1,9 @@
-/**
- * @typedef {'link' | 'image' | 'article'} LinkingTargetType
- *
- * @typedef {{
- *   className?: string,
- *   extensions?: string[],
- *   label: string,
- *   preservedClassNames?: { modifiers: string[], replacements: string[] },
- *   targetType?: LinkingTargetType,
- * }} LinkingMode
- */
+import type { MediaBridgeLinkingMode } from '../../../shared/types/knowledgeworks'
+import type { LinkingMode, LinkingModes } from '../types.ts'
 
-/** @type {Record<string, LinkingMode>} */
-export const LINKING_MODES = {
+export type { LinkingMode } from '../types.ts'
+
+export const LINKING_MODES: LinkingModes = {
   pdf: {
     className: 'pdf',
     extensions: ['.pdf'],
@@ -51,12 +43,9 @@ export const LINKING_MODES = {
   },
 }
 
-/**
- * @param {string} mode
- * @returns {LinkingMode}
- */
-export function getLinkingMode(mode = 'pdf') {
-  const linkingMode = LINKING_MODES[mode]
+export function getLinkingMode(mode: string = 'pdf'): LinkingMode {
+  const modeKey = mode as MediaBridgeLinkingMode
+  const linkingMode = LINKING_MODES[modeKey]
 
   if (!linkingMode) {
     throw new Error(`Unsupported linking mode: ${mode}`)

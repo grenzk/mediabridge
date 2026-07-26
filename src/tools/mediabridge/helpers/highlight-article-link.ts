@@ -1,16 +1,17 @@
+import type { Locator } from 'playwright'
+import type { ArticleEditorLink } from '../types.ts'
+
 /**
  * Selects the article editor anchor that corresponds to a source HTML link.
  * Matching by anchor identity avoids duplicate visible text selecting the
  * wrong location.
- *
- * @param {import('playwright').Locator} editorBody
- * @param {{ filename: string, href: string, sourceIndex: number, text: string }} targetLink
  */
-export async function highlightArticleLink(editorBody, targetLink) {
-  const selected = await editorBody.evaluate((body, targetLink) => {
+export async function highlightArticleLink(editorBody: Locator, targetLink: ArticleEditorLink) {
+  const selected = await editorBody.evaluate((element, targetLink) => {
+    const body = element as HTMLElement
     const anchors = [...body.querySelectorAll('a')]
 
-    const decodeFilename = filename => {
+    const decodeFilename = (filename: string) => {
       try {
         return decodeURIComponent(filename)
       } catch {
@@ -18,27 +19,27 @@ export async function highlightArticleLink(editorBody, targetLink) {
       }
     }
 
-    const normalizeText = text => text.replace(/\s+/g, ' ').trim()
+    const normalizeText = (text: string) => text.replace(/\s+/g, ' ').trim()
 
-    const getAnchorFilename = anchor => {
+    const getAnchorFilename = (anchor: HTMLAnchorElement) => {
       const href = anchor.getAttribute('href') ?? anchor.href
 
       try {
         const url = new URL(href, window.location.href)
 
-        return decodeFilename(url.pathname.split('/').pop())
+        return decodeFilename(url.pathname.split('/').pop() ?? '')
       } catch {
         return ''
       }
     }
 
-    const anchorMatches = anchor => {
+    const anchorMatches = (anchor: HTMLAnchorElement | undefined) => {
       if (!anchor) {
         return false
       }
 
       const filename = getAnchorFilename(anchor)
-      const text = normalizeText(anchor.textContent)
+      const text = normalizeText(anchor.textContent ?? '')
 
       return filename === targetLink.filename && text === normalizeText(targetLink.text)
     }
@@ -55,6 +56,10 @@ export async function highlightArticleLink(editorBody, targetLink) {
     range.selectNodeContents(matchingAnchor)
 
     const selection = body.ownerDocument.getSelection()
+
+    if (!selection) {
+      return false
+    }
 
     selection.removeAllRanges()
     selection.addRange(range)

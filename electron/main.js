@@ -9,11 +9,11 @@ import { registerToolbarHandlers } from './ipc/toolbar-handlers.js'
 import { configureApplicationMenu } from './platform/app-menu.js'
 import { checkForUpdates, configureAutoUpdater } from './platform/auto-updater.js'
 import { createBrowserService } from './platform/browser-service.js'
-import { getErrorDetail, getErrorMessage } from './platform/error-format.js'
+import { getErrorDetail, getErrorMessage } from './platform/error-format.ts'
 import { createLogService } from './platform/log-service.js'
 import { configureDockIcon } from './platform/runtime-icon.js'
 import { createHubBrowserWindow, createLogsBrowserWindow, createToolbarBrowserWindow } from './platform/windows.js'
-import { registerMediaBridgeHandlers } from './tools/mediabridge/handlers.js'
+import { registerMediaBridgeHandlers } from './tools/mediabridge/handlers.ts'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')

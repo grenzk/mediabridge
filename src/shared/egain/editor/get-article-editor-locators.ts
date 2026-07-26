@@ -1,16 +1,17 @@
+import type { Locator, Page } from 'playwright'
+
+export type ArticleEditorLocators = {
+  sourceEditor: Locator
+  editorBody: Locator
+  sourceButton: Locator
+  linkArticleButton: Locator
+  selectLinkArticleModal: Locator
+}
+
 /**
  * Returns the shared controls exposed by the eGain article editor.
- *
- * @param {import('playwright').Page} articlePage
- * @returns {{
- *   sourceEditor: import('playwright').Locator,
- *   editorBody: import('playwright').Locator,
- *   sourceButton: import('playwright').Locator,
- *   linkArticleButton: import('playwright').Locator,
- *   selectLinkArticleModal: import('playwright').Locator,
- * }}
  */
-export function getArticleEditorLocators(articlePage) {
+export function getArticleEditorLocators(articlePage: Page): ArticleEditorLocators {
   return {
     sourceEditor: articlePage.getByRole('textbox', { name: 'Editor' }),
 

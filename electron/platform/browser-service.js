@@ -2,7 +2,7 @@ import { app } from 'electron'
 import { spawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { join } from 'node:path'
-import { getCdpPort, getDefaultCdpUrl } from '../../src/shared/config/runtime.js'
+import { getCdpPort, getDefaultCdpUrl } from '../../src/shared/config/runtime.ts'
 
 /**
  * @typedef {'idle' | 'launching' | 'connected' | 'disconnected' | 'error'} BrowserConnectionState

@@ -1,15 +1,14 @@
-import { getArticleEditorLocators } from '../../../shared/egain/editor/get-article-editor-locators.js'
+import type { Page } from 'playwright'
+import { getArticleEditorLocators } from '../../../shared/egain/editor/get-article-editor-locators.ts'
+import type { ArticleReferenceLink } from '../types.ts'
 
 const ARTICLE_ID_PREFIX = 'ECV3'
 
 /**
  * Reads article-link placeholders from the source editor. Content developers
  * can use either a direct article ID href or a dummy path ending with the ID.
- *
- * @param {import('playwright').Page} articlePage
- * @returns {Promise<{ articleId: string, classNames: string[], filename: string, href: string, sourceIndex: number, text: string }[]>}
  */
-export async function extractArticleReferenceLinks(articlePage) {
+export async function extractArticleReferenceLinks(articlePage: Page): Promise<ArticleReferenceLink[]> {
   const { sourceEditor } = getArticleEditorLocators(articlePage)
 
   const html = await sourceEditor.inputValue()
@@ -19,7 +18,7 @@ export async function extractArticleReferenceLinks(articlePage) {
       const parser = new DOMParser()
       const doc = parser.parseFromString(html, 'text/html')
 
-      const decodePathPart = value => {
+      const decodePathPart = (value: string) => {
         try {
           return decodeURIComponent(value)
         } catch {
@@ -27,7 +26,7 @@ export async function extractArticleReferenceLinks(articlePage) {
         }
       }
 
-      const getArticleId = href => {
+      const getArticleId = (href: string) => {
         const pathPart = decodePathPart(href.split('/').pop() ?? '')
           .split('?')[0]
           .split('#')[0]

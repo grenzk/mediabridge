@@ -1,10 +1,9 @@
-<script setup>
+<script setup lang="ts">
 import { onBeforeMount, ref } from 'vue'
-import { useMediaLinking } from './composables/useMediaLinking.js'
-import { useToolbarActions } from './composables/useToolbarActions.js'
+import { useMediaLinking } from './composables/useMediaLinking.ts'
+import { useToolbarActions } from './composables/useToolbarActions.ts'
 
-/** @type {import('vue').Ref<null | string>} */
-const appVersion = ref(null)
+const appVersion = ref<string | null>(null)
 const toolbarActions = useToolbarActions()
 const { currentMessage, errorMessage, isBusy, reportActionError, showProgressDots } = toolbarActions
 const {

@@ -1,6 +1,6 @@
 import { app, dialog } from 'electron'
 import electronUpdater from 'electron-updater'
-import { getErrorDetail, getErrorMessage } from './error-format.js'
+import { getErrorDetail, getErrorMessage } from './error-format.ts'
 
 let lastUpdateDownloadLogPercent = 0
 

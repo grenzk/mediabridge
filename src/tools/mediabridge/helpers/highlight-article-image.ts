@@ -1,16 +1,17 @@
+import type { Locator } from 'playwright'
+import type { ArticleEditorImage } from '../types.ts'
+
 /**
  * Selects the article editor image that corresponds to a source HTML image.
  * Image selections use the node itself because img elements do not have text
  * contents to select.
- *
- * @param {import('playwright').Locator} editorBody
- * @param {{ alt: string, filename: string, height: string, sourceIndex: number, src: string, width: string }} targetImage
  */
-export async function highlightArticleImage(editorBody, targetImage) {
-  const selected = await editorBody.evaluate((body, targetImage) => {
+export async function highlightArticleImage(editorBody: Locator, targetImage: ArticleEditorImage) {
+  const selected = await editorBody.evaluate((element, targetImage) => {
+    const body = element as HTMLElement
     const images = [...body.querySelectorAll('img')]
 
-    const decodeFilename = filename => {
+    const decodeFilename = (filename: string) => {
       try {
         return decodeURIComponent(filename)
       } catch {
@@ -18,19 +19,19 @@ export async function highlightArticleImage(editorBody, targetImage) {
       }
     }
 
-    const getImageFilename = image => {
+    const getImageFilename = (image: HTMLImageElement) => {
       const src = image.getAttribute('src') ?? image.src
 
       try {
         const url = new URL(src, window.location.href)
 
-        return decodeFilename(url.pathname.split('/').pop())
+        return decodeFilename(url.pathname.split('/').pop() ?? '')
       } catch {
         return ''
       }
     }
 
-    const filenameMatches = image => {
+    const filenameMatches = (image: HTMLImageElement | undefined) => {
       if (!image) {
         return false
       }
@@ -38,7 +39,7 @@ export async function highlightArticleImage(editorBody, targetImage) {
       return getImageFilename(image) === targetImage.filename
     }
 
-    const imageMatches = image => {
+    const imageMatches = (image: HTMLImageElement) => {
       return filenameMatches(image) && (image.getAttribute('alt') ?? '') === targetImage.alt
     }
 
@@ -56,6 +57,10 @@ export async function highlightArticleImage(editorBody, targetImage) {
     range.selectNode(matchingImage)
 
     const selection = body.ownerDocument.getSelection()
+
+    if (!selection) {
+      return false
+    }
 
     selection.removeAllRanges()
     selection.addRange(range)

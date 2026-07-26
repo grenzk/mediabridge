@@ -1,13 +1,12 @@
-import { getArticleEditorLocators } from '../../../shared/egain/editor/get-article-editor-locators.js'
+import type { Page } from 'playwright'
+import { getArticleEditorLocators } from '../../../shared/egain/editor/get-article-editor-locators.ts'
+import type { ArticleEditorImage } from '../types.ts'
 
 /**
  * Reads image placeholders from the source editor. Content developers can use
  * dummy src paths as long as the path ends with the media server filename.
- *
- * @param {import('playwright').Page} articlePage
- * @returns {Promise<{ alt: string, filename: string, height: string, sourceIndex: number, src: string, style: string, width: string }[]>}
  */
-export async function extractArticleImages(articlePage) {
+export async function extractArticleImages(articlePage: Page): Promise<ArticleEditorImage[]> {
   const { sourceEditor } = getArticleEditorLocators(articlePage)
 
   const html = await sourceEditor.inputValue()
@@ -16,7 +15,7 @@ export async function extractArticleImages(articlePage) {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
 
-    const decodeFilename = filename => {
+    const decodeFilename = (filename: string) => {
       try {
         return decodeURIComponent(filename)
       } catch {
@@ -31,7 +30,7 @@ export async function extractArticleImages(articlePage) {
       try {
         const url = new URL(src, window.location.href)
 
-        filename = decodeFilename(url.pathname.split('/').pop())
+        filename = decodeFilename(url.pathname.split('/').pop() ?? '')
       } catch {
         filename = src
       }

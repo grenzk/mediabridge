@@ -2,11 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   filterTargetsByLinkedState,
   filterTargetsByMode,
-} from '../../../src/tools/mediabridge/automation/linked-targets.js'
-import { getLinkingMode } from '../../../src/tools/mediabridge/automation/linking-modes.js'
+} from '../../../src/tools/mediabridge/automation/linked-targets.ts'
+import { getLinkingMode } from '../../../src/tools/mediabridge/automation/linking-modes.ts'
+import type { ArticleEditorTarget } from '../../../src/tools/mediabridge/types.ts'
 
-function target(filename, options = {}) {
-  return { classNames: [], filename, ...options }
+function target(filename: string, options: Partial<ArticleEditorTarget> = {}): ArticleEditorTarget {
+  return { classNames: [], filename, sourceIndex: 0, ...options }
 }
 
 describe('filterTargetsByMode', () => {

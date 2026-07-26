@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatUnlinkedTargetsDetail } from '../../../electron/tools/mediabridge/unlinked-target-logs.js'
+import { formatUnlinkedTargetsDetail } from '../../../electron/tools/mediabridge/unlinked-target-logs.ts'
 
 describe('formatUnlinkedTargetsDetail', () => {
   it.each([undefined, null, [], 'invalid'])('returns no detail for an empty unlinked target value', unlinkedTargets => {
@@ -17,9 +17,12 @@ describe('formatUnlinkedTargetsDetail', () => {
         ],
       }),
     ).toBe(
-      ['Unlinked media filenames:', '- guide.pdf (User guide)', '- diagram.png (Parts diagram)', '- same-name.docx'].join(
-        '\n',
-      ),
+      [
+        'Unlinked media filenames:',
+        '- guide.pdf (User guide)',
+        '- diagram.png (Parts diagram)',
+        '- same-name.docx',
+      ].join('\n'),
     )
   })
 
@@ -36,10 +39,7 @@ describe('formatUnlinkedTargetsDetail', () => {
     expect(
       formatUnlinkedTargetsDetail({
         mode: { targetType: 'article' },
-        unlinkedTargets: [
-          { articleId: 'ECV3-12345', text: 'Reset procedure' },
-          { articleId: 'ECV3-67890' },
-        ],
+        unlinkedTargets: [{ articleId: 'ECV3-12345', text: 'Reset procedure' }, { articleId: 'ECV3-67890' }],
       }),
     ).toBe(['Unlinked article IDs:', '- ECV3-12345 (Reset procedure)', '- ECV3-67890'].join('\n'))
   })

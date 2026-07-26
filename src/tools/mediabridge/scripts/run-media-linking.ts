@@ -1,6 +1,6 @@
 import 'dotenv/config'
-import { runMediaLinkingFromCdp } from '../automation/media-linking.js'
-import { getDefaultCdpUrl } from '../../../shared/config/runtime.js'
+import { getDefaultCdpUrl } from '../../../shared/config/runtime.ts'
+import { runMediaLinkingFromCdp } from '../automation/media-linking.ts'
 
 const { LINKING_MODE = 'pdf' } = process.env
 

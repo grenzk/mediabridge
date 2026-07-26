@@ -1,33 +1,20 @@
 import { computed, ref } from 'vue'
+import type { MediaBridgeActionResult, MediaBridgeLinkingMode } from '../../../../shared/types/knowledgeworks'
+import type { ToolbarActions } from './useToolbarActions.ts'
 
-/**
- * @typedef {{
- *   disabled?: boolean,
- *   label: string,
- *   statusLabel: string,
- * }} LinkingTypeConfig
- *
- * @typedef {{
- *   disabled: boolean,
- *   label: string,
- *   value: import('../../../../shared/types/knowledgeworks').MediaBridgeLinkingMode,
- * }} LinkingOption
- *
- * @typedef {{
- *   isBusy: import('vue').ComputedRef<boolean>,
- *   errorMessage: import('vue').Ref<string>,
- *   runAction: (
- *     name: string,
- *     action: () => Promise<import('../../../../shared/types/knowledgeworks').MediaBridgeActionResult>,
- *     successMessage: (result: import('../../../../shared/types/knowledgeworks').MediaBridgeActionResult) => string,
- *     updateState?: (result: import('../../../../shared/types/knowledgeworks').MediaBridgeActionResult) => void,
- *   ) => Promise<void>,
- *   status: import('vue').Ref<string>,
- * }} ToolbarActions
- */
+type LinkingTypeConfig = {
+  disabled?: boolean
+  label: string
+  statusLabel: string
+}
 
-/** @type {Record<import('../../../../shared/types/knowledgeworks').MediaBridgeLinkingMode, LinkingTypeConfig>} */
-const linkingTypes = {
+type LinkingOption = {
+  disabled: boolean
+  label: string
+  value: MediaBridgeLinkingMode
+}
+
+const linkingTypes: Record<MediaBridgeLinkingMode, LinkingTypeConfig> = {
   pdf: { label: 'PDF', statusLabel: 'PDF' },
   word: { label: 'Word', statusLabel: 'Word' },
   excel: { label: 'Excel', statusLabel: 'Excel' },
@@ -35,26 +22,17 @@ const linkingTypes = {
   image: { label: 'Image', statusLabel: 'Image' },
   article: { label: 'Article', statusLabel: 'Article' },
 }
-const linkingModes = /** @type {import('../../../../shared/types/knowledgeworks').MediaBridgeLinkingMode[]} */ (
-  Object.keys(linkingTypes)
-)
+const linkingModes = Object.keys(linkingTypes) as MediaBridgeLinkingMode[]
 
 /**
  * Owns linking mode selection, counts, and automation actions.
- *
- * @param {ToolbarActions} toolbarActions
  */
-export function useMediaLinking({ errorMessage, isBusy, runAction, status }) {
-  /** @type {import('vue').Ref<null | number>} */
-  const targetCount = ref(null)
-  /** @type {import('vue').Ref<null | number>} */
-  const unlinkedTargetCount = ref(null)
-  /** @type {import('vue').Ref<null | number>} */
-  const linkedTargetCount = ref(null)
-  /** @type {import('vue').Ref<null | number>} */
-  const processedTargetCount = ref(null)
-  /** @type {import('vue').Ref<import('../../../../shared/types/knowledgeworks').MediaBridgeLinkingMode>} */
-  const selectedLinkingType = ref('pdf')
+export function useMediaLinking({ errorMessage, isBusy, runAction, status }: ToolbarActions) {
+  const targetCount = ref<number | null>(null)
+  const unlinkedTargetCount = ref<number | null>(null)
+  const linkedTargetCount = ref<number | null>(null)
+  const processedTargetCount = ref<number | null>(null)
+  const selectedLinkingType = ref<MediaBridgeLinkingMode>('pdf')
   const isLinkingTypeMenuOpen = ref(false)
 
   const targetLabel = computed(() => {
@@ -94,9 +72,8 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }) {
   /**
    * Applies count fields returned by count and linking actions.
    *
-   * @param {import('../../../../shared/types/knowledgeworks').MediaBridgeActionResult} result
    */
-  function updateCounts(result) {
+  function updateCounts(result: MediaBridgeActionResult) {
     if (result.targetCount !== undefined) {
       targetCount.value = result.targetCount
     }
@@ -167,9 +144,8 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }) {
   /**
    * Selects a linking mode and resets its display state.
    *
-   * @param {LinkingOption} option
    */
-  function chooseLinkingType(option) {
+  function chooseLinkingType(option: LinkingOption) {
     if (option.disabled) {
       return
     }

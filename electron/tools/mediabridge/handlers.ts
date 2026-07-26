@@ -1,29 +1,36 @@
 import { app, ipcMain } from 'electron'
-import { connectToBrowser } from '../../../src/shared/browser/connect-to-browser.js'
-import { analyzeArticleLinks, runMediaLinking } from '../../../src/tools/mediabridge/automation/media-linking.js'
-import { getErrorDetail, getErrorMessage } from '../../platform/error-format.js'
-import { formatUnlinkedTargetsDetail } from './unlinked-target-logs.js'
+import type { IpcMainInvokeEvent } from 'electron'
+import { connectToBrowser } from '../../../src/shared/browser/connect-to-browser.ts'
+import type { BrowserSession } from '../../../src/shared/browser/connect-to-browser.ts'
+import { analyzeArticleLinks, runMediaLinking } from '../../../src/tools/mediabridge/automation/media-linking.ts'
+import { getErrorDetail, getErrorMessage } from '../../platform/error-format.ts'
+import { formatUnlinkedTargetsDetail } from './unlinked-target-logs.ts'
 
-/**
- * @typedef {(level: 'info' | 'success' | 'error', scope: string, message: string, detail?: string) => void} AddLog
- */
+type AddLog = (level: 'info' | 'success' | 'error', scope: string, message: string, detail?: string) => void
 
-/**
- * @param {{
- *   addLog: AddLog,
- *   browserService: { getCdpUrl: () => string },
- *   launchBrowser: () => Promise<{ ok: boolean }>,
- * }} dependencies
- */
-export function registerMediaBridgeHandlers({ addLog, browserService, launchBrowser }) {
+type BrowserService = {
+  getCdpUrl: () => string
+}
+
+type MediaBridgeSession = BrowserSession & {
+  ownsBrowser: boolean
+}
+
+type MediaBridgeHandlerDependencies = {
+  addLog: AddLog
+  browserService: BrowserService
+  launchBrowser: () => Promise<{ ok: boolean }>
+}
+
+export function registerMediaBridgeHandlers({ addLog, browserService, launchBrowser }: MediaBridgeHandlerDependencies) {
   ipcMain.handle('session:get-app-version', () => {
     return app.getVersion()
   })
 
   ipcMain.handle('session:launch-browser', () => launchBrowser())
 
-  ipcMain.handle('session:get-target-count', async (_event, mode = 'pdf') => {
-    let session
+  ipcMain.handle('session:get-target-count', async (_event: IpcMainInvokeEvent, mode: string = 'pdf') => {
+    let session: MediaBridgeSession | undefined
 
     try {
       addLog('info', 'Counter', `Counting ${mode} targets.`)
@@ -54,8 +61,8 @@ export function registerMediaBridgeHandlers({ addLog, browserService, launchBrow
     }
   })
 
-  ipcMain.handle('session:run-media-linking', async (_event, mode = 'pdf') => {
-    let session
+  ipcMain.handle('session:run-media-linking', async (_event: IpcMainInvokeEvent, mode: string = 'pdf') => {
+    let session: MediaBridgeSession | undefined
 
     try {
       addLog('info', 'Linking', `Running ${mode} linking.`)
@@ -87,10 +94,7 @@ export function registerMediaBridgeHandlers({ addLog, browserService, launchBrow
   })
 }
 
-/**
- * @param {{ getCdpUrl: () => string }} browserService
- */
-async function getSession(browserService) {
+async function getSession(browserService: BrowserService): Promise<MediaBridgeSession> {
   const cdpUrl = browserService.getCdpUrl()
 
   return {

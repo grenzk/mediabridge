@@ -1,29 +1,17 @@
-/**
- * @typedef {import('./linking-modes.js').LinkingMode} LinkingMode
- * @typedef {{
- *   alt?: string,
- *   classNames?: string[],
- *   displayName?: string,
- *   filename: string,
- *   height?: string,
- *   sourceIndex: number,
- *   style?: string,
- *   text?: string,
- *   width?: string,
- * }} ArticleEditorTarget
- */
+import type { Locator, Page } from 'playwright'
+import type { ArticleEditorTarget, LinkingMode } from '../types.ts'
 
 /**
  * Restores source HTML details that the media server dialog cannot preserve.
  * Documents get their class/original text restored; images get their original
  * alt text and inline size attributes.
- *
- * @param {import('playwright').Page} articlePage
- * @param {import('playwright').Locator} sourceEditor
- * @param {ArticleEditorTarget[]} targets
- * @param {LinkingMode} linkingMode
  */
-export async function restoreLinkedTargets(articlePage, sourceEditor, targets, linkingMode) {
+export async function restoreLinkedTargets(
+  articlePage: Page,
+  sourceEditor: Locator,
+  targets: ArticleEditorTarget[],
+  linkingMode: LinkingMode,
+) {
   const html = await sourceEditor.inputValue()
 
   if (linkingMode.targetType === 'image') {
@@ -43,34 +31,30 @@ export async function restoreLinkedTargets(articlePage, sourceEditor, targets, l
  * Updates the source editor value directly. This avoids Playwright's fill
  * action, which can hang on large CKEditor source textareas while still
  * notifying the editor that its value changed.
- *
- * @param {import('playwright').Locator} sourceEditor
- * @param {string} html
  */
-async function setSourceEditorHtml(sourceEditor, html) {
+async function setSourceEditorHtml(sourceEditor: Locator, html: string) {
   await sourceEditor.evaluate((element, html) => {
-    element.value = html
-    element.dispatchEvent(new Event('input', { bubbles: true }))
-    element.dispatchEvent(new Event('change', { bubbles: true }))
+    const sourceTextArea = element as HTMLTextAreaElement
+
+    sourceTextArea.value = html
+    sourceTextArea.dispatchEvent(new Event('input', { bubbles: true }))
+    sourceTextArea.dispatchEvent(new Event('change', { bubbles: true }))
   }, html)
 }
 
 /**
- * @param {import('playwright').Page} articlePage
- * @param {string} html
- * @param {ArticleEditorTarget[]} images
- * @returns {Promise<string>}
+ * Restores image attributes captured before the media dialog replaced each image.
  */
-async function restoreImageTargets(articlePage, html, images) {
+async function restoreImageTargets(articlePage: Page, html: string, images: ArticleEditorTarget[]) {
   return articlePage.evaluate(
     ({ html, images }) => {
       const template = document.createElement('template')
       template.innerHTML = html
 
       const allImages = [...template.content.querySelectorAll('img')]
-      const updatedImages = new Set()
+      const updatedImages = new Set<number>()
 
-      const decodeFilename = filename => {
+      const decodeFilename = (filename: string) => {
         try {
           return decodeURIComponent(filename)
         } catch {
@@ -78,13 +62,13 @@ async function restoreImageTargets(articlePage, html, images) {
         }
       }
 
-      const getImageFilename = image => {
+      const getImageFilename = (image: HTMLImageElement) => {
         const src = image.getAttribute('src') ?? image.src
 
         try {
           const url = new URL(src, window.location.href)
 
-          return decodeFilename(url.pathname.split('/').pop())
+          return decodeFilename(url.pathname.split('/').pop() ?? '')
         } catch {
           return ''
         }
@@ -107,7 +91,7 @@ async function restoreImageTargets(articlePage, html, images) {
           const matchingImage = allImages[matchingIndex]
 
           updatedImages.add(matchingIndex)
-          matchingImage.setAttribute('alt', imageLink.alt)
+          matchingImage.setAttribute('alt', imageLink.alt ?? '')
 
           if (imageLink.style) {
             matchingImage.setAttribute('style', imageLink.style)
@@ -130,20 +114,22 @@ async function restoreImageTargets(articlePage, html, images) {
 }
 
 /**
- * @param {import('playwright').Page} articlePage
- * @param {string} html
- * @param {ArticleEditorTarget[]} targets
- * @param {LinkingMode} linkingMode
- * @returns {Promise<string>}
+ * Restores link text and class names captured before the media dialog replaced
+ * each anchor.
  */
-async function restoreLinkTargets(articlePage, html, targets, linkingMode) {
+async function restoreLinkTargets(
+  articlePage: Page,
+  html: string,
+  targets: ArticleEditorTarget[],
+  linkingMode: LinkingMode,
+) {
   return articlePage.evaluate(
     ({ html, targets, className, preservedClassNames }) => {
       const template = document.createElement('template')
       template.innerHTML = html
 
       const anchors = [...template.content.querySelectorAll('a')]
-      const updatedLinks = new Set()
+      const updatedLinks = new Set<number>()
       const modifierClassNameSet = new Set(preservedClassNames.modifiers)
       const replacementClassNameSet = new Set(preservedClassNames.replacements)
 
@@ -156,7 +142,7 @@ async function restoreLinkTargets(articlePage, html, targets, linkingMode) {
           matchingIndex = anchors.findIndex((link, index) => {
             if (updatedLinks.has(index)) return false
 
-            const text = link.textContent.trim()
+            const text = link.textContent?.trim() ?? ''
 
             return text === articleLink.text || text === articleLink.displayName
           })
@@ -181,7 +167,7 @@ async function restoreLinkTargets(articlePage, html, targets, linkingMode) {
             matchingLink.classList.add(...modifierClassNames)
           }
 
-          matchingLink.textContent = articleLink.text
+          matchingLink.textContent = articleLink.text ?? ''
         }
       })
 
