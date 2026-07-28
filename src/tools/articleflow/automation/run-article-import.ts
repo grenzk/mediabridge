@@ -123,12 +123,7 @@ async function createArticle(
   await dialog.waitFor({ state: 'hidden' })
 
   await requireUniqueLocator(articleTitleInput, 'article title input')
-
-  const createdArticleTitle = await articleTitleInput.inputValue()
-
-  if (createdArticleTitle !== article.title) {
-    throw new Error(`Expected the created article title to be "${article.title}", but found "${createdArticleTitle}".`)
-  }
+  await waitForInputValue(articlePage, articleTitleInput, article.title, 'created article title')
 
   await requireUniqueLocator(sourceButton, 'Source button')
   await sourceButton.click()
@@ -180,6 +175,23 @@ async function verifySourceEditorHtml(sourceEditor: Locator, expectedHtml: strin
   if (sourceHtml !== expectedHtml) {
     throw new Error('CKEditor did not receive the complete source HTML.')
   }
+}
+
+async function waitForInputValue(articlePage: Page, input: Locator, expectedValue: string, description: string) {
+  const deadline = Date.now() + editorSyncTimeoutMs
+  let actualValue = ''
+
+  while (Date.now() < deadline) {
+    actualValue = await input.inputValue()
+
+    if (actualValue === expectedValue) {
+      return
+    }
+
+    await articlePage.waitForTimeout(editorSyncPollIntervalMs)
+  }
+
+  throw new Error(`Expected the ${description} to be "${expectedValue}", but found "${actualValue}".`)
 }
 
 async function waitForEditorContent(articlePage: Page, editorBody: Locator, expectedHtml: string) {
