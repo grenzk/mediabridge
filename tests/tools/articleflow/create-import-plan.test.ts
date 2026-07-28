@@ -14,8 +14,10 @@ describe('createArticleImportPlan', () => {
   it('creates ordered article entries from a filesystem taxonomy', async () => {
     const rootPath = await createTemporaryDirectory('Sample Product')
     const manualsPath = join(rootPath, '[001]Product Information', '[004]Manuals')
+    const emptyFolderPath = join(rootPath, '[002]Empty')
 
     await mkdir(manualsPath, { recursive: true })
+    await mkdir(emptyFolderPath)
     await writeFile(join(manualsPath, 'Manuals.htm'), '<p>Manuals</p>')
     await writeFile(join(manualsPath, 'Specifications.HTML'), '<p>Specifications</p>')
     await writeFile(join(manualsPath, 'Notes.txt'), 'Not an article')
@@ -37,6 +39,12 @@ describe('createArticleImportPlan', () => {
         title: 'Specifications',
       },
     ])
+    expect(plan.folderPaths).toEqual([
+      ['Sample Product'],
+      ['Sample Product', '[001]Product Information'],
+      ['Sample Product', '[001]Product Information', '[004]Manuals'],
+      ['Sample Product', '[002]Empty'],
+    ])
     expect(plan.ignoredPaths).toEqual(['.DS_Store', join('[001]Product Information', '[004]Manuals', 'Notes.txt')])
   })
 
@@ -50,6 +58,7 @@ describe('createArticleImportPlan', () => {
     const plan = await createArticleImportPlan(rootPath)
 
     expect(plan.articles).toEqual([])
+    expect(plan.folderPaths).toEqual([['Sample Product']])
     expect(plan.ignoredPaths).toEqual(['.archive'])
   })
 

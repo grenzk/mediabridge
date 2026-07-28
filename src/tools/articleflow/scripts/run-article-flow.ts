@@ -31,12 +31,12 @@ async function main() {
   printImportPlan(plan, options.completionAction)
 
   if (!options.execute) {
-    console.log('\nDry run complete. Add --execute to create these articles in eGain.')
+    console.log('\nDry run complete. Add --execute to create these folders and articles in eGain.')
     return 0
   }
 
-  if (plan.articles.length === 0) {
-    console.log('\nNo supported article files were found.')
+  if (plan.folderPaths.length === 0) {
+    console.log('\nNo folders were found.')
     return 0
   }
 
@@ -133,8 +133,18 @@ function printImportPlan(
 ) {
   console.log('ArticleFlow import plan')
   console.log(`Root: ${plan.rootPath}`)
+  console.log(`Folders: ${plan.folderPaths.length}`)
   console.log(`Articles: ${plan.articles.length}`)
   console.log(`Ignored: ${plan.ignoredPaths.length}`)
+
+  console.log('\nFolder hierarchy:')
+  plan.folderPaths.forEach(folderPath => {
+    console.log(`- ${folderPath.join(' > ')}`)
+  })
+
+  if (plan.articles.length > 0) {
+    console.log('\nArticles:')
+  }
 
   plan.articles.forEach(article => {
     console.log(`- ${article.folderPath.join(' > ')} > ${article.title} [${completionAction}]`)
@@ -147,6 +157,8 @@ function printImportPlan(
 }
 
 function printImportResult(result: ArticleImportResult, completionAction: ArticleCompletionAction) {
+  console.log(`\n${result.createdFolderPaths.length} folder(s) created.`)
+  console.log(`${result.existingFolderPaths.length} folder(s) already existed.`)
   console.log(`\n${result.completedArticles.length} article(s) completed with "${completionAction}".`)
 
   if (result.failedArticles.length === 0) {
@@ -166,7 +178,7 @@ function printHelp() {
 Options:
   -r, --root <path>       Filesystem taxonomy root (default: "Sample Product")
   -a, --action <action>   Final action: "check-in" or "publish" (default: "check-in")
-      --execute           Create the planned articles in eGain
+      --execute           Create the planned folders and articles in eGain
   -h, --help              Show this help
 
 Examples:

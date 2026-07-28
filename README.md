@@ -44,16 +44,18 @@ without changing eGain:
 npm run script:articleflow -- --root "Sample Product"
 ```
 
-The selected root directory is treated as the first eGain folder. ArticleFlow
-recursively targets its folders and creates an article for each `.htm` or
-`.html` file. Execution is opt-in, and check-in is the default final action:
+The selected root directory is created under the eGain folder currently selected
+in the controlled browser. ArticleFlow recreates missing folders recursively and
+creates an article for each `.htm` or `.html` file. Execution is opt-in, and
+check-in is the default final action:
 
 ```sh
 npm run script:articleflow -- --root "Sample Product" --action check-in --execute
 ```
 
-Before execution, open the intended destination folder in the controlled eGain
-browser without selecting an article. ArticleFlow verifies the folder shown in
+Before execution, select the intended parent folder in the controlled eGain
+browser without selecting an article. ArticleFlow uses that folder's context
+menu when it needs to add a direct child, then verifies the destination shown in
 the New Article dialog before creating each article.
 
 Use `--action publish` only when every planned article should be published.

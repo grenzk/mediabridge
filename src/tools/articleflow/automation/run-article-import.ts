@@ -2,11 +2,11 @@ import { readFile } from 'node:fs/promises'
 import type { Locator, Page } from 'playwright'
 import {
   getArticleEditorLocators,
-  getArticleFolderLocators,
   getArticlePageActionLocators,
   getNewArticleDialogLocators,
 } from '../../../shared/egain/editor/get-article-editor-locators.ts'
 import type { ArticleImportEntry, ArticleImportPlan } from './create-import-plan.ts'
+import { ensureFolderPath, getSelectedFolderReference, selectFolderPath } from './ensure-folder-path.ts'
 
 const editorSyncTimeoutMs = 10000
 const editorSyncPollIntervalMs = 100
@@ -21,24 +21,40 @@ export type ArticleImportFailure = {
 
 export type ArticleImportResult = {
   completedArticles: ArticleImportEntry[]
+  createdFolderPaths: string[][]
+  existingFolderPaths: string[][]
   failedArticles: ArticleImportFailure[]
 }
 
 /**
- * Creates each planned article sequentially so one browser operation cannot
- * race another. Individual failures are recorded and do not end the batch.
+ * Recreates the planned folder hierarchy under the currently selected eGain
+ * folder, then creates each article sequentially. Individual article failures
+ * are recorded and do not end the batch.
  */
 export async function runArticleImport(
   articlePage: Page,
   plan: ArticleImportPlan,
   completionAction: ArticleCompletionAction,
 ): Promise<ArticleImportResult> {
+  const importParent = await getSelectedFolderReference(articlePage)
   const completedArticles: ArticleImportEntry[] = []
+  const createdFolderPaths: string[][] = []
+  const existingFolderPaths: string[][] = []
   const failedArticles: ArticleImportFailure[] = []
+
+  for (const folderPath of plan.folderPaths) {
+    const createdFinalFolder = await ensureFolderPath(articlePage, importParent, folderPath)
+
+    if (createdFinalFolder) {
+      createdFolderPaths.push(folderPath)
+    } else {
+      existingFolderPaths.push(folderPath)
+    }
+  }
 
   for (const article of plan.articles) {
     try {
-      await selectArticleFolderPath(articlePage, article.folderPath)
+      await selectFolderPath(articlePage, importParent, article.folderPath)
       await createArticle(articlePage, article, completionAction)
       completedArticles.push(article)
     } catch (error) {
@@ -49,35 +65,7 @@ export async function runArticleImport(
     }
   }
 
-  return { completedArticles, failedArticles }
-}
-
-async function selectArticleFolderPath(articlePage: Page, folderPath: string[]) {
-  for (const [index, folderName] of folderPath.entries()) {
-    const { cell, collapseButton, expandButton } = getArticleFolderLocators(articlePage, folderName)
-
-    await requireUniqueLocator(cell, `folder "${folderName}"`)
-
-    if (index === folderPath.length - 1) {
-      await cell.click()
-      continue
-    }
-
-    const collapseButtonCount = await collapseButton.count()
-
-    if (collapseButtonCount === 1) {
-      continue
-    }
-
-    if (collapseButtonCount > 1) {
-      throw new Error(
-        `Expected at most one collapse button for folder "${folderName}", but found ${collapseButtonCount}.`,
-      )
-    }
-
-    await requireUniqueLocator(expandButton, `expand button for folder "${folderName}"`)
-    await expandButton.click()
-  }
+  return { completedArticles, createdFolderPaths, existingFolderPaths, failedArticles }
 }
 
 async function createArticle(

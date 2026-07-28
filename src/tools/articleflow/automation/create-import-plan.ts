@@ -12,13 +12,15 @@ export type ArticleImportEntry = {
 
 export type ArticleImportPlan = {
   articles: ArticleImportEntry[]
+  folderPaths: string[][]
   ignoredPaths: string[]
   rootPath: string
 }
 
 /**
  * Scans a filesystem taxonomy into an ordered, browser-independent article
- * import plan. The selected root directory is the first eGain folder.
+ * import plan. The selected root directory becomes a child of the eGain folder
+ * selected when the plan runs.
  */
 export async function createArticleImportPlan(inputPath: string): Promise<ArticleImportPlan> {
   const rootPath = resolve(inputPath)
@@ -29,17 +31,19 @@ export async function createArticleImportPlan(inputPath: string): Promise<Articl
   }
 
   const articles: ArticleImportEntry[] = []
+  const folderPaths = [[basename(rootPath)]]
   const ignoredPaths: string[] = []
 
-  await scanDirectory(rootPath, rootPath, [basename(rootPath)], articles, ignoredPaths)
+  await scanDirectory(rootPath, rootPath, folderPaths[0], folderPaths, articles, ignoredPaths)
 
-  return { articles, ignoredPaths, rootPath }
+  return { articles, folderPaths, ignoredPaths, rootPath }
 }
 
 async function scanDirectory(
   rootPath: string,
   directoryPath: string,
   folderPath: string[],
+  folderPaths: string[][],
   articles: ArticleImportEntry[],
   ignoredPaths: string[],
 ) {
@@ -57,7 +61,10 @@ async function scanDirectory(
     }
 
     if (entry.isDirectory()) {
-      await scanDirectory(rootPath, entryPath, [...folderPath, entry.name], articles, ignoredPaths)
+      const childFolderPath = [...folderPath, entry.name]
+
+      folderPaths.push(childFolderPath)
+      await scanDirectory(rootPath, entryPath, childFolderPath, folderPaths, articles, ignoredPaths)
       continue
     }
 

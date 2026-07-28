@@ -17,9 +17,17 @@ export type ArticlePageActionLocators = {
 }
 
 export type ArticleFolderLocators = {
+  addFolderMenuItem: Locator
   cell: Locator
-  expandButton: Locator
   collapseButton: Locator
+  contextMenuButton: Locator
+  expandButton: Locator
+}
+
+export type CreateFolderFormLocators = {
+  heading: Locator
+  nameInput: Locator
+  saveButton: Locator
 }
 
 export type NewArticleDialogLocators = {
@@ -80,12 +88,27 @@ export function getNewArticleDialogLocators(articlePage: Page): NewArticleDialog
 }
 
 /**
- * Returns the controls for an exact folder name in the eGain article taxonomy.
+ * Returns the controls for an exact folder name within a page or folder row.
  */
-export function getArticleFolderLocators(articlePage: Page, folderName: string): ArticleFolderLocators {
+export function getArticleFolderLocators(scope: Page | Locator, folderName: string): ArticleFolderLocators {
+  const contextMenuButton = scope.getByTestId(`dropdown-toggle-folders-${folderName}`)
+
   return {
-    cell: articlePage.getByTestId(`grid-body-cell-folders-${folderName}`),
-    expandButton: articlePage.getByTestId(`button-folders-expand-${folderName}`),
-    collapseButton: articlePage.getByTestId(`button-folders-collapse-${folderName}`),
+    addFolderMenuItem: contextMenuButton.getByRole('menuitem', { exact: true, name: 'Add' }),
+    cell: scope.getByTestId(`grid-body-cell-folders-${folderName}`),
+    collapseButton: scope.getByTestId(`button-folders-collapse-${folderName}`),
+    contextMenuButton,
+    expandButton: scope.getByTestId(`button-folders-expand-${folderName}`),
+  }
+}
+
+/**
+ * Returns the controls used by eGain's full-page folder creation form.
+ */
+export function getCreateFolderFormLocators(articlePage: Page): CreateFolderFormLocators {
+  return {
+    heading: articlePage.getByRole('heading', { exact: true, name: 'Create Folder' }),
+    nameInput: articlePage.getByTestId('text-input-field_1_create-or-edit_kbfolder_Name'),
+    saveButton: articlePage.getByTestId('button-create-or-edit-kbfolder-save'),
   }
 }
