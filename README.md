@@ -37,6 +37,27 @@ npm run script:media-linking
 
 That command connects to `MEDIABRIDGE_CDP_PORT`, or port `9222` by default.
 
+The ArticleFlow prototype reads a filesystem taxonomy and prints its import plan
+without changing eGain:
+
+```sh
+npm run script:articleflow -- --root "Sample Product"
+```
+
+The selected root directory is treated as the first eGain folder. ArticleFlow
+recursively targets its folders and creates an article for each `.htm` or
+`.html` file. Execution is opt-in, and check-in is the default final action:
+
+```sh
+npm run script:articleflow -- --root "Sample Product" --action check-in --execute
+```
+
+Before execution, open the intended destination folder in the controlled eGain
+browser without selecting an article. ArticleFlow verifies the folder shown in
+the New Article dialog before creating each article.
+
+Use `--action publish` only when every planned article should be published.
+
 ## Testing
 
 Run the focused automation unit tests with:
