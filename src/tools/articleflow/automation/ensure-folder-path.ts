@@ -104,7 +104,7 @@ async function createChildFolder(
   await addFolderMenuItem.waitFor({ state: 'visible' })
   await addFolderMenuItem.click()
 
-  const { heading, nameInput, saveButton } = getCreateFolderFormLocators(articlePage)
+  const { backButton, heading, nameInput, saveButton } = getCreateFolderFormLocators(articlePage)
 
   await requireUniqueLocator(heading, 'Create Folder heading')
 
@@ -117,6 +117,8 @@ async function createChildFolder(
   await requireUniqueLocator(saveButton, 'Create Folder Save button')
   await saveButton.click()
 
+  await requireUniqueLocator(backButton, 'Create Folder Back button')
+  await backButton.click()
   await heading.waitFor({ state: 'hidden' })
   await articlePage.getByRole('heading', { exact: true, name: 'Folders' }).waitFor({ state: 'visible' })
 

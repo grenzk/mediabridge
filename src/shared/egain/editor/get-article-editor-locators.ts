@@ -25,6 +25,7 @@ export type ArticleFolderLocators = {
 }
 
 export type CreateFolderFormLocators = {
+  backButton: Locator
   heading: Locator
   nameInput: Locator
   saveButton: Locator
@@ -81,8 +82,11 @@ export function getNewArticleDialogLocators(articlePage: Page): NewArticleDialog
 
   return {
     dialog,
+
     titleInput: dialog.getByTestId('text-input-field_1_create-or-edit_kbarticle_Title'),
+
     folderPathInput: dialog.getByTestId('text-input-field_0_create-or-edit_kbarticle_Folder-Path'),
+
     doneButton: dialog.getByTestId('pop-up-window-button-new-article-done'),
   }
 }
@@ -95,9 +99,13 @@ export function getArticleFolderLocators(scope: Page | Locator, folderName: stri
 
   return {
     addFolderMenuItem: contextMenuButton.getByRole('menuitem', { exact: true, name: 'Add' }),
+
     cell: scope.getByTestId(`grid-body-cell-folders-${folderName}`),
+
     collapseButton: scope.getByTestId(`button-folders-collapse-${folderName}`),
+
     contextMenuButton,
+
     expandButton: scope.getByTestId(`button-folders-expand-${folderName}`),
   }
 }
@@ -107,8 +115,12 @@ export function getArticleFolderLocators(scope: Page | Locator, folderName: stri
  */
 export function getCreateFolderFormLocators(articlePage: Page): CreateFolderFormLocators {
   return {
+    backButton: articlePage.getByTestId('button-create-or-edit-kbfolder-back'),
+
     heading: articlePage.getByRole('heading', { exact: true, name: 'Create Folder' }),
+
     nameInput: articlePage.getByTestId('text-input-field_1_create-or-edit_kbfolder_Name'),
+
     saveButton: articlePage.getByTestId('button-create-or-edit-kbfolder-save'),
   }
 }
