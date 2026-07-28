@@ -8,6 +8,10 @@ import {
 } from '../../../shared/egain/editor/get-article-editor-locators.ts'
 import type { ArticleImportEntry, ArticleImportPlan } from './create-import-plan.ts'
 
+const editorSyncTimeoutMs = 10000
+const editorSyncPollIntervalMs = 100
+const saveSettleDelayMs = 1000
+
 export type ArticleCompletionAction = 'check-in' | 'publish'
 
 export type ArticleImportFailure = {
@@ -94,7 +98,7 @@ async function createArticle(
 
   const { createArticleButton, saveArticleButton, checkInArticleButton, publishArticleButton } =
     getArticlePageActionLocators(articlePage)
-  const { articleTitleInput, sourceButton, sourceEditor } = getArticleEditorLocators(articlePage)
+  const { articleTitleInput, editorBody, sourceButton, sourceEditor } = getArticleEditorLocators(articlePage)
   const { dialog, doneButton, folderPathInput, titleInput } = getNewArticleDialogLocators(articlePage)
 
   await requireUniqueLocator(createArticleButton, 'Create article button')
@@ -130,10 +134,15 @@ async function createArticle(
   await sourceButton.click()
   await requireUniqueLocator(sourceEditor, 'source editor')
   await setSourceEditorHtml(sourceEditor, html)
+  await verifySourceEditorHtml(sourceEditor, html)
   await sourceButton.click()
+  await sourceEditor.waitFor({ state: 'hidden' })
+  await editorBody.waitFor({ state: 'visible' })
+  await waitForEditorContent(articlePage, editorBody, html)
 
   await requireUniqueLocator(saveArticleButton, 'Save button')
   await saveArticleButton.click()
+  await articlePage.waitForTimeout(saveSettleDelayMs)
 
   const completionButton = completionAction === 'publish' ? publishArticleButton : checkInArticleButton
   const completionLabel = completionAction === 'publish' ? 'Publish button' : 'Check-In button'
@@ -163,4 +172,43 @@ async function setSourceEditorHtml(sourceEditor: Locator, html: string) {
     sourceTextArea.dispatchEvent(new Event('input', { bubbles: true }))
     sourceTextArea.dispatchEvent(new Event('change', { bubbles: true }))
   }, html)
+}
+
+async function verifySourceEditorHtml(sourceEditor: Locator, expectedHtml: string) {
+  const sourceHtml = await sourceEditor.inputValue()
+
+  if (sourceHtml !== expectedHtml) {
+    throw new Error('CKEditor did not receive the complete source HTML.')
+  }
+}
+
+async function waitForEditorContent(articlePage: Page, editorBody: Locator, expectedHtml: string) {
+  const deadline = Date.now() + editorSyncTimeoutMs
+
+  while (Date.now() < deadline) {
+    const editorIsSynchronized = await editorBody.evaluate((element, html) => {
+      const template = element.ownerDocument.createElement('template')
+      const normalizeText = (value: string) => value.replace(/\s+/g, ' ').trim()
+
+      template.innerHTML = html
+      template.content.querySelectorAll('script, style').forEach(ignoredElement => ignoredElement.remove())
+
+      const expectedText = normalizeText(template.content.textContent ?? '')
+      const actualText = normalizeText(element.textContent ?? '')
+
+      if (expectedText) {
+        return actualText.includes(expectedText.slice(0, 120))
+      }
+
+      return element.innerHTML.trim().length > 0
+    }, expectedHtml)
+
+    if (editorIsSynchronized) {
+      return
+    }
+
+    await articlePage.waitForTimeout(editorSyncPollIntervalMs)
+  }
+
+  throw new Error('CKEditor did not display the inserted article content before saving.')
 }
