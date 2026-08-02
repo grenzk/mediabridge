@@ -168,69 +168,71 @@ function getErrorMessage(error: unknown) {
       />
     </header>
 
-    <section class="article-flow-workspace" aria-labelledby="article-flow-source-title">
-      <section class="article-flow-command">
-        <div class="command-heading">
-          <div>
-            <h1 id="article-flow-source-title">Source folder</h1>
-            <span class="source-name" :title="importPlan?.rootPath">{{ sourceFolderName }}</span>
+    <section class="article-flow-workspace">
+      <section class="setup-section" aria-labelledby="import-setup-title">
+        <h1 id="import-setup-title" class="section-title">Import setup</h1>
+
+        <div class="setup-panel">
+          <div class="setup-row source-row">
+            <span class="setup-label">Source folder</span>
+            <strong class="setup-value source-name" :title="importPlan?.rootPath">{{ sourceFolderName }}</strong>
+
+            <Button
+              class="choose-folder-button"
+              icon="pi pi-folder-open"
+              :label="importPlan ? 'Change folder' : 'Choose folder'"
+              severity="secondary"
+              outlined
+              :loading="isSelectingRoot"
+              :disabled="isRunning"
+              @click="selectRoot"
+            />
           </div>
 
-          <Button
-            class="choose-folder-button"
-            icon="pi pi-folder-open"
-            :label="importPlan ? 'Change folder' : 'Choose folder'"
-            severity="secondary"
-            outlined
-            :loading="isSelectingRoot"
-            :disabled="isRunning"
-            @click="selectRoot"
-          />
-        </div>
+          <div class="setup-row destination-row">
+            <span class="setup-label">Destination</span>
+            <strong class="setup-value">Current eGain folder</strong>
+          </div>
 
-        <div class="destination-row">
-          <span>Destination</span>
-          <strong>Current eGain folder</strong>
-        </div>
-
-        <div class="completion-row">
-          <span id="completion-action-label">Completion action</span>
-          <div class="completion-control" role="radiogroup" aria-labelledby="completion-action-label">
-            <button
-              type="button"
-              data-action="check-in"
-              :aria-checked="completionAction === 'check-in'"
-              :class="{ selected: completionAction === 'check-in' }"
-              :tabindex="completionAction === 'check-in' ? 0 : -1"
-              role="radio"
-              :disabled="isRunning"
-              @click="selectCompletionAction('check-in')"
-              @keydown.down.prevent="selectCompletionAction('publish', $event)"
-              @keydown.right.prevent="selectCompletionAction('publish', $event)"
-            >
-              Check in
-            </button>
-            <button
-              type="button"
-              data-action="publish"
-              :aria-checked="completionAction === 'publish'"
-              :class="{ selected: completionAction === 'publish' }"
-              :tabindex="completionAction === 'publish' ? 0 : -1"
-              role="radio"
-              :disabled="isRunning"
-              @click="selectCompletionAction('publish')"
-              @keydown.left.prevent="selectCompletionAction('check-in', $event)"
-              @keydown.up.prevent="selectCompletionAction('check-in', $event)"
-            >
-              Publish
-            </button>
+          <div class="setup-row completion-row">
+            <span id="completion-action-label" class="setup-label">Completion action</span>
+            <div class="completion-control" role="radiogroup" aria-labelledby="completion-action-label">
+              <button
+                type="button"
+                data-action="check-in"
+                :aria-checked="completionAction === 'check-in'"
+                :class="{ selected: completionAction === 'check-in' }"
+                :tabindex="completionAction === 'check-in' ? 0 : -1"
+                role="radio"
+                :disabled="isRunning"
+                @click="selectCompletionAction('check-in')"
+                @keydown.down.prevent="selectCompletionAction('publish', $event)"
+                @keydown.right.prevent="selectCompletionAction('publish', $event)"
+              >
+                Check in
+              </button>
+              <button
+                type="button"
+                data-action="publish"
+                :aria-checked="completionAction === 'publish'"
+                :class="{ selected: completionAction === 'publish' }"
+                :tabindex="completionAction === 'publish' ? 0 : -1"
+                role="radio"
+                :disabled="isRunning"
+                @click="selectCompletionAction('publish')"
+                @keydown.left.prevent="selectCompletionAction('check-in', $event)"
+                @keydown.up.prevent="selectCompletionAction('check-in', $event)"
+              >
+                Publish
+              </button>
+            </div>
           </div>
         </div>
       </section>
 
       <section class="plan-section" aria-labelledby="import-plan-title">
         <div class="plan-heading">
-          <h2 id="import-plan-title">Import plan</h2>
+          <h2 id="import-plan-title" class="section-title">Import plan</h2>
           <div v-if="importPlan" class="plan-counts" aria-label="Import plan totals">
             <span
               ><strong>{{ importPlan.folderPaths.length }}</strong> folder{{
@@ -242,9 +244,7 @@ function getErrorMessage(error: unknown) {
                 importPlan.articles.length === 1 ? '' : 's'
               }}</span
             >
-            <span
-              ><strong>{{ importPlan.ignoredPaths.length }}</strong> ignored</span
-            >
+            <span><strong>{{ importPlan.ignoredPaths.length }}</strong> ignored</span>
           </div>
         </div>
 
@@ -254,28 +254,46 @@ function getErrorMessage(error: unknown) {
         </div>
 
         <div v-else class="plan-content">
-          <ol v-if="importPlan.articles.length" class="article-list" aria-label="Articles to import">
-            <li v-for="article in importPlan.articles" :key="article.sourcePath">
-              <i class="pi pi-file" aria-hidden="true" />
-              <span>
-                <strong>{{ article.title }}</strong>
-                <small :title="article.relativeSourcePath">{{ article.relativeSourcePath }}</small>
-              </span>
-            </li>
-          </ol>
-          <p v-else class="plan-empty compact">No HTML articles found in this folder.</p>
-
-          <details class="plan-details">
-            <summary>Folder hierarchy</summary>
-            <ul>
-              <li v-for="folderPath in importPlan.folderPaths" :key="folderPath.join('/')">
-                {{ folderPath.join(' > ') }}
+          <div class="plan-panel">
+            <ol v-if="importPlan.articles.length" class="article-list" aria-label="Articles to import">
+              <li v-for="article in importPlan.articles" :key="article.sourcePath">
+                <i class="pi pi-file" aria-hidden="true" />
+                <span>
+                  <strong>{{ article.title }}</strong>
+                  <small :title="article.relativeSourcePath">{{ article.relativeSourcePath }}</small>
+                </span>
               </li>
-            </ul>
-          </details>
+            </ol>
+            <p v-else class="plan-empty compact">No HTML articles found in this folder.</p>
 
-          <details v-if="importPlan.ignoredPaths.length" class="plan-details">
-            <summary>Ignored items</summary>
+            <details class="plan-details hierarchy-details" open>
+              <summary>
+                <span class="summary-label">
+                  <i class="pi pi-chevron-right detail-chevron" aria-hidden="true" />
+                  <span>Folder hierarchy</span>
+                </span>
+              </summary>
+              <ul>
+                <li
+                  v-for="folderPath in importPlan.folderPaths"
+                  :key="folderPath.join('/')"
+                  :style="{ paddingInlineStart: `${Math.max(0, folderPath.length - 1) * 16}px` }"
+                  :title="folderPath.join(' > ')"
+                >
+                  {{ folderPath[folderPath.length - 1] }}
+                </li>
+              </ul>
+            </details>
+          </div>
+
+          <details v-if="importPlan.ignoredPaths.length" class="plan-details ignored-details">
+            <summary>
+              <span class="summary-label">
+                <i class="pi pi-chevron-right detail-chevron" aria-hidden="true" />
+                <span>Ignored items</span>
+              </span>
+              <strong>{{ importPlan.ignoredPaths.length }}</strong>
+            </summary>
             <ul>
               <li v-for="ignoredPath in importPlan.ignoredPaths" :key="ignoredPath">{{ ignoredPath }}</li>
             </ul>
@@ -305,7 +323,7 @@ function getErrorMessage(error: unknown) {
 <style scoped>
 .article-flow-shell {
   display: grid;
-  grid-template-rows: 72px minmax(0, 1fr) 64px;
+  grid-template-rows: 72px minmax(0, 1fr) 68px;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -337,9 +355,9 @@ function getErrorMessage(error: unknown) {
 }
 
 .article-flow-brand strong {
-  font-size: 1.05rem;
+  font-size: 1.125rem;
   font-weight: 600;
-  line-height: 1.35rem;
+  line-height: 1.5rem;
 }
 
 .article-flow-mark {
@@ -377,9 +395,13 @@ function getErrorMessage(error: unknown) {
   border: 1px solid var(--kw-border);
   border-radius: 8px;
   background: transparent;
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out;
 }
 
 :deep(.article-flow-icon-button.p-button:enabled:hover) {
+  color: var(--kw-text-light) !important;
   border-color: var(--kw-text-muted);
   background: var(--kw-surface-hover);
 }
@@ -388,18 +410,73 @@ function getErrorMessage(error: unknown) {
   min-height: 0;
   overflow-y: auto;
   padding: 20px 24px 24px;
+  scrollbar-color: var(--kw-border) var(--kw-quiet-surface);
 }
 
-.article-flow-command {
+.setup-section,
+.plan-section {
   display: grid;
-  gap: 16px;
-  padding-bottom: 20px;
-  border-bottom: 1px solid var(--kw-border-subtle);
+  gap: 12px;
 }
 
-.command-heading,
-.destination-row,
-.completion-row,
+.plan-section {
+  margin-top: 24px;
+}
+
+.section-title {
+  margin: 0;
+  color: var(--kw-text-light);
+  font-size: 0.875rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+}
+
+.setup-panel,
+.plan-panel,
+.ignored-details {
+  border: 1px solid var(--kw-border);
+  border-radius: 10px;
+  background: var(--kw-surface);
+}
+
+.setup-row {
+  display: grid;
+  grid-template-columns: 160px minmax(0, 1fr) auto;
+  min-height: 66px;
+  align-items: center;
+  gap: 12px 16px;
+  padding: 10px 16px;
+}
+
+.setup-row + .setup-row {
+  border-top: 1px solid var(--kw-border-subtle);
+}
+
+.setup-label {
+  color: var(--kw-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.125rem;
+}
+
+.setup-value {
+  min-width: 0;
+  color: var(--kw-text-light);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1.125rem;
+}
+
+.destination-row .setup-value {
+  grid-column: 2 / -1;
+}
+
+.source-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .plan-heading {
   display: flex;
   align-items: center;
@@ -407,64 +484,34 @@ function getErrorMessage(error: unknown) {
   gap: 16px;
 }
 
-.command-heading > div {
-  display: grid;
-  min-width: 0;
-  gap: 3px;
-}
-
-.command-heading h1,
-.plan-heading h2 {
-  margin: 0;
-  color: var(--kw-text-light);
-  font-size: 0.88rem;
-  font-weight: 600;
-  line-height: 1.25rem;
-}
-
-.source-name {
-  overflow: hidden;
-  color: var(--kw-text-muted);
-  font-size: 0.8rem;
-  line-height: 1.15rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 :deep(.choose-folder-button.p-button),
 :deep(.run-import-button.p-button) {
-  min-width: 132px;
   height: 44px;
   border-radius: 8px;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   font-weight: 600;
+  transition:
+    background-color 120ms ease-out,
+    border-color 120ms ease-out,
+    color 120ms ease-out;
 }
 
 :deep(.choose-folder-button.p-button) {
+  min-width: 132px;
   color: var(--kw-text-light);
   border-color: var(--kw-border);
-  background: var(--kw-surface);
+  background: transparent;
 }
 
 :deep(.choose-folder-button.p-button:enabled:hover) {
+  color: var(--kw-text-light) !important;
   border-color: var(--kw-text-muted);
   background: var(--kw-surface-hover);
 }
 
-.destination-row > span,
-.completion-row > span {
-  color: var(--kw-text-muted);
-  font-size: 0.8rem;
-  font-weight: 500;
-}
-
-.destination-row > strong {
-  color: var(--kw-text-light);
-  font-size: 0.8rem;
-  font-weight: 600;
-}
-
 .completion-control {
+  grid-column: 2 / -1;
+  justify-self: end;
   display: grid;
   grid-template-columns: repeat(2, 104px);
   overflow: hidden;
@@ -479,9 +526,12 @@ function getErrorMessage(error: unknown) {
   color: var(--kw-text-muted);
   border: 0;
   background: transparent;
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
+  transition:
+    color 120ms ease-out,
+    background-color 120ms ease-out;
 }
 
 .completion-control button + button {
@@ -498,6 +548,14 @@ function getErrorMessage(error: unknown) {
   background: var(--kw-primary);
 }
 
+.completion-control button.selected:hover:not(:disabled) {
+  background: var(--kw-primary-hover);
+}
+
+.completion-control button.selected:active:not(:disabled) {
+  background: var(--kw-primary-pressed);
+}
+
 .completion-control button:disabled {
   cursor: default;
   opacity: 0.7;
@@ -509,19 +567,14 @@ function getErrorMessage(error: unknown) {
   outline-offset: 2px;
 }
 
-.plan-section {
-  display: grid;
-  gap: 14px;
-  padding-top: 20px;
-}
-
 .plan-counts {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 12px;
+  gap: 16px;
   color: var(--kw-text-muted);
-  font-size: 0.74rem;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
 }
 
 .plan-counts span {
@@ -535,24 +588,32 @@ function getErrorMessage(error: unknown) {
 
 .plan-empty {
   display: flex;
-  min-height: 148px;
+  min-height: 156px;
   align-items: center;
   justify-content: center;
   gap: 10px;
   margin: 0;
   color: var(--kw-text-disabled);
-  border: 1px dashed var(--kw-border);
+  border: 1px solid var(--kw-border);
   border-radius: 10px;
-  font-size: 0.82rem;
+  background: var(--kw-surface);
+  font-size: 0.8125rem;
 }
 
 .plan-empty.compact {
-  min-height: 80px;
+  min-height: 72px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
 }
 
 .plan-content {
   display: grid;
   gap: 12px;
+}
+
+.plan-panel {
+  overflow: hidden;
 }
 
 .article-list,
@@ -564,18 +625,15 @@ function getErrorMessage(error: unknown) {
 
 .article-list {
   display: grid;
-  border: 1px solid var(--kw-border);
-  border-radius: 10px;
-  background: var(--kw-surface);
 }
 
 .article-list li {
   display: grid;
-  grid-template-columns: 20px minmax(0, 1fr);
+  grid-template-columns: 28px minmax(0, 1fr);
   align-items: center;
-  gap: 10px;
-  min-height: 56px;
-  padding: 8px 12px;
+  gap: 12px;
+  min-height: 64px;
+  padding: 10px 16px;
 }
 
 .article-list li + li {
@@ -584,7 +642,8 @@ function getErrorMessage(error: unknown) {
 
 .article-list li > i {
   color: var(--kw-focus);
-  font-size: 0.9rem;
+  font-size: 1.25rem;
+  text-align: center;
 }
 
 .article-list li > span {
@@ -601,39 +660,91 @@ function getErrorMessage(error: unknown) {
 }
 
 .article-list strong {
-  font-size: 0.82rem;
+  font-size: 0.875rem;
   font-weight: 600;
-  line-height: 1.15rem;
+  line-height: 1.25rem;
 }
 
 .article-list small {
   color: var(--kw-text-muted);
-  font-size: 0.72rem;
-  line-height: 1rem;
+  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
 }
 
-.plan-details {
+.hierarchy-details {
   border-top: 1px solid var(--kw-border-subtle);
 }
 
 .plan-details summary {
   display: flex;
-  min-height: 44px;
+  min-height: 52px;
   align-items: center;
-  padding: 10px 2px;
-  color: var(--kw-text-muted);
-  font-size: 0.78rem;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  color: var(--kw-text-light);
+  font-size: 0.875rem;
   font-weight: 600;
   cursor: pointer;
+  list-style: none;
+  transition: background-color 120ms ease-out;
+}
+
+.plan-details summary::-webkit-details-marker {
+  display: none;
+}
+
+.plan-details summary:hover {
+  background: var(--kw-surface-hover);
+}
+
+.summary-label {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.detail-chevron {
+  width: 12px;
+  flex: 0 0 auto;
+  color: var(--kw-text-muted);
+  font-size: 0.6875rem;
+  text-align: center;
+  transition: transform 180ms ease-out;
+}
+
+.plan-details[open] .detail-chevron {
+  transform: rotate(90deg);
+}
+
+.ignored-details {
+  overflow: hidden;
+}
+
+.ignored-details summary > strong {
+  color: var(--kw-text-light);
+  font-size: 0.8125rem;
+  font-weight: 600;
 }
 
 .plan-details ul {
   display: grid;
-  gap: 6px;
-  padding: 0 2px 12px 20px;
+  gap: 8px;
+  padding: 0 16px 16px 48px;
   color: var(--kw-text-muted);
-  font-size: 0.74rem;
-  line-height: 1.1rem;
+  font-size: 0.8125rem;
+  line-height: 1.25rem;
+}
+
+.plan-details li {
+  overflow-wrap: anywhere;
+}
+
+.ignored-details ul {
+  padding-top: 12px;
+  border-top: 1px solid var(--kw-border-subtle);
 }
 
 .article-flow-footer {
@@ -641,7 +752,7 @@ function getErrorMessage(error: unknown) {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
-  padding: 10px 20px;
+  padding: 12px 24px;
   border-top: 1px solid var(--kw-border-subtle);
   background: var(--kw-canvas);
 }
@@ -650,16 +761,18 @@ function getErrorMessage(error: unknown) {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   color: var(--kw-text-muted);
-  font-size: 0.76rem;
+  font-size: 0.8125rem;
   font-weight: 500;
+  line-height: 1.125rem;
 }
 
 .article-flow-status > i {
-  width: 14px;
+  width: 18px;
   flex: 0 0 auto;
   color: var(--kw-text-disabled);
+  font-size: 1rem;
   text-align: center;
 }
 
@@ -683,12 +796,14 @@ function getErrorMessage(error: unknown) {
 }
 
 :deep(.run-import-button.p-button) {
+  min-width: 140px;
   color: var(--kw-text-light);
   border-color: var(--kw-focus);
   background: var(--kw-primary);
 }
 
 :deep(.run-import-button.p-button:enabled:hover) {
+  color: var(--kw-text-light) !important;
   border-color: var(--kw-text-light);
   background: var(--kw-primary-hover);
 }
@@ -698,29 +813,64 @@ function getErrorMessage(error: unknown) {
   background: var(--kw-primary-pressed);
 }
 
+:deep(.run-import-button.p-button:disabled) {
+  color: var(--kw-text-disabled);
+  border-color: var(--kw-border);
+  background: var(--kw-surface);
+  opacity: 1;
+}
+
 @media (max-width: 700px) {
   .article-flow-workspace {
     padding: 16px;
   }
 
-  .command-heading,
-  .completion-row {
-    align-items: stretch;
-    flex-direction: column;
+  .plan-section {
+    margin-top: 20px;
   }
 
-  :deep(.choose-folder-button.p-button),
+  .setup-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 0;
+    gap: 8px 12px;
+    padding: 12px;
+  }
+
+  .setup-label {
+    grid-column: 1 / -1;
+  }
+
+  .setup-value {
+    grid-column: 1;
+  }
+
+  .source-row :deep(.choose-folder-button.p-button) {
+    grid-column: 2;
+    grid-row: 2;
+  }
+
+  .destination-row .setup-value,
+  .completion-control {
+    grid-column: 1 / -1;
+  }
+
   .completion-control {
     width: 100%;
-  }
-
-  .completion-control {
+    justify-self: stretch;
     grid-template-columns: repeat(2, 1fr);
   }
 
   .article-flow-footer {
-    grid-template-columns: minmax(0, 1fr) 124px;
+    grid-template-columns: minmax(0, 1fr) auto;
     padding-inline: 16px;
+  }
+
+  :deep(.run-import-button.p-button) {
+    min-width: 128px;
+  }
+
+  .plan-details ul {
+    padding-left: 36px;
   }
 }
 

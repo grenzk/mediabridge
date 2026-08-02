@@ -132,8 +132,8 @@ export async function createArticleFlowBrowserWindow({
   }
 
   const articleFlowWindow = new BrowserWindow({
-    width: 760,
-    height: 680,
+    width: 860,
+    height: 760,
     minWidth: 640,
     minHeight: 560,
     title: 'ArticleFlow',
