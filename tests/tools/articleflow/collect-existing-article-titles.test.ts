@@ -42,6 +42,7 @@ describe('collectExistingArticleTitles', () => {
     locatorMocks.getArticleListLocators.mockReturnValue({
       articleIds: createTextListLocator(() => state.idsByPage[state.currentPage]),
       currentPageInput: createSingleLocator({ inputValue: () => String(state.currentPage) }),
+      emptyState: createSingleLocator({ isVisible: () => false }),
       firstPageButton: createSingleLocator({ click: firstPageClick }),
       nextPageButton: createSingleLocator({ click: nextPageClick }),
       titleLabels: createTextListLocator(() => state.titlesByPage[state.currentPage]),
@@ -59,11 +60,12 @@ describe('collectExistingArticleTitles', () => {
   it('returns an empty set for an empty single-page article list', async () => {
     locatorMocks.getArticleListLocators.mockReturnValue({
       articleIds: createTextListLocator(() => []),
-      currentPageInput: createSingleLocator({ inputValue: () => '1' }),
+      currentPageInput: createSingleLocator({ isVisible: () => false }),
+      emptyState: createSingleLocator({ isVisible: () => true }),
       firstPageButton: createSingleLocator(),
       nextPageButton: createSingleLocator(),
       titleLabels: createTextListLocator(() => []),
-      totalPagesLabel: createSingleLocator({ textContent: () => ' of 1' }),
+      totalPagesLabel: createSingleLocator({ isVisible: () => false }),
     })
 
     await expect(collectExistingArticleTitles(createPage())).resolves.toEqual(new Set())
@@ -80,6 +82,7 @@ function createSingleLocator(
   overrides: {
     click?: () => Promise<void>
     inputValue?: () => Promise<string> | string
+    isVisible?: () => Promise<boolean> | boolean
     textContent?: () => Promise<string | null> | string | null
   } = {},
 ): Locator {
@@ -87,6 +90,7 @@ function createSingleLocator(
     click: overrides.click ?? (async () => {}),
     count: async () => 1,
     inputValue: async () => overrides.inputValue?.() ?? '',
+    isVisible: async () => overrides.isVisible?.() ?? true,
     textContent: async () => overrides.textContent?.() ?? '',
     waitFor: async () => {},
   } as Locator

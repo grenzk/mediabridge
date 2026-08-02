@@ -19,6 +19,7 @@ export type ArticlePageActionLocators = {
 export type ArticleListLocators = {
   articleIds: Locator
   currentPageInput: Locator
+  emptyState: Locator
   firstPageButton: Locator
   nextPageButton: Locator
   titleLabels: Locator
@@ -94,6 +95,8 @@ export function getArticleListLocators(articlePage: Page): ArticleListLocators {
     articleIds: articlePage.locator('[data-testid^="label-articles-alternate-id-"]'),
 
     currentPageInput: articlePage.getByTestId('text-input-field-articles-current-page'),
+
+    emptyState: articlePage.getByText('No article to display', { exact: true }),
 
     firstPageButton: articlePage.getByTestId('button-articles-first-page'),
 

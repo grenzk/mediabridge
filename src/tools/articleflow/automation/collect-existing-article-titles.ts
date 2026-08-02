@@ -9,8 +9,12 @@ const articleListPollIntervalMs = 100
  * eGain folder, then restores the list to its first page.
  */
 export async function collectExistingArticleTitles(articlePage: Page): Promise<Set<string>> {
-  const { articleIds, currentPageInput, firstPageButton, nextPageButton, titleLabels, totalPagesLabel } =
+  const { articleIds, currentPageInput, emptyState, firstPageButton, nextPageButton, titleLabels, totalPagesLabel } =
     getArticleListLocators(articlePage)
+
+  if ((await waitForArticleListState(articlePage, currentPageInput, totalPagesLabel, emptyState)) === 'empty') {
+    return new Set()
+  }
 
   await requireUniqueLocator(currentPageInput, 'current article-list page input')
   await requireUniqueLocator(totalPagesLabel, 'article-list total pages label')
@@ -71,6 +75,29 @@ export async function collectExistingArticleTitles(articlePage: Page): Promise<S
   }
 
   return titles
+}
+
+async function waitForArticleListState(
+  articlePage: Page,
+  currentPageInput: Locator,
+  totalPagesLabel: Locator,
+  emptyState: Locator,
+): Promise<'empty' | 'ready'> {
+  const deadline = Date.now() + articleListTimeoutMs
+
+  while (Date.now() < deadline) {
+    if (await emptyState.isVisible()) {
+      return 'empty'
+    }
+
+    if ((await currentPageInput.isVisible()) && (await totalPagesLabel.isVisible())) {
+      return 'ready'
+    }
+
+    await articlePage.waitForTimeout(articleListPollIntervalMs)
+  }
+
+  throw new Error('eGain did not finish loading the selected folder article list.')
 }
 
 async function changeArticleListPage(
