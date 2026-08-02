@@ -38,6 +38,11 @@ export type NewArticleDialogLocators = {
   doneButton: Locator
 }
 
+export type PublishSummaryDialogLocators = {
+  dialog: Locator
+  doneButton: Locator
+}
+
 /**
  * Returns the shared controls exposed by the eGain article editor.
  */
@@ -88,6 +93,21 @@ export function getNewArticleDialogLocators(articlePage: Page): NewArticleDialog
     folderPathInput: dialog.getByTestId('text-input-field_0_create-or-edit_kbarticle_Folder-Path'),
 
     doneButton: dialog.getByTestId('pop-up-window-button-new-article-done'),
+  }
+}
+
+/**
+ * Returns the controls used to confirm an article publication.
+ */
+export function getPublishSummaryDialogLocators(articlePage: Page): PublishSummaryDialogLocators {
+  const dialog = articlePage.getByRole('dialog').filter({
+    has: articlePage.getByText('Enter Summary', { exact: true }),
+  })
+
+  return {
+    dialog,
+
+    doneButton: dialog.getByRole('button', { exact: true, name: 'Done' }),
   }
 }
 

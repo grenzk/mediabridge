@@ -4,6 +4,7 @@ import {
   getArticleEditorLocators,
   getArticlePageActionLocators,
   getNewArticleDialogLocators,
+  getPublishSummaryDialogLocators,
 } from '../../../shared/egain/editor/get-article-editor-locators.ts'
 import type { ArticleImportEntry, ArticleImportPlan } from './create-import-plan.ts'
 import { ensureFolderPath, getSelectedFolderReference, selectFolderPath } from './ensure-folder-path.ts'
@@ -132,6 +133,15 @@ async function createArticle(
 
   await requireUniqueLocator(completionButton, completionLabel)
   await completionButton.click()
+
+  if (completionAction === 'publish') {
+    const { dialog: publishDialog, doneButton: publishDoneButton } = getPublishSummaryDialogLocators(articlePage)
+
+    await requireUniqueLocator(publishDialog, 'Publish summary dialog')
+    await requireUniqueLocator(publishDoneButton, 'Publish summary Done button')
+    await publishDoneButton.click()
+    await publishDialog.waitFor({ state: 'hidden' })
+  }
 }
 
 async function requireUniqueLocator(locator: Locator, description: string) {
