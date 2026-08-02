@@ -34,6 +34,7 @@ const browserStatusLabels: Record<KnowledgeWorksBrowserState, string> = {
 const appVersion = ref<string | null>(null)
 const errorMessage = ref<string | null>(null)
 const browserStatus = ref<KnowledgeWorksBrowserStatus>({ state: 'idle' })
+const isOpeningArticleFlow = ref(false)
 const isOpeningMediaBridge = ref(false)
 let removeBrowserStatusListener: (() => void) | undefined
 let browserStatusTimer: ReturnType<typeof setInterval> | undefined
@@ -58,6 +59,22 @@ async function openMediaBridge() {
     errorMessage.value = getErrorMessage(error)
   } finally {
     isOpeningMediaBridge.value = false
+  }
+}
+
+/**
+ * Opens or focuses the ArticleFlow import window.
+ */
+async function openArticleFlow() {
+  errorMessage.value = null
+  isOpeningArticleFlow.value = true
+
+  try {
+    await window.knowledgeworks.openTool('articleflow')
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error)
+  } finally {
+    isOpeningArticleFlow.value = false
   }
 }
 
@@ -176,19 +193,18 @@ onBeforeUnmount(() => {
         />
       </article>
 
-      <article class="tool-row unavailable">
+      <article class="tool-row">
         <span class="tool-mark article-mark" aria-hidden="true">AF</span>
         <div class="tool-copy">
           <strong>ArticleFlow</strong>
           <span>Create and manage eGain articles</span>
         </div>
         <Button
-          v-tooltip.bottom="'ArticleFlow is planned for a future release'"
           class="open-tool-button"
-          icon="pi pi-lock"
-          label="Soon"
-          severity="secondary"
-          disabled
+          icon="pi pi-arrow-up-right"
+          label="Open"
+          :loading="isOpeningArticleFlow"
+          @click="openArticleFlow"
         />
       </article>
     </section>
@@ -356,10 +372,6 @@ onBeforeUnmount(() => {
   background: var(--kw-surface);
 }
 
-.tool-row.unavailable {
-  border-color: var(--kw-border-subtle);
-}
-
 .tool-mark {
   width: 44px;
   height: 44px;
@@ -376,7 +388,8 @@ onBeforeUnmount(() => {
 }
 
 .article-mark {
-  color: var(--kw-text-disabled);
+  color: var(--kw-accent);
+  border-color: var(--kw-accent);
 }
 
 .tool-copy {
@@ -413,22 +426,15 @@ onBeforeUnmount(() => {
   font-weight: 600;
 }
 
-.tool-row:not(.unavailable) .open-tool-button {
+.tool-row .open-tool-button {
   color: var(--kw-text-light);
   border-color: var(--kw-focus);
   background: var(--kw-primary);
 }
 
-.tool-row:not(.unavailable) .open-tool-button:enabled:hover {
+.tool-row .open-tool-button:enabled:hover {
   border-color: var(--kw-text-light);
   background: var(--kw-primary-hover);
-}
-
-.tool-row.unavailable .open-tool-button {
-  color: var(--kw-text-disabled);
-  border-color: var(--kw-border-subtle);
-  background: var(--kw-quiet-surface);
-  opacity: 1;
 }
 
 .hub-footer {
