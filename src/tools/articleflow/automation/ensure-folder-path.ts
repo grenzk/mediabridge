@@ -7,7 +7,7 @@ import {
 const folderTreeRowSelector = 'tr[data-testid="grid-body-row-folders"]'
 const selectedFolderRowSelector = `${folderTreeRowSelector}.selected-table-row`
 const folderCellTestIdPrefix = 'grid-body-cell-folders-'
-const folderUiTimeoutMs = 10000
+const folderUiTimeoutMs = 60000
 const folderUiPollIntervalMs = 100
 
 export type EgainFolderReference = {
@@ -122,29 +122,36 @@ async function createChildFolder(
   await heading.waitFor({ state: 'hidden' })
   await articlePage.getByRole('heading', { exact: true, name: 'Folders' }).waitFor({ state: 'visible' })
 
-  const selectedFolder = await getSelectedFolderSelection(articlePage)
+  const restoredParentRow = getFolderRowById(articlePage, selectedParent.folder.id)
 
-  if (selectedFolder.folder.name === folderName) {
-    return selectedFolder
+  await requireUniqueLocator(restoredParentRow, `folder "${selectedParent.folder.name}"`)
+  await expandFolderRow(articlePage, restoredParentRow, selectedParent.folder.name)
+
+  const createdFolderRow = await waitForDirectChildFolderRow(
+    articlePage,
+    restoredParentRow,
+    selectedParent.folder.name,
+    folderName,
+  )
+
+  const selectedFolderId = getFolderIdFromUrl(articlePage.url())
+
+  if (selectedFolderId && selectedFolderId !== selectedParent.folder.id) {
+    return {
+      folder: { id: selectedFolderId, name: folderName },
+      row: createdFolderRow,
+    }
   }
-
-  const restoredParent = await selectFolderReference(articlePage, selectedParent.folder)
-
-  await expandFolderRow(articlePage, restoredParent.row, restoredParent.folder.name)
-
-  const createdFolderRow = await waitForDirectChildFolderRow(articlePage, restoredParent.row, folderName)
 
   return selectFolderRow(articlePage, createdFolderRow, folderName)
 }
 
 async function selectFolderReference(articlePage: Page, folder: EgainFolderReference): Promise<FolderSelection> {
-  const selectedFolder = await getSelectedFolderSelection(articlePage)
-
-  if (selectedFolder.folder.id === folder.id) {
-    return selectedFolder
-  }
-
   const folderRow = getFolderRowById(articlePage, folder.id)
+
+  if (getFolderIdFromUrl(articlePage.url()) === folder.id && (await folderRow.count()) === 1) {
+    return { folder, row: folderRow }
+  }
 
   await requireUniqueLocator(folderRow, `folder "${folder.name}"`)
 
@@ -247,6 +254,7 @@ async function findDirectChildFolderRow(
 async function waitForDirectChildFolderRow(
   articlePage: Page,
   parentRow: Locator,
+  parentName: string,
   folderName: string,
 ): Promise<Locator> {
   const deadline = Date.now() + folderUiTimeoutMs
@@ -257,6 +265,8 @@ async function waitForDirectChildFolderRow(
     if (childRow) {
       return childRow
     }
+
+    await expandFolderRow(articlePage, parentRow, parentName)
 
     await articlePage.waitForTimeout(folderUiPollIntervalMs)
   }
