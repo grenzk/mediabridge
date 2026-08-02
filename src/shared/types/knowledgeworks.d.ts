@@ -1,7 +1,8 @@
 export type MediaBridgeLinkingMode = 'pdf' | 'word' | 'excel' | 'powerpoint' | 'image' | 'article'
+export type ArticleFlowCompletionAction = 'check-in' | 'publish'
 export type KnowledgeWorksLogLevel = 'info' | 'success' | 'error'
 export type MediaBridgeLogLevel = KnowledgeWorksLogLevel
-export type KnowledgeWorksTool = 'mediabridge'
+export type KnowledgeWorksTool = 'articleflow' | 'mediabridge'
 export type KnowledgeWorksBrowserState = 'idle' | 'launching' | 'connected' | 'disconnected' | 'error'
 
 export type KnowledgeWorksBrowserStatus = {
@@ -34,6 +35,42 @@ export type KnowledgeWorksLogEntry = {
 }
 
 export type MediaBridgeLogEntry = KnowledgeWorksLogEntry
+
+export type ArticleFlowImportEntry = {
+  folderPath: string[]
+  relativeSourcePath: string
+  sourcePath: string
+  title: string
+}
+
+export type ArticleFlowImportPlan = {
+  articles: ArticleFlowImportEntry[]
+  folderPaths: string[][]
+  ignoredPaths: string[]
+  rootPath: string
+}
+
+export type ArticleFlowSelectionResult = {
+  canceled: boolean
+  ok: boolean
+  plan?: ArticleFlowImportPlan
+}
+
+export type ArticleFlowRunResult = {
+  completedArticleCount: number
+  createdFolderCount: number
+  existingFolderCount: number
+  failedArticles: Array<{
+    message: string
+    relativeSourcePath: string
+  }>
+  ok: boolean
+}
+
+export type ArticleFlowApi = {
+  runImport: (rootPath: string, completionAction: ArticleFlowCompletionAction) => Promise<ArticleFlowRunResult>
+  selectRoot: () => Promise<ArticleFlowSelectionResult>
+}
 
 export type MediaBridgeApi = {
   clearLogs: () => Promise<MediaBridgeOkResult>
@@ -74,6 +111,7 @@ export type KnowledgeWorksApi = {
 
 declare global {
   interface Window {
+    articleflow: ArticleFlowApi
     knowledgeworks: KnowledgeWorksApi
     mediabridge: MediaBridgeApi
   }

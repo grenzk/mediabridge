@@ -12,7 +12,13 @@ import { createBrowserService } from './platform/browser-service.js'
 import { getErrorDetail, getErrorMessage } from './platform/error-format.ts'
 import { createLogService } from './platform/log-service.js'
 import { configureDockIcon } from './platform/runtime-icon.js'
-import { createHubBrowserWindow, createLogsBrowserWindow, createToolbarBrowserWindow } from './platform/windows.js'
+import {
+  createArticleFlowBrowserWindow,
+  createHubBrowserWindow,
+  createLogsBrowserWindow,
+  createToolbarBrowserWindow,
+} from './platform/windows.js'
+import { registerArticleFlowHandlers } from './tools/articleflow/handlers.ts'
 import { registerMediaBridgeHandlers } from './tools/mediabridge/handlers.ts'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
@@ -29,9 +35,11 @@ const addLog = logService.add
 let toolbarWindow
 let logsWindow
 let hubWindow
+let articleFlowWindow
 let toolbarWindowPromise
 let logsWindowPromise
 let hubWindowPromise
+let articleFlowWindowPromise
 let launchBrowserPromise
 
 /**
@@ -128,6 +136,30 @@ async function createLogsWindow() {
   return logsWindowPromise
 }
 
+async function createArticleFlowWindow() {
+  if (!articleFlowWindowPromise) {
+    articleFlowWindowPromise = createArticleFlowBrowserWindow({
+      appRoot,
+      devServerUrl: getDevServerUrl(),
+      electronDirectory: __dirname,
+      existingWindow: articleFlowWindow,
+      onClosed: closedWindow => {
+        if (articleFlowWindow === closedWindow) {
+          articleFlowWindow = undefined
+        }
+      },
+    })
+      .then(createdWindow => {
+        articleFlowWindow = createdWindow
+      })
+      .finally(() => {
+        articleFlowWindowPromise = undefined
+      })
+  }
+
+  return articleFlowWindowPromise
+}
+
 logService.subscribe(logs => {
   if (logsWindow && !logsWindow.isDestroyed()) {
     logsWindow.webContents.send('logs:updated', logs)
@@ -169,6 +201,11 @@ registerAppHandlers({
   openTool: async tool => {
     if (tool === 'mediabridge') {
       await createToolbarWindow()
+      return
+    }
+
+    if (tool === 'articleflow') {
+      await createArticleFlowWindow()
     }
   },
 })
@@ -182,6 +219,11 @@ registerMediaBridgeHandlers({
   addLog,
   browserService,
   launchBrowser,
+})
+
+registerArticleFlowHandlers({
+  addLog,
+  browserService,
 })
 
 registerLogHandlers({

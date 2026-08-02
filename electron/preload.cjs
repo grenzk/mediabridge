@@ -2,6 +2,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 
 /**
  * @typedef {'pdf' | 'word' | 'excel' | 'powerpoint' | 'image' | 'article'} MediaBridgeLinkingMode
+ * @typedef {'check-in' | 'publish'} ArticleFlowCompletionAction
  * @typedef {'info' | 'success' | 'error'} KnowledgeWorksLogLevel
  *
  * @typedef {{
@@ -26,13 +27,41 @@ const { contextBridge, ipcRenderer } = require('electron')
  *   timestamp: string,
  * }} KnowledgeWorksLogEntry
  *
- * @typedef {'mediabridge'} KnowledgeWorksTool
+ * @typedef {'articleflow' | 'mediabridge'} KnowledgeWorksTool
  * @typedef {'idle' | 'launching' | 'connected' | 'disconnected' | 'error'} KnowledgeWorksBrowserState
  *
  * @typedef {{
  *   state: KnowledgeWorksBrowserState,
  *   message?: string,
  * }} KnowledgeWorksBrowserStatus
+ *
+ * @typedef {{
+ *   folderPath: string[],
+ *   relativeSourcePath: string,
+ *   sourcePath: string,
+ *   title: string,
+ * }} ArticleFlowImportEntry
+ *
+ * @typedef {{
+ *   articles: ArticleFlowImportEntry[],
+ *   folderPaths: string[][],
+ *   ignoredPaths: string[],
+ *   rootPath: string,
+ * }} ArticleFlowImportPlan
+ *
+ * @typedef {{
+ *   canceled: boolean,
+ *   ok: boolean,
+ *   plan?: ArticleFlowImportPlan,
+ * }} ArticleFlowSelectionResult
+ *
+ * @typedef {{
+ *   completedArticleCount: number,
+ *   createdFolderCount: number,
+ *   existingFolderCount: number,
+ *   failedArticles: Array<{ message: string, relativeSourcePath: string }>,
+ *   ok: boolean,
+ * }} ArticleFlowRunResult
  */
 
 /** @returns {Promise<MediaBridgeOkResult>} */
@@ -106,6 +135,20 @@ contextBridge.exposeInMainWorld('knowledgeworks', {
   openTool: tool => ipcRenderer.invoke('app:open-tool', tool),
 
   writeLog,
+})
+
+contextBridge.exposeInMainWorld('articleflow', {
+  /**
+   * @param {string} rootPath
+   * @param {ArticleFlowCompletionAction} completionAction
+   * @returns {Promise<ArticleFlowRunResult>}
+   */
+  runImport: (rootPath, completionAction) => ipcRenderer.invoke('articleflow:run', rootPath, completionAction),
+
+  /**
+   * @returns {Promise<ArticleFlowSelectionResult>}
+   */
+  selectRoot: () => ipcRenderer.invoke('articleflow:select-root'),
 })
 
 contextBridge.exposeInMainWorld('mediabridge', {

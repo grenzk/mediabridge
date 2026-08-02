@@ -43,6 +43,7 @@
       "dist/renderer/**/*",
       "electron/**/*",
       "src/shared/**/*",
+      "src/tools/articleflow/**/*",
       "src/tools/mediabridge/**/*",
       "package.json"
     ],

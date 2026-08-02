@@ -118,13 +118,58 @@ export async function createLogsBrowserWindow({ devServerUrl, electronDirectory,
  * }} options
  * @returns {Promise<BrowserWindow>}
  */
-export async function createHubBrowserWindow({
+export async function createArticleFlowBrowserWindow({
   appRoot,
   devServerUrl,
   electronDirectory,
   existingWindow,
   onClosed,
 }) {
+  const focusedWindow = focusWindow(existingWindow)
+
+  if (focusedWindow) {
+    return focusedWindow
+  }
+
+  const articleFlowWindow = new BrowserWindow({
+    width: 760,
+    height: 680,
+    minWidth: 640,
+    minHeight: 560,
+    title: 'ArticleFlow',
+    backgroundColor: '#202426',
+    icon: getRuntimeIcon(appRoot),
+    webPreferences: {
+      preload: join(electronDirectory, 'preload.cjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  })
+
+  articleFlowWindow.once('closed', () => onClosed(articleFlowWindow))
+
+  if (devServerUrl) {
+    await articleFlowWindow.loadURL(`${devServerUrl}?view=article-flow`)
+  } else {
+    await articleFlowWindow.loadFile(join(electronDirectory, '../dist/renderer/index.html'), {
+      query: { view: 'article-flow' },
+    })
+  }
+
+  return articleFlowWindow
+}
+
+/**
+ * @param {{
+ *   appRoot: string,
+ *   devServerUrl?: string,
+ *   electronDirectory: string,
+ *   existingWindow?: BrowserWindow,
+ *   onClosed: (closedWindow: BrowserWindow) => void,
+ * }} options
+ * @returns {Promise<BrowserWindow>}
+ */
+export async function createHubBrowserWindow({ appRoot, devServerUrl, electronDirectory, existingWindow, onClosed }) {
   const focusedWindow = focusWindow(existingWindow)
 
   if (focusedWindow) {

@@ -27,6 +27,28 @@ export type ArticleImportResult = {
   failedArticles: ArticleImportFailure[]
 }
 
+export type ArticleImportProgress =
+  | {
+      article: ArticleImportEntry
+      status: 'started' | 'completed'
+      type: 'article'
+    }
+  | {
+      article: ArticleImportEntry
+      message: string
+      status: 'failed'
+      type: 'article'
+    }
+  | {
+      folderPath: string[]
+      status: 'created' | 'existing'
+      type: 'folder'
+    }
+
+export type ArticleImportOptions = {
+  onProgress?: (progress: ArticleImportProgress) => void
+}
+
 /**
  * Recreates the planned folder hierarchy under the currently selected eGain
  * folder, then creates each article sequentially. Individual article failures
@@ -36,6 +58,7 @@ export async function runArticleImport(
   articlePage: Page,
   plan: ArticleImportPlan,
   completionAction: ArticleCompletionAction,
+  options: ArticleImportOptions = {},
 ): Promise<ArticleImportResult> {
   const importParent = await getSelectedFolderReference(articlePage)
   const completedArticles: ArticleImportEntry[] = []
@@ -48,21 +71,29 @@ export async function runArticleImport(
 
     if (createdFinalFolder) {
       createdFolderPaths.push(folderPath)
+      options.onProgress?.({ folderPath, status: 'created', type: 'folder' })
     } else {
       existingFolderPaths.push(folderPath)
+      options.onProgress?.({ folderPath, status: 'existing', type: 'folder' })
     }
   }
 
   for (const article of plan.articles) {
+    options.onProgress?.({ article, status: 'started', type: 'article' })
+
     try {
       await selectFolderPath(articlePage, importParent, article.folderPath)
       await createArticle(articlePage, article, completionAction)
       completedArticles.push(article)
+      options.onProgress?.({ article, status: 'completed', type: 'article' })
     } catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+
       failedArticles.push({
         article,
-        message: error instanceof Error ? error.message : String(error),
+        message,
       })
+      options.onProgress?.({ article, message, status: 'failed', type: 'article' })
     }
   }
 
