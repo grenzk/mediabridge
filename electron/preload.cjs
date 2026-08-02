@@ -56,8 +56,9 @@ const { contextBridge, ipcRenderer } = require('electron')
  * }} ArticleFlowSelectionResult
  *
  * @typedef {{
- *   completedArticleCount: number,
+ *   createdArticleCount: number,
  *   createdFolderCount: number,
+ *   existingArticleCount: number,
  *   existingFolderCount: number,
  *   failedArticles: Array<{ message: string, relativeSourcePath: string }>,
  *   ok: boolean,

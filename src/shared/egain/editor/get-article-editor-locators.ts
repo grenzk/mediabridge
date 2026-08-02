@@ -16,6 +16,15 @@ export type ArticlePageActionLocators = {
   publishArticleButton: Locator
 }
 
+export type ArticleListLocators = {
+  articleIds: Locator
+  currentPageInput: Locator
+  firstPageButton: Locator
+  nextPageButton: Locator
+  titleLabels: Locator
+  totalPagesLabel: Locator
+}
+
 export type ArticleFolderLocators = {
   addFolderMenuItem: Locator
   cell: Locator
@@ -74,6 +83,25 @@ export function getArticlePageActionLocators(articlePage: Page): ArticlePageActi
     checkInArticleButton: articlePage.getByTestId('button-article-content-check-in'),
 
     publishArticleButton: articlePage.getByTestId('button-article-content-publish'),
+  }
+}
+
+/**
+ * Returns the article-list controls used to inspect a selected eGain folder.
+ */
+export function getArticleListLocators(articlePage: Page): ArticleListLocators {
+  return {
+    articleIds: articlePage.locator('[data-testid^="label-articles-alternate-id-"]'),
+
+    currentPageInput: articlePage.getByTestId('text-input-field-articles-current-page'),
+
+    firstPageButton: articlePage.getByTestId('button-articles-first-page'),
+
+    nextPageButton: articlePage.getByTestId('button-articles-next-page'),
+
+    titleLabels: articlePage.locator('[data-testid^="label-articles-article-name-"]'),
+
+    totalPagesLabel: articlePage.getByTestId('label-articles-total-pages'),
   }
 }
 

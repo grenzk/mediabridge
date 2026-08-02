@@ -104,15 +104,21 @@ async function openLogs() {
 }
 
 function setResultStatus(result: ArticleFlowRunResult) {
+  const action = completionAction.value === 'check-in' ? 'checked in' : 'published'
+  const parts = [`${formatCount(result.createdArticleCount, 'article')} ${action}`]
+
+  if (result.existingArticleCount > 0) {
+    parts.push(`${formatCount(result.existingArticleCount, 'article')} already existed`)
+  }
+
   if (!result.ok) {
-    statusMessage.value = `${formatCount(result.completedArticleCount, 'article')} completed; ${formatCount(result.failedArticles.length, 'article')} failed. See logs.`
+    parts.push(`${formatCount(result.failedArticles.length, 'article')} failed`)
+    statusMessage.value = `${parts.join('; ')}. See logs.`
     statusTone.value = 'error'
     return
   }
 
-  const action = completionAction.value === 'check-in' ? 'checked in' : 'published'
-
-  statusMessage.value = `${formatCount(result.completedArticleCount, 'article')} ${action}.`
+  statusMessage.value = `${parts.join('; ')}.`
   statusTone.value = 'success'
 }
 

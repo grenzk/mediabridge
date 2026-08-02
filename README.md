@@ -58,6 +58,11 @@ browser without selecting an article. ArticleFlow uses that folder's context
 menu when it needs to add a direct child, then verifies the destination shown in
 the New Article dialog before creating each article.
 
+ArticleFlow scans every article-list page in each destination folder before
+creating content. An exact title match is treated as an existing article and is
+skipped, so interrupted imports can be run again without overwriting completed
+articles.
+
 Use `--action publish` only when every planned article should be published.
 
 ## Testing

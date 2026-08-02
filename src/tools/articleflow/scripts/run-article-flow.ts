@@ -126,7 +126,8 @@ function printImportPlan(
 function printImportResult(result: ArticleImportResult, completionAction: ArticleCompletionAction) {
   console.log(`\n${result.createdFolderPaths.length} folder(s) created.`)
   console.log(`${result.existingFolderPaths.length} folder(s) already existed.`)
-  console.log(`\n${result.completedArticles.length} article(s) completed with "${completionAction}".`)
+  console.log(`\n${result.createdArticles.length} article(s) completed with "${completionAction}".`)
+  console.log(`${result.existingArticles.length} article(s) already existed and were skipped.`)
 
   if (result.failedArticles.length === 0) {
     return

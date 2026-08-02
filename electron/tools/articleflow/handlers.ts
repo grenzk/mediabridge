@@ -77,7 +77,8 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
           onProgress: progress => logProgress(addLog, progress, completionAction),
         })
         const failedArticleCount = result.failedArticles.length
-        const completedArticleCount = result.completedArticles.length
+        const createdArticleCount = result.createdArticles.length
+        const existingArticleCount = result.existingArticles.length
         const detail = result.failedArticles
           .map(({ article, message }) => `${article.relativeSourcePath}: ${message}`)
           .join('\n')
@@ -86,20 +87,21 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
           addLog(
             'error',
             'ArticleFlow',
-            `${formatCount(completedArticleCount, 'article')} completed; ${formatCount(failedArticleCount, 'article')} failed.`,
+            formatImportSummary(createdArticleCount, existingArticleCount, failedArticleCount, completionAction),
             detail,
           )
         } else {
           addLog(
             'success',
             'ArticleFlow',
-            `${formatCount(completedArticleCount, 'article')} ${formatCompletionResult(completionAction)}.`,
+            formatImportSummary(createdArticleCount, existingArticleCount, failedArticleCount, completionAction),
           )
         }
 
         return {
-          completedArticleCount,
+          createdArticleCount,
           createdFolderCount: result.createdFolderPaths.length,
+          existingArticleCount,
           existingFolderCount: result.existingFolderPaths.length,
           failedArticles: result.failedArticles.map(({ article, message }) => ({
             message,
@@ -139,11 +141,21 @@ function logProgress(addLog: AddLog, progress: ArticleImportProgress, completion
     return
   }
 
-  if (progress.status === 'completed') {
+  if (progress.status === 'created') {
     addLog(
       'success',
       'ArticleFlow',
       `${progress.article.title} ${formatCompletionResult(completionAction)}.`,
+      progress.article.relativeSourcePath,
+    )
+    return
+  }
+
+  if (progress.status === 'existing') {
+    addLog(
+      'info',
+      'ArticleFlow',
+      `Skipped ${progress.article.title}; an article with that title already exists.`,
       progress.article.relativeSourcePath,
     )
     return
@@ -161,6 +173,25 @@ function logProgress(addLog: AddLog, progress: ArticleImportProgress, completion
 
 function formatCompletionResult(completionAction: ArticleCompletionAction) {
   return completionAction === 'check-in' ? 'checked in' : 'published'
+}
+
+function formatImportSummary(
+  createdArticleCount: number,
+  existingArticleCount: number,
+  failedArticleCount: number,
+  completionAction: ArticleCompletionAction,
+) {
+  const parts = [`${formatCount(createdArticleCount, 'article')} ${formatCompletionResult(completionAction)}`]
+
+  if (existingArticleCount > 0) {
+    parts.push(`${formatCount(existingArticleCount, 'article')} already existed`)
+  }
+
+  if (failedArticleCount > 0) {
+    parts.push(`${formatCount(failedArticleCount, 'article')} failed`)
+  }
+
+  return `${parts.join('; ')}.`
 }
 
 function formatCount(count: number, noun: string) {

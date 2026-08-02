@@ -6,6 +6,7 @@ import {
   getNewArticleDialogLocators,
   getPublishSummaryDialogLocators,
 } from '../../../shared/egain/editor/get-article-editor-locators.ts'
+import { collectExistingArticleTitles } from './collect-existing-article-titles.ts'
 import type { ArticleImportEntry, ArticleImportPlan } from './create-import-plan.ts'
 import { ensureFolderPath, getSelectedFolderReference, selectFolderPath } from './ensure-folder-path.ts'
 
@@ -21,8 +22,9 @@ export type ArticleImportFailure = {
 }
 
 export type ArticleImportResult = {
-  completedArticles: ArticleImportEntry[]
+  createdArticles: ArticleImportEntry[]
   createdFolderPaths: string[][]
+  existingArticles: ArticleImportEntry[]
   existingFolderPaths: string[][]
   failedArticles: ArticleImportFailure[]
 }
@@ -30,7 +32,7 @@ export type ArticleImportResult = {
 export type ArticleImportProgress =
   | {
       article: ArticleImportEntry
-      status: 'started' | 'completed'
+      status: 'created' | 'existing' | 'started'
       type: 'article'
     }
   | {
@@ -51,8 +53,8 @@ export type ArticleImportOptions = {
 
 /**
  * Recreates the planned folder hierarchy under the currently selected eGain
- * folder, then creates each article sequentially. Individual article failures
- * are recorded and do not end the batch.
+ * folder, then creates each missing article sequentially. Existing exact-title
+ * matches are skipped, and individual article failures do not end the batch.
  */
 export async function runArticleImport(
   articlePage: Page,
@@ -61,10 +63,12 @@ export async function runArticleImport(
   options: ArticleImportOptions = {},
 ): Promise<ArticleImportResult> {
   const importParent = await getSelectedFolderReference(articlePage)
-  const completedArticles: ArticleImportEntry[] = []
+  const createdArticles: ArticleImportEntry[] = []
   const createdFolderPaths: string[][] = []
+  const existingArticles: ArticleImportEntry[] = []
   const existingFolderPaths: string[][] = []
   const failedArticles: ArticleImportFailure[] = []
+  const existingTitlesByFolder = new Map<string, Set<string>>()
 
   for (const folderPath of plan.folderPaths) {
     const createdFinalFolder = await ensureFolderPath(articlePage, importParent, folderPath)
@@ -79,13 +83,28 @@ export async function runArticleImport(
   }
 
   for (const article of plan.articles) {
-    options.onProgress?.({ article, status: 'started', type: 'article' })
-
     try {
       await selectFolderPath(articlePage, importParent, article.folderPath)
+
+      const folderKey = JSON.stringify(article.folderPath)
+      let existingTitles = existingTitlesByFolder.get(folderKey)
+
+      if (!existingTitles) {
+        existingTitles = await collectExistingArticleTitles(articlePage)
+        existingTitlesByFolder.set(folderKey, existingTitles)
+      }
+
+      if (existingTitles.has(article.title)) {
+        existingArticles.push(article)
+        options.onProgress?.({ article, status: 'existing', type: 'article' })
+        continue
+      }
+
+      options.onProgress?.({ article, status: 'started', type: 'article' })
       await createArticle(articlePage, article, completionAction)
-      completedArticles.push(article)
-      options.onProgress?.({ article, status: 'completed', type: 'article' })
+      existingTitles.add(article.title)
+      createdArticles.push(article)
+      options.onProgress?.({ article, status: 'created', type: 'article' })
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
 
@@ -97,7 +116,7 @@ export async function runArticleImport(
     }
   }
 
-  return { completedArticles, createdFolderPaths, existingFolderPaths, failedArticles }
+  return { createdArticles, createdFolderPaths, existingArticles, existingFolderPaths, failedArticles }
 }
 
 async function createArticle(

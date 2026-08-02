@@ -57,8 +57,9 @@ export type ArticleFlowSelectionResult = {
 }
 
 export type ArticleFlowRunResult = {
-  completedArticleCount: number
+  createdArticleCount: number
   createdFolderCount: number
+  existingArticleCount: number
   existingFolderCount: number
   failedArticles: Array<{
     message: string
