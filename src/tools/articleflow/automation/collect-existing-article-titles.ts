@@ -3,6 +3,7 @@ import { getArticleListLocators } from '../../../shared/egain/editor/get-article
 
 const articleListTimeoutMs = 60000
 const articleListPollIntervalMs = 100
+const articleListStablePollCount = 20
 
 /**
  * Collects exact article titles across every article-list page for the selected
@@ -12,7 +13,16 @@ export async function collectExistingArticleTitles(articlePage: Page): Promise<S
   const { articleIds, currentPageInput, emptyState, firstPageButton, nextPageButton, titleLabels, totalPagesLabel } =
     getArticleListLocators(articlePage)
 
-  if ((await waitForArticleListState(articlePage, currentPageInput, totalPagesLabel, emptyState)) === 'empty') {
+  if (
+    (await waitForArticleListState(
+      articlePage,
+      articleIds,
+      currentPageInput,
+      emptyState,
+      titleLabels,
+      totalPagesLabel,
+    )) === 'empty'
+  ) {
     return new Set()
   }
 
@@ -79,25 +89,70 @@ export async function collectExistingArticleTitles(articlePage: Page): Promise<S
 
 async function waitForArticleListState(
   articlePage: Page,
+  articleIds: Locator,
   currentPageInput: Locator,
-  totalPagesLabel: Locator,
   emptyState: Locator,
+  titleLabels: Locator,
+  totalPagesLabel: Locator,
 ): Promise<'empty' | 'ready'> {
   const deadline = Date.now() + articleListTimeoutMs
+  let previousSignature = ''
+  let stablePollCount = 0
 
   while (Date.now() < deadline) {
-    if (await emptyState.isVisible()) {
-      return 'empty'
-    }
+    const emptyStateVisible = await emptyState.isVisible()
+    const readyStateVisible = (await currentPageInput.isVisible()) && (await totalPagesLabel.isVisible())
+    const state = emptyStateVisible ? 'empty' : readyStateVisible ? 'ready' : undefined
 
-    if ((await currentPageInput.isVisible()) && (await totalPagesLabel.isVisible())) {
-      return 'ready'
+    if (state) {
+      const signature = await getArticleListStateSignature(
+        articleIds,
+        currentPageInput,
+        titleLabels,
+        totalPagesLabel,
+        emptyStateVisible,
+      )
+
+      if (signature === previousSignature) {
+        stablePollCount += 1
+      } else {
+        previousSignature = signature
+        stablePollCount = 1
+      }
+
+      if (stablePollCount >= articleListStablePollCount) {
+        return state
+      }
+    } else {
+      previousSignature = ''
+      stablePollCount = 0
     }
 
     await articlePage.waitForTimeout(articleListPollIntervalMs)
   }
 
   throw new Error('eGain did not finish loading the selected folder article list.')
+}
+
+async function getArticleListStateSignature(
+  articleIds: Locator,
+  currentPageInput: Locator,
+  titleLabels: Locator,
+  totalPagesLabel: Locator,
+  emptyStateVisible: boolean,
+): Promise<string> {
+  if (emptyStateVisible) {
+    return 'empty'
+  }
+
+  const [currentPage, ids, titles, totalPages] = await Promise.all([
+    currentPageInput.inputValue(),
+    articleIds.allTextContents(),
+    titleLabels.allTextContents(),
+    totalPagesLabel.textContent(),
+  ])
+
+  return [currentPage, totalPages ?? '', ...ids, '|', ...titles].join('\u0000')
 }
 
 async function changeArticleListPage(

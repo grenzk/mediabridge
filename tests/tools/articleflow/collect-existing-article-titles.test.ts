@@ -70,11 +70,34 @@ describe('collectExistingArticleTitles', () => {
 
     await expect(collectExistingArticleTitles(createPage())).resolves.toEqual(new Set())
   })
+
+  it('waits for a stale article list to be replaced before collecting titles', async () => {
+    let pollCount = 0
+    const getTitles = () => (pollCount < 2 ? ['Root article'] : ['Manuals'])
+
+    locatorMocks.getArticleListLocators.mockReturnValue({
+      articleIds: createTextListLocator(() => (pollCount < 2 ? ['ECV3-100'] : ['ECV3-200'])),
+      currentPageInput: createSingleLocator({ inputValue: () => '1' }),
+      emptyState: createSingleLocator({ isVisible: () => false }),
+      firstPageButton: createSingleLocator(),
+      nextPageButton: createSingleLocator(),
+      titleLabels: createTextListLocator(getTitles),
+      totalPagesLabel: createSingleLocator({ textContent: () => ' of 1' }),
+    })
+
+    const titles = await collectExistingArticleTitles(createPage(() => {
+      pollCount += 1
+    }))
+
+    expect([...titles]).toEqual(['Manuals'])
+  })
 })
 
-function createPage(): Page {
+function createPage(onWait?: () => void): Page {
   return {
-    waitForTimeout: async () => {},
+    waitForTimeout: async () => {
+      onWait?.()
+    },
   } as unknown as Page
 }
 
