@@ -5,126 +5,200 @@ import {
 } from '../../../shared/egain/editor/get-article-editor-locators.ts'
 
 const folderTreeRowSelector = 'tr[data-testid="grid-body-row-folders"]'
-const selectedFolderRowSelector = `${folderTreeRowSelector}.selected-table-row`
 const folderCellTestIdPrefix = 'grid-body-cell-folders-'
 const activeFolderLoaderSelector = '[data-testid="loader"].loader-container-show:visible'
+const folderTreeRetryLimit = 3
 const folderUiTimeoutMs = 60000
 const folderUiPollIntervalMs = 100
+const folderSelectionSettleDelayMs = 500
 
 export type EgainFolderReference = {
   id: string
   name: string
 }
 
-type FolderSelection = {
+export type EgainImportParent = EgainFolderReference & {
+  ancestorPath: EgainFolderReference[]
+}
+
+type ResolvedFolder = {
   folder: EgainFolderReference
   row: Locator
 }
 
+type FolderTreeEntry = EgainFolderReference & {
+  level: number
+  parentId?: string
+  selected: boolean
+}
+
+class FolderTreeChangedError extends Error {}
+
+class FolderTreeStructureError extends Error {}
+
 /**
- * Returns the eGain folder selected when an ArticleFlow import starts.
+ * Returns the selected eGain folder and its visible ancestor path when an
+ * ArticleFlow import starts.
  */
-export async function getSelectedFolderReference(articlePage: Page): Promise<EgainFolderReference> {
-  return (await getSelectedFolderSelection(articlePage)).folder
+export async function getSelectedFolderReference(articlePage: Page): Promise<EgainImportParent> {
+  await waitForFolderUiReady(articlePage)
+
+  const entries = await getFolderTreeEntries(articlePage)
+  const selectedEntries = entries.filter(entry => entry.selected)
+
+  if (selectedEntries.length !== 1) {
+    throw new Error(`Expected one selected eGain folder, but found ${selectedEntries.length}.`)
+  }
+
+  const selectedFolder = selectedEntries[0]
+  const entriesById = new Map(entries.map(entry => [entry.id, entry]))
+  const ancestorPath: EgainFolderReference[] = []
+  let parentId = selectedFolder.parentId
+
+  while (parentId) {
+    const parent = entriesById.get(parentId)
+
+    if (!parent) {
+      throw new Error(`Could not determine the ancestor path for folder "${selectedFolder.name}".`)
+    }
+
+    ancestorPath.unshift(toFolderReference(parent))
+    parentId = parent.parentId
+  }
+
+  return { ...toFolderReference(selectedFolder), ancestorPath }
 }
 
 /**
- * Selects a folder path beneath the import parent, creating any missing direct
- * children through each parent's context menu. Returns whether the final folder
- * in the path was created.
+ * Recreates a folder path beneath the import parent. Existing direct children
+ * are reused and missing children are created through the parent context menu.
  */
 export async function ensureFolderPath(
   articlePage: Page,
-  importParent: EgainFolderReference,
+  importParent: EgainImportParent,
   folderPath: string[],
 ): Promise<boolean> {
-  return walkFolderPath(articlePage, importParent, folderPath, true)
-}
-
-/**
- * Selects an existing folder path beneath the import parent.
- */
-export async function selectFolderPath(
-  articlePage: Page,
-  importParent: EgainFolderReference,
-  folderPath: string[],
-): Promise<void> {
-  await walkFolderPath(articlePage, importParent, folderPath, false)
-}
-
-async function walkFolderPath(
-  articlePage: Page,
-  importParent: EgainFolderReference,
-  folderPath: string[],
-  createMissingFolders: boolean,
-) {
-  let currentSelection = await selectFolderReference(articlePage, importParent)
   let createdFinalFolder = false
 
   for (const [index, folderName] of folderPath.entries()) {
-    currentSelection = await restoreFolderPath(
-      articlePage,
-      importParent,
-      folderPath.slice(0, index),
-      currentSelection,
-    )
-    currentSelection = await expandFolderSelection(articlePage, currentSelection)
+    const parentPath = folderPath.slice(0, index)
+    const existingChild = await resolveDirectChild(articlePage, importParent, parentPath, folderName)
 
-    const childRow = await findDirectChildFolderRow(articlePage, currentSelection.row, folderName)
-    let childWasCreated = false
-
-    if (childRow) {
-      currentSelection = await selectFolderRow(articlePage, childRow, folderName)
-    } else if (createMissingFolders) {
-      currentSelection = await createChildFolder(
-        articlePage,
-        importParent,
-        folderPath.slice(0, index),
-        currentSelection,
-        folderName,
-      )
-      childWasCreated = true
-    } else {
-      throw new Error(`Could not find folder "${folderName}" directly under "${currentSelection.folder.name}".`)
+    if (existingChild) {
+      continue
     }
 
+    await createChildFolder(articlePage, importParent, parentPath, folderName)
+
     if (index === folderPath.length - 1) {
-      createdFinalFolder = childWasCreated
+      createdFinalFolder = true
     }
   }
 
   return createdFinalFolder
 }
 
-async function createChildFolder(
+/**
+ * Resolves and selects one existing folder path beneath the import parent.
+ */
+export async function selectFolderPath(
   articlePage: Page,
-  importParent: EgainFolderReference,
+  importParent: EgainImportParent,
+  folderPath: string[],
+): Promise<void> {
+  await retryFolderTreeOperation(articlePage, `select folder path "${formatFolderPath(folderPath)}"`, async () => {
+    const destination = await resolveFolderPathOnce(articlePage, importParent, folderPath)
+
+    await selectResolvedFolder(articlePage, destination)
+  })
+}
+
+async function resolveDirectChild(
+  articlePage: Page,
+  importParent: EgainImportParent,
   parentPath: string[],
-  parentSelection: FolderSelection,
   folderName: string,
-): Promise<FolderSelection> {
-  const selectedParent = await restoreFolderPath(articlePage, importParent, parentPath, parentSelection)
-  const { addFolderMenuItem, contextMenuButton } = getArticleFolderLocators(
-    selectedParent.row,
-    selectedParent.folder.name,
+): Promise<EgainFolderReference | null> {
+  return retryFolderTreeOperation(
+    articlePage,
+    `resolve folder "${folderName}" under "${formatFolderPath(parentPath, importParent.name)}"`,
+    async () => {
+      const parent = await resolveFolderPathOnce(articlePage, importParent, parentPath)
+      const expandedParent = await expandResolvedFolder(articlePage, parent)
+
+      return findDirectChildFolder(articlePage, expandedParent.folder.id, folderName)
+    },
   )
+}
 
-  await requireUniqueLocator(contextMenuButton, `context menu for folder "${selectedParent.folder.name}"`)
+async function resolveFolderPathOnce(
+  articlePage: Page,
+  importParent: EgainImportParent,
+  folderPath: string[],
+): Promise<ResolvedFolder> {
+  let current = await resolveImportParentOnce(articlePage, importParent)
 
-  if (!(await addFolderMenuItem.isVisible())) {
-    await contextMenuButton.click()
+  for (const folderName of folderPath) {
+    current = await expandResolvedFolder(articlePage, current)
+
+    const child = await findDirectChildFolder(articlePage, current.folder.id, folderName)
+
+    if (!child) {
+      throw new FolderTreeChangedError(
+        `Could not find folder "${folderName}" directly under "${current.folder.name}".`,
+      )
+    }
+
+    current = await resolveVisibleFolder(articlePage, child)
   }
 
-  await requireUniqueLocator(addFolderMenuItem, `Add action for folder "${selectedParent.folder.name}"`)
-  await addFolderMenuItem.waitFor({ state: 'visible' })
-  await addFolderMenuItem.click()
+  return current
+}
 
+async function resolveImportParentOnce(
+  articlePage: Page,
+  importParent: EgainImportParent,
+): Promise<ResolvedFolder> {
+  const importPath = [...importParent.ancestorPath, toFolderReference(importParent)]
+  const [topLevelFolder, ...nestedFolders] = importPath
+
+  if (!topLevelFolder) {
+    throw new FolderTreeStructureError('The selected eGain import parent has no resolvable folder path.')
+  }
+
+  let current = await resolveVisibleFolder(articlePage, topLevelFolder)
+
+  for (const expectedFolder of nestedFolders) {
+    current = await expandResolvedFolder(articlePage, current)
+
+    const directChildren = await getDirectChildFolderReferences(articlePage, current.folder.id)
+    const matchingFolder = directChildren.find(folder => folder.id === expectedFolder.id)
+
+    if (!matchingFolder) {
+      throw new FolderTreeChangedError(
+        `Folder "${expectedFolder.name}" disappeared while reopening the import parent.`,
+      )
+    }
+
+    current = await resolveVisibleFolder(articlePage, matchingFolder)
+  }
+
+  return current
+}
+
+async function createChildFolder(
+  articlePage: Page,
+  importParent: EgainImportParent,
+  parentPath: string[],
+  folderName: string,
+): Promise<void> {
+  const selectedParent = await openCreateFolderForm(articlePage, importParent, parentPath)
   const { backButton, heading, nameInput, saveButton } = getCreateFolderFormLocators(articlePage)
 
   await requireUniqueLocator(heading, 'Create Folder heading')
 
-  if (getFolderIdFromUrl(articlePage.url()) !== selectedParent.folder.id || !isCreateFolderUrl(articlePage.url())) {
-    throw new Error(`The Create Folder form did not open under "${selectedParent.folder.name}".`)
+  if (getFolderIdFromUrl(articlePage.url()) !== selectedParent.id || !isCreateFolderUrl(articlePage.url())) {
+    throw new Error(`The Create Folder form did not open under "${selectedParent.name}".`)
   }
 
   await requireUniqueLocator(nameInput, 'Create Folder name input')
@@ -137,235 +211,76 @@ async function createChildFolder(
   await heading.waitFor({ state: 'hidden' })
   await articlePage.getByRole('heading', { exact: true, name: 'Folders' }).waitFor({ state: 'visible' })
 
-  const restoredParent = await restoreFolderPath(articlePage, importParent, parentPath)
+  await waitForCreatedFolder(articlePage, importParent, parentPath, folderName)
+}
 
-  const createdFolderRow = await waitForDirectChildFolderRow(
+async function openCreateFolderForm(
+  articlePage: Page,
+  importParent: EgainImportParent,
+  parentPath: string[],
+): Promise<EgainFolderReference> {
+  return retryFolderTreeOperation(
     articlePage,
-    restoredParent,
-    folderName,
-  )
-
-  return selectFolderRow(articlePage, createdFolderRow, folderName)
-}
-
-/**
- * Reopens a known path from the stable import parent after eGain rerenders or
- * collapses the folder tree.
- */
-async function restoreFolderPath(
-  articlePage: Page,
-  importParent: EgainFolderReference,
-  folderPath: string[],
-  currentSelection?: FolderSelection,
-): Promise<FolderSelection> {
-  await waitForFolderUiReady(articlePage)
-
-  if (currentSelection && (await currentSelection.row.count()) === 1) {
-    return selectFolderReference(articlePage, currentSelection.folder)
-  }
-
-  let restoredSelection = await selectFolderReference(articlePage, importParent)
-
-  for (const folderName of folderPath) {
-    restoredSelection = await expandFolderSelection(articlePage, restoredSelection)
-
-    const childRow = await waitForDirectChildFolderRow(articlePage, restoredSelection, folderName)
-
-    restoredSelection = await selectFolderRow(articlePage, childRow, folderName)
-  }
-
-  return restoredSelection
-}
-
-async function selectFolderReference(articlePage: Page, folder: EgainFolderReference): Promise<FolderSelection> {
-  const folderRow = getFolderRowById(articlePage, folder.id)
-
-  await requireUniqueLocator(folderRow, `folder "${folder.name}"`)
-
-  if (await isFolderRowSelected(folderRow)) {
-    return { folder, row: folderRow }
-  }
-
-  return selectFolderRow(articlePage, folderRow, folder.name)
-}
-
-async function selectFolderRow(articlePage: Page, folderRow: Locator, folderName: string): Promise<FolderSelection> {
-  const folder = await getFolderReference(folderRow)
-
-  if (folder.name !== folderName) {
-    throw new Error(`Expected folder "${folderName}", but found "${folder.name}".`)
-  }
-
-  if (await isFolderRowSelected(folderRow)) {
-    return { folder, row: folderRow }
-  }
-
-  const { cell } = getArticleFolderLocators(folderRow, folderName)
-
-  await waitForFolderUiReady(articlePage)
-  await requireUniqueLocator(cell, `folder "${folderName}"`)
-  await cell.click({ timeout: folderUiTimeoutMs })
-
-  return waitForSelectedFolder(articlePage, folder)
-}
-
-async function getSelectedFolderSelection(articlePage: Page): Promise<FolderSelection> {
-  const row = articlePage.locator(selectedFolderRowSelector)
-
-  await requireUniqueLocator(row, 'selected eGain folder')
-
-  return { folder: await getFolderReference(row), row }
-}
-
-async function getFolderReference(folderRow: Locator): Promise<EgainFolderReference> {
-  const { contextMenuIconIds, folderCellTestIds } = await folderRow.evaluate(
-    (row, options) => {
-      const belongsToCurrentRow = (element: Element) => element.closest(options.folderTreeRowSelector) === row
-
-      const folderCellTestIds = Array.from(
-        row.querySelectorAll<HTMLElement>(`[data-testid^="${options.folderCellTestIdPrefix}"]`),
+    `open Create Folder under "${formatFolderPath(parentPath, importParent.name)}"`,
+    async () => {
+      const parent = await resolveFolderPathOnce(articlePage, importParent, parentPath)
+      const freshParent = await resolveVisibleFolder(articlePage, parent.folder)
+      const { addFolderMenuItem, contextMenuButton } = getArticleFolderLocators(
+        freshParent.row,
+        freshParent.folder.name,
       )
-        .filter(belongsToCurrentRow)
-        .map(element => element.getAttribute('data-testid'))
-        .filter((value): value is string => Boolean(value))
 
-      const contextMenuIconIds = Array.from(
-        row.querySelectorAll<HTMLElement>('[id^="ic-dot-menu-"][id$="-context"]'),
-      )
-        .filter(belongsToCurrentRow)
-        .map(element => element.id)
-        .filter(Boolean)
-
-      return { contextMenuIconIds, folderCellTestIds }
-    },
-    { folderCellTestIdPrefix, folderTreeRowSelector },
-  )
-
-  if (folderCellTestIds.length !== 1) {
-    throw new Error(`Expected one folder name cell, but found ${folderCellTestIds.length}.`)
-  }
-
-  const name = folderCellTestIds[0].slice(folderCellTestIdPrefix.length)
-
-  if (!name) {
-    throw new Error('Could not determine the selected eGain folder name.')
-  }
-
-  if (contextMenuIconIds.length !== 1) {
-    throw new Error(`Expected one context menu marker for folder "${name}", but found ${contextMenuIconIds.length}.`)
-  }
-
-  const contextMenuIconId = contextMenuIconIds[0]
-  const id = contextMenuIconId?.match(/^ic-dot-menu-(.+)-context$/)?.[1]
-
-  if (!id) {
-    throw new Error(`Could not determine the eGain folder ID for "${name}".`)
-  }
-
-  return { id, name }
-}
-
-async function waitForSelectedFolder(
-  articlePage: Page,
-  expectedFolder: EgainFolderReference,
-): Promise<FolderSelection> {
-  const deadline = Date.now() + folderUiTimeoutMs
-  let actualName = ''
-
-  while (Date.now() < deadline) {
-    const selectedRows = articlePage.locator(selectedFolderRowSelector)
-
-    if ((await selectedRows.count()) === 1) {
-      const actualFolder = await getFolderReference(selectedRows)
-
-      actualName = actualFolder.name
-
-      if (actualFolder.id === expectedFolder.id) {
-        await waitForFolderUiReady(articlePage)
-
-        return { folder: actualFolder, row: getFolderRowById(articlePage, actualFolder.id) }
+      if ((await contextMenuButton.count()) !== 1) {
+        throw new FolderTreeChangedError(`The context menu for "${freshParent.folder.name}" disappeared.`)
       }
+
+      if (!(await addFolderMenuItem.isVisible())) {
+        await contextMenuButton.click({ timeout: folderUiTimeoutMs })
+      }
+
+      await waitForFolderMenuItem(articlePage, freshParent.folder, addFolderMenuItem)
+      await addFolderMenuItem.click({ timeout: folderUiTimeoutMs })
+
+      return freshParent.folder
+    },
+  )
+}
+
+async function waitForFolderMenuItem(
+  articlePage: Page,
+  parentFolder: EgainFolderReference,
+  menuItem: Locator,
+): Promise<void> {
+  const deadline = Date.now() + folderUiTimeoutMs
+
+  while (Date.now() < deadline) {
+    if ((await getFolderRowById(articlePage, parentFolder.id).count()) === 0) {
+      throw new FolderTreeChangedError(`Folder "${parentFolder.name}" disappeared while opening its context menu.`)
+    }
+
+    if (await menuItem.isVisible()) {
+      return
     }
 
     await articlePage.waitForTimeout(folderUiPollIntervalMs)
   }
 
-  throw new Error(`Expected eGain to select folder "${expectedFolder.name}", but found "${actualName || 'none'}".`)
+  throw new FolderTreeChangedError(`The Add action for folder "${parentFolder.name}" did not appear.`)
 }
 
-async function expandFolderSelection(
+async function waitForCreatedFolder(
   articlePage: Page,
-  selection: FolderSelection,
-): Promise<FolderSelection> {
-  await waitForFolderUiReady(articlePage)
-
-  const folderRow = getFolderRowById(articlePage, selection.folder.id)
-
-  await requireUniqueLocator(folderRow, `folder "${selection.folder.name}"`)
-
-  const { collapseButton, expandButton } = getArticleFolderLocators(folderRow, selection.folder.name)
-  const collapseButtonCount = await collapseButton.count()
-  const expandButtonCount = await expandButton.count()
-
-  if (collapseButtonCount > 1 || expandButtonCount > 1) {
-    throw new Error(`Expected one hierarchy control for folder "${selection.folder.name}".`)
-  }
-
-  if (await collapseButton.isVisible()) {
-    return { folder: selection.folder, row: folderRow }
-  }
-
-  if (!(await expandButton.isVisible())) {
-    return { folder: selection.folder, row: folderRow }
-  }
-
-  await expandButton.click({ timeout: folderUiTimeoutMs })
-  await collapseButton.waitFor({ state: 'visible' })
-
+  importParent: EgainImportParent,
+  parentPath: string[],
+  folderName: string,
+): Promise<void> {
   const deadline = Date.now() + folderUiTimeoutMs
 
   while (Date.now() < deadline) {
-    const refreshedRow = getFolderRowById(articlePage, selection.folder.id)
+    const createdFolder = await resolveDirectChild(articlePage, importParent, parentPath, folderName)
 
-    if ((await refreshedRow.count()) === 1 && (await getDirectChildFolderIds(refreshedRow)).length > 0) {
-      await waitForFolderUiReady(articlePage)
-
-      return { folder: selection.folder, row: refreshedRow }
-    }
-
-    await articlePage.waitForTimeout(folderUiPollIntervalMs)
-  }
-
-  throw new Error(`Folder "${selection.folder.name}" expanded, but its child folders did not load.`)
-}
-
-async function findDirectChildFolderRow(
-  articlePage: Page,
-  parentRow: Locator,
-  folderName: string,
-): Promise<Locator | null> {
-  const matchingFolderIds = await getDirectChildFolderIds(parentRow, folderName)
-
-  if (matchingFolderIds.length > 1) {
-    throw new Error(`Found multiple folders named "${folderName}" under the same eGain parent.`)
-  }
-
-  return matchingFolderIds[0] ? getFolderRowById(articlePage, matchingFolderIds[0]) : null
-}
-
-async function waitForDirectChildFolderRow(
-  articlePage: Page,
-  parentSelection: FolderSelection,
-  folderName: string,
-): Promise<Locator> {
-  const deadline = Date.now() + folderUiTimeoutMs
-
-  while (Date.now() < deadline) {
-    const expandedParent = await expandFolderSelection(articlePage, parentSelection)
-    const childRow = await findDirectChildFolderRow(articlePage, expandedParent.row, folderName)
-
-    if (childRow) {
-      return childRow
+    if (createdFolder) {
+      return
     }
 
     await articlePage.waitForTimeout(folderUiPollIntervalMs)
@@ -374,10 +289,248 @@ async function waitForDirectChildFolderRow(
   throw new Error(`eGain did not display the newly created folder "${folderName}".`)
 }
 
-async function isFolderRowSelected(folderRow: Locator): Promise<boolean> {
-  const className = await folderRow.getAttribute('class')
+async function selectResolvedFolder(articlePage: Page, destination: ResolvedFolder): Promise<void> {
+  await waitForFolderUiReady(articlePage)
 
-  return className?.split(/\s+/).includes('selected-table-row') ?? false
+  const freshDestination = await resolveVisibleFolder(articlePage, destination.folder)
+  const { cell } = getArticleFolderLocators(freshDestination.row, freshDestination.folder.name)
+
+  if ((await cell.count()) !== 1) {
+    throw new FolderTreeChangedError(`Folder "${freshDestination.folder.name}" disappeared before selection.`)
+  }
+
+  await cell.click({ timeout: folderUiTimeoutMs })
+  await waitForFolderSelection(articlePage, freshDestination.folder)
+  await articlePage.waitForTimeout(folderSelectionSettleDelayMs)
+  await waitForFolderUiReady(articlePage)
+}
+
+async function waitForFolderSelection(
+  articlePage: Page,
+  expectedFolder: EgainFolderReference,
+): Promise<void> {
+  const deadline = Date.now() + folderUiTimeoutMs
+
+  while (Date.now() < deadline) {
+    if (await isFolderSelectionComplete(articlePage, expectedFolder.id)) {
+      await waitForFolderUiReady(articlePage)
+
+      if (await isFolderSelectionComplete(articlePage, expectedFolder.id)) {
+        return
+      }
+    }
+
+    await articlePage.waitForTimeout(folderUiPollIntervalMs)
+  }
+
+  throw new FolderTreeChangedError(`eGain did not select folder "${expectedFolder.name}".`)
+}
+
+async function isFolderSelectionComplete(articlePage: Page, folderId: string): Promise<boolean> {
+  if (getFolderIdFromUrl(articlePage.url()) !== folderId) {
+    return false
+  }
+
+  const selectedEntries = (await getFolderTreeEntries(articlePage)).filter(entry => entry.selected)
+
+  return selectedEntries.length === 1 && selectedEntries[0].id === folderId
+}
+
+async function expandResolvedFolder(articlePage: Page, folder: ResolvedFolder): Promise<ResolvedFolder> {
+  await waitForFolderUiReady(articlePage)
+
+  const current = await resolveVisibleFolder(articlePage, folder.folder)
+  const { collapseButton, expandButton } = getArticleFolderLocators(current.row, current.folder.name)
+  const collapseButtonCount = await collapseButton.count()
+  const expandButtonCount = await expandButton.count()
+
+  if (collapseButtonCount > 1 || expandButtonCount > 1) {
+    throw new FolderTreeStructureError(`Expected one hierarchy control for folder "${current.folder.name}".`)
+  }
+
+  if (await collapseButton.isVisible()) {
+    if ((await getDirectChildFolderReferences(articlePage, current.folder.id)).length === 0) {
+      throw new FolderTreeChangedError(`Folder "${current.folder.name}" lost its visible child rows.`)
+    }
+
+    return current
+  }
+
+  if (!(await expandButton.isVisible())) {
+    return current
+  }
+
+  await expandButton.click({ timeout: folderUiTimeoutMs })
+  await waitForFolderExpansion(articlePage, current.folder)
+
+  return resolveVisibleFolder(articlePage, current.folder)
+}
+
+async function waitForFolderExpansion(articlePage: Page, folder: EgainFolderReference): Promise<void> {
+  const deadline = Date.now() + folderUiTimeoutMs
+
+  while (Date.now() < deadline) {
+    await waitForFolderUiReady(articlePage)
+
+    const row = getFolderRowById(articlePage, folder.id)
+
+    if ((await row.count()) !== 1) {
+      throw new FolderTreeChangedError(`Folder "${folder.name}" disappeared while it was expanding.`)
+    }
+
+    const { collapseButton } = getArticleFolderLocators(row, folder.name)
+
+    if (
+      (await collapseButton.isVisible()) &&
+      (await getDirectChildFolderReferences(articlePage, folder.id)).length > 0
+    ) {
+      return
+    }
+
+    await articlePage.waitForTimeout(folderUiPollIntervalMs)
+  }
+
+  throw new FolderTreeChangedError(`Folder "${folder.name}" did not finish expanding.`)
+}
+
+async function resolveVisibleFolder(
+  articlePage: Page,
+  folder: EgainFolderReference,
+): Promise<ResolvedFolder> {
+  const row = getFolderRowById(articlePage, folder.id)
+  const rowCount = await row.count()
+
+  if (rowCount === 0) {
+    throw new FolderTreeChangedError(`Folder "${folder.name}" is no longer visible in the eGain tree.`)
+  }
+
+  if (rowCount !== 1) {
+    throw new FolderTreeStructureError(`Expected one folder "${folder.name}", but found ${rowCount}.`)
+  }
+
+  if (!(await row.isVisible())) {
+    throw new FolderTreeChangedError(`Folder "${folder.name}" is currently hidden in the eGain tree.`)
+  }
+
+  return { folder, row }
+}
+
+async function findDirectChildFolder(
+  articlePage: Page,
+  parentId: string,
+  folderName: string,
+): Promise<EgainFolderReference | null> {
+  const matchingFolders = (await getDirectChildFolderReferences(articlePage, parentId)).filter(
+    folder => folder.name === folderName,
+  )
+
+  if (matchingFolders.length > 1) {
+    throw new FolderTreeStructureError(`Found multiple folders named "${folderName}" under the same eGain parent.`)
+  }
+
+  return matchingFolders[0] ?? null
+}
+
+async function getDirectChildFolderReferences(
+  articlePage: Page,
+  parentId: string,
+): Promise<EgainFolderReference[]> {
+  return (await getFolderTreeEntries(articlePage))
+    .filter(entry => entry.parentId === parentId)
+    .map(toFolderReference)
+}
+
+async function getFolderTreeEntries(articlePage: Page): Promise<FolderTreeEntry[]> {
+  return articlePage.locator(folderTreeRowSelector).evaluateAll(
+    (rows, options) => {
+      const entries: FolderTreeEntry[] = []
+      const folderIdsByLevel: string[] = []
+
+      rows.forEach(row => {
+        const levelMatch = row.className.match(/\blevel-(\d+)\b/)
+
+        if (!levelMatch) {
+          return
+        }
+
+        const belongsToRow = (element: Element) => element.closest(options.folderTreeRowSelector) === row
+        const folderCell = Array.from(
+          row.querySelectorAll<HTMLElement>(`[data-testid^="${options.folderCellTestIdPrefix}"]`),
+        ).find(belongsToRow)
+        const contextMenuIcon = Array.from(
+          row.querySelectorAll<HTMLElement>('[id^="ic-dot-menu-"][id$="-context"]'),
+        ).find(belongsToRow)
+        const name = folderCell?.dataset.testid?.slice(options.folderCellTestIdPrefix.length)
+        const id = contextMenuIcon?.id.match(/^ic-dot-menu-(.+)-context$/)?.[1]
+
+        if (!id || !name) {
+          return
+        }
+
+        const level = Number(levelMatch[1])
+
+        entries.push({
+          id,
+          level,
+          name,
+          parentId: level > 0 ? folderIdsByLevel[level - 1] : undefined,
+          selected: row.classList.contains('selected-table-row'),
+        })
+
+        folderIdsByLevel[level] = id
+        folderIdsByLevel.length = level + 1
+      })
+
+      return entries
+    },
+    { folderCellTestIdPrefix, folderTreeRowSelector },
+  )
+}
+
+async function retryFolderTreeOperation<T>(
+  articlePage: Page,
+  description: string,
+  operation: () => Promise<T>,
+): Promise<T> {
+  let lastError: unknown
+
+  for (let attempt = 1; attempt <= folderTreeRetryLimit; attempt += 1) {
+    try {
+      await waitForFolderUiReady(articlePage)
+
+      return await operation()
+    } catch (error) {
+      if (error instanceof FolderTreeStructureError || !isRetryableFolderTreeError(error)) {
+        throw error
+      }
+
+      lastError = error
+
+      if (attempt < folderTreeRetryLimit) {
+        await articlePage.waitForTimeout(folderUiPollIntervalMs)
+      }
+    }
+  }
+
+  const reason = lastError instanceof Error ? lastError.message : String(lastError)
+
+  throw new Error(
+    `Could not ${description} after ${folderTreeRetryLimit} attempts because eGain kept rerendering the folder tree. Last error: ${reason}`,
+  )
+}
+
+function isRetryableFolderTreeError(error: unknown): boolean {
+  if (error instanceof FolderTreeChangedError) {
+    return true
+  }
+
+  if (!(error instanceof Error)) {
+    return false
+  }
+
+  return /detached from the DOM|intercepts pointer events|locator\.(?:click|evaluate)|strict mode violation/i.test(
+    error.message,
+  )
 }
 
 async function waitForFolderUiReady(articlePage: Page): Promise<void> {
@@ -395,69 +548,14 @@ async function waitForFolderUiReady(articlePage: Page): Promise<void> {
   throw new Error('eGain did not finish loading the folder workspace.')
 }
 
-async function getDirectChildFolderIds(parentRow: Locator, folderName?: string): Promise<string[]> {
-  return parentRow.evaluate(
-    (row, options) => {
-      const levelMatch = row.className.match(/\blevel-(\d+)\b/)
-
-      if (!levelMatch) {
-        return []
-      }
-
-      const parentLevel = Number(levelMatch[1])
-      const matchingFolderIds: string[] = []
-      let sibling = row.nextElementSibling
-
-      while (sibling?.tagName === 'TR') {
-        const siblingLevelMatch = sibling.className.match(/\blevel-(\d+)\b/)
-
-        if (!siblingLevelMatch) {
-          sibling = sibling.nextElementSibling
-          continue
-        }
-
-        const siblingLevel = Number(siblingLevelMatch[1])
-
-        if (siblingLevel <= parentLevel) {
-          break
-        }
-
-        if (siblingLevel === parentLevel + 1) {
-          const folderCell = Array.from(
-            sibling.querySelectorAll<HTMLElement>(`[data-testid^="${options.folderCellTestIdPrefix}"]`),
-          ).find(element => element.closest(options.folderTreeRowSelector) === sibling)
-          const childTestId = folderCell?.getAttribute('data-testid')
-          const childName = childTestId?.slice(options.folderCellTestIdPrefix.length)
-
-          if (!options.folderName || childName === options.folderName) {
-            const contextMenuIcon = Array.from(
-              sibling.querySelectorAll<HTMLElement>('[id^="ic-dot-menu-"][id$="-context"]'),
-            ).find(element => element.closest(options.folderTreeRowSelector) === sibling)
-            const folderId = contextMenuIcon?.id.match(/^ic-dot-menu-(.+)-context$/)?.[1]
-
-            if (folderId) {
-              matchingFolderIds.push(folderId)
-            }
-          }
-        }
-
-        sibling = sibling.nextElementSibling
-      }
-
-      return matchingFolderIds
-    },
-    { folderCellTestIdPrefix, folderName, folderTreeRowSelector },
-  )
-}
-
 function getFolderRowById(articlePage: Page, folderId: string): Locator {
   if (!/^[A-Za-z0-9_-]+$/.test(folderId)) {
-    throw new Error(`Unsupported eGain folder ID: ${folderId}`)
+    throw new FolderTreeStructureError(`Unsupported eGain folder ID: ${folderId}`)
   }
 
   return articlePage
     .locator(`[id="ic-dot-menu-${folderId}-context"]`)
-    .locator(`xpath=ancestor::tr[@data-testid="grid-body-row-folders"][1]`)
+    .locator('xpath=ancestor::tr[@data-testid="grid-body-row-folders"][1]')
 }
 
 function getFolderIdFromUrl(value: string): string | undefined {
@@ -478,7 +576,15 @@ function isCreateFolderUrl(value: string): boolean {
   }
 }
 
-async function requireUniqueLocator(locator: Locator, description: string) {
+function toFolderReference(folder: EgainFolderReference): EgainFolderReference {
+  return { id: folder.id, name: folder.name }
+}
+
+function formatFolderPath(folderPath: string[], rootName?: string): string {
+  return [rootName, ...folderPath].filter(Boolean).join(' > ')
+}
+
+async function requireUniqueLocator(locator: Locator, description: string): Promise<void> {
   let matchCount = await locator.count()
 
   if (matchCount === 0) {
