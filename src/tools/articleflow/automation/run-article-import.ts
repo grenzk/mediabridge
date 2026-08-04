@@ -220,9 +220,13 @@ async function setSourceEditorHtml(sourceEditor: Locator, html: string) {
 async function verifySourceEditorHtml(sourceEditor: Locator, expectedHtml: string) {
   const sourceHtml = await sourceEditor.inputValue()
 
-  if (sourceHtml !== expectedHtml) {
+  if (normalizeHtmlLineEndings(sourceHtml) !== normalizeHtmlLineEndings(expectedHtml)) {
     throw new Error('CKEditor did not receive the complete source HTML.')
   }
+}
+
+export function normalizeHtmlLineEndings(value: string): string {
+  return value.replace(/\r\n?/g, '\n')
 }
 
 async function waitForInputValue(articlePage: Page, input: Locator, expectedValue: string, description: string) {
