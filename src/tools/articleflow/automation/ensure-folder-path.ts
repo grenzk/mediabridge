@@ -212,6 +212,7 @@ async function createChildFolder(
   await articlePage.getByRole('heading', { exact: true, name: 'Folders' }).waitFor({ state: 'visible' })
 
   await waitForCreatedFolder(articlePage, importParent, parentPath, folderName)
+  await selectFolderPath(articlePage, importParent, [...parentPath, folderName])
 }
 
 async function openCreateFolderForm(
