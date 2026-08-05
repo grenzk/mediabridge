@@ -5,7 +5,7 @@ import type {
   ArticleFlowImportPlan,
   ArticleFlowRunResult,
 } from '../../../shared/types/knowledgeworks'
-import FolderHierarchyTree from './FolderHierarchyTree.vue'
+import SourceStructureTree from './SourceStructureTree.vue'
 
 type ArticleFlowStatusTone = 'idle' | 'ready' | 'running' | 'success' | 'error'
 
@@ -21,6 +21,13 @@ const sourceFolderName = computed(() => {
 
   return rootPath?.split(/[\\/]/).filter(Boolean).at(-1) ?? 'No folder selected'
 })
+const sourceFilePaths = computed(
+  () =>
+    importPlan.value?.articles.map(article => [
+      sourceFolderName.value,
+      ...article.relativeSourcePath.split(/[\\/]/).filter(Boolean),
+    ]) ?? [],
+)
 const canRun = computed(() => importPlan.value !== null && !isSelectingRoot.value && !isRunning.value)
 const statusIcon = computed(() => {
   const icons: Record<ArticleFlowStatusTone, string> = {
@@ -256,26 +263,18 @@ function getErrorMessage(error: unknown) {
 
         <div v-else class="plan-content">
           <div class="plan-panel">
-            <ol v-if="importPlan.articles.length" class="article-list" aria-label="Articles to import">
-              <li v-for="article in importPlan.articles" :key="article.sourcePath">
-                <i class="pi pi-file" aria-hidden="true" />
-                <span>
-                  <strong>{{ article.title }}</strong>
-                  <small :title="article.relativeSourcePath">{{ article.relativeSourcePath }}</small>
-                </span>
-              </li>
-            </ol>
-            <p v-else class="plan-empty compact">No HTML articles found in this folder.</p>
-
-            <details class="plan-details hierarchy-details" open>
+            <details class="plan-details source-details" open>
               <summary>
                 <span class="summary-label">
                   <i class="pi pi-chevron-right detail-chevron" aria-hidden="true" />
-                  <span>Folder hierarchy</span>
+                  <span>Source structure</span>
                 </span>
               </summary>
-              <div class="hierarchy-tree">
-                <FolderHierarchyTree :paths="importPlan.folderPaths" />
+              <div class="source-tree-frame">
+                <SourceStructureTree
+                  :file-paths="sourceFilePaths"
+                  :folder-paths="importPlan.folderPaths"
+                />
               </div>
             </details>
           </div>
@@ -610,67 +609,12 @@ function getErrorMessage(error: unknown) {
   overflow: hidden;
 }
 
-.article-list,
 .ignored-details ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
-
-.article-list {
-  display: grid;
-}
-
-.article-list li {
-  display: grid;
-  grid-template-columns: 28px minmax(0, 1fr);
-  align-items: center;
-  gap: 12px;
-  min-height: 64px;
-  padding: 10px 16px;
-}
-
-.article-list li + li {
-  border-top: 1px solid var(--kw-border-subtle);
-}
-
-.article-list li > i {
-  color: var(--kw-focus);
-  font-size: 1.25rem;
-  text-align: center;
-}
-
-.article-list li > span {
-  display: grid;
-  min-width: 0;
-  gap: 1px;
-}
-
-.article-list strong,
-.article-list small {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.article-list strong {
-  font-size: 0.875rem;
-  font-weight: 600;
-  line-height: 1.25rem;
-}
-
-.article-list small {
-  color: var(--kw-text-muted);
-  font-family: ui-monospace, 'SFMono-Regular', Consolas, monospace;
-  font-size: 0.8125rem;
-  line-height: 1.125rem;
-}
-
-.hierarchy-details {
-  border-top: 1px solid var(--kw-border-subtle);
-}
-
-.hierarchy-tree {
+.source-tree-frame {
   padding: 0 16px 16px 48px;
 }
 
@@ -881,7 +825,7 @@ function getErrorMessage(error: unknown) {
     padding-left: 36px;
   }
 
-  .hierarchy-tree {
+  .source-tree-frame {
     padding-left: 36px;
   }
 }
