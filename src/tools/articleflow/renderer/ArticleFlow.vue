@@ -340,15 +340,15 @@ function getErrorMessage(error: unknown) {
 .article-flow-mark {
   position: relative;
   display: grid;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   flex: 0 0 auto;
   place-items: center;
   color: var(--kw-text-light);
   border: 2px solid var(--kw-primary);
   border-radius: 8px;
   background: var(--kw-surface);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 700;
   line-height: 1;
 }
