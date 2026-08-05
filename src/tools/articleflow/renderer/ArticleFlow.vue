@@ -5,6 +5,7 @@ import type {
   ArticleFlowImportPlan,
   ArticleFlowRunResult,
 } from '../../../shared/types/knowledgeworks'
+import FolderHierarchyTree from './FolderHierarchyTree.vue'
 
 type ArticleFlowStatusTone = 'idle' | 'ready' | 'running' | 'success' | 'error'
 
@@ -273,16 +274,9 @@ function getErrorMessage(error: unknown) {
                   <span>Folder hierarchy</span>
                 </span>
               </summary>
-              <ul>
-                <li
-                  v-for="folderPath in importPlan.folderPaths"
-                  :key="folderPath.join('/')"
-                  :style="{ paddingInlineStart: `${Math.max(0, folderPath.length - 1) * 16}px` }"
-                  :title="folderPath.join(' > ')"
-                >
-                  {{ folderPath[folderPath.length - 1] }}
-                </li>
-              </ul>
+              <div class="hierarchy-tree">
+                <FolderHierarchyTree :paths="importPlan.folderPaths" />
+              </div>
             </details>
           </div>
 
@@ -617,7 +611,7 @@ function getErrorMessage(error: unknown) {
 }
 
 .article-list,
-.plan-details ul {
+.ignored-details ul {
   margin: 0;
   padding: 0;
   list-style: none;
@@ -676,6 +670,10 @@ function getErrorMessage(error: unknown) {
   border-top: 1px solid var(--kw-border-subtle);
 }
 
+.hierarchy-tree {
+  padding: 0 16px 16px 48px;
+}
+
 .plan-details summary {
   display: flex;
   min-height: 52px;
@@ -729,7 +727,7 @@ function getErrorMessage(error: unknown) {
   font-weight: 600;
 }
 
-.plan-details ul {
+.ignored-details ul {
   display: grid;
   gap: 8px;
   padding: 0 16px 16px 48px;
@@ -738,7 +736,7 @@ function getErrorMessage(error: unknown) {
   line-height: 1.25rem;
 }
 
-.plan-details li {
+.ignored-details li {
   overflow-wrap: anywhere;
 }
 
@@ -820,6 +818,16 @@ function getErrorMessage(error: unknown) {
   opacity: 1;
 }
 
+:deep(.run-import-button .p-button-loading-icon) {
+  display: block;
+  width: 16px;
+  height: 16px;
+  flex: 0 0 16px;
+  transform-origin: 50% 50%;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
 @media (max-width: 700px) {
   .article-flow-workspace {
     padding: 16px;
@@ -869,7 +877,11 @@ function getErrorMessage(error: unknown) {
     min-width: 128px;
   }
 
-  .plan-details ul {
+  .ignored-details ul {
+    padding-left: 36px;
+  }
+
+  .hierarchy-tree {
     padding-left: 36px;
   }
 }
