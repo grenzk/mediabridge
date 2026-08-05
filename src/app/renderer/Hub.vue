@@ -147,11 +147,8 @@ onBeforeUnmount(() => {
 <template>
   <main class="hub-shell app-dark">
     <header class="hub-header">
-      <div class="hub-brand">
+      <div class="hub-brand" aria-label="KnowledgeWorks">
         <span class="hub-brand-mark" aria-hidden="true">KW</span>
-        <div class="hub-title">
-          <strong>KnowledgeWorks</strong>
-        </div>
       </div>
 
       <Button
@@ -240,7 +237,7 @@ onBeforeUnmount(() => {
 
 .hub-header {
   display: grid;
-  grid-template-columns: minmax(190px, 1fr) 156px 44px;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
   align-items: center;
   gap: 8px;
   padding: 16px 20px;
@@ -285,19 +282,6 @@ onBeforeUnmount(() => {
   background: var(--kw-accent);
 }
 
-.hub-title {
-  min-width: 0;
-}
-
-.hub-title strong {
-  overflow: hidden;
-  font-size: 1.1rem;
-  font-weight: 650;
-  line-height: 1.5rem;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
 .hub-header :deep(.p-button) {
   height: 44px;
   border-radius: 8px;
@@ -316,6 +300,7 @@ onBeforeUnmount(() => {
 
 .browser-button {
   width: 156px;
+  justify-self: end;
   color: var(--kw-text-light);
   border-color: var(--kw-focus);
   background: var(--kw-primary);
