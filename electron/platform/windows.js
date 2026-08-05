@@ -132,10 +132,10 @@ export async function createArticleFlowBrowserWindow({
   }
 
   const articleFlowWindow = new BrowserWindow({
-    width: 860,
-    height: 760,
-    minWidth: 640,
-    minHeight: 560,
+    width: 640,
+    height: 560,
+    minWidth: 560,
+    minHeight: 500,
     title: 'ArticleFlow',
     backgroundColor: '#202426',
     icon: getRuntimeIcon(appRoot),

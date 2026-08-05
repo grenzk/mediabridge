@@ -158,11 +158,8 @@ function getErrorMessage(error: unknown) {
 <template>
   <main class="article-flow-shell app-dark">
     <header class="article-flow-header">
-      <div class="article-flow-brand">
+      <div class="article-flow-brand" aria-label="ArticleFlow">
         <span class="article-flow-mark" aria-hidden="true">AF</span>
-        <div>
-          <strong>ArticleFlow</strong>
-        </div>
       </div>
 
       <Button
@@ -316,7 +313,7 @@ function getErrorMessage(error: unknown) {
 <style scoped>
 .article-flow-shell {
   display: grid;
-  grid-template-rows: 72px minmax(0, 1fr) 68px;
+  grid-template-rows: 60px minmax(0, 1fr) 64px;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -329,7 +326,7 @@ function getErrorMessage(error: unknown) {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 20px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--kw-border-subtle);
   background: var(--kw-quiet-header);
 }
@@ -338,33 +335,20 @@ function getErrorMessage(error: unknown) {
   display: flex;
   min-width: 0;
   align-items: center;
-  gap: 12px;
-}
-
-.article-flow-brand > div {
-  display: grid;
-  min-width: 0;
-  gap: 1px;
-}
-
-.article-flow-brand strong {
-  font-size: 1.125rem;
-  font-weight: 600;
-  line-height: 1.5rem;
 }
 
 .article-flow-mark {
   position: relative;
   display: grid;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   flex: 0 0 auto;
   place-items: center;
   color: var(--kw-text-light);
   border: 2px solid var(--kw-primary);
   border-radius: 8px;
   background: var(--kw-surface);
-  font-size: 1rem;
+  font-size: 0.9375rem;
   font-weight: 700;
   line-height: 1;
 }
@@ -380,8 +364,8 @@ function getErrorMessage(error: unknown) {
 }
 
 :deep(.article-flow-icon-button.p-button) {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   flex: 0 0 auto;
   padding: 0;
   color: var(--kw-text-light);
@@ -694,7 +678,7 @@ function getErrorMessage(error: unknown) {
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: 16px;
-  padding: 12px 24px;
+  padding: 10px 24px;
   border-top: 1px solid var(--kw-border-subtle);
   background: var(--kw-canvas);
 }
