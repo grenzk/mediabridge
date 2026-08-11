@@ -1,4 +1,0 @@
-{
-  "extends": "./tsconfig.base.json",
-  "include": ["src/app/renderer/**/*.ts", "src/app/renderer/**/*.vue", "src/shared/types/**/*.d.ts"]
-}

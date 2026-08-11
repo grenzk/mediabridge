@@ -79,14 +79,11 @@ To display every individual test in the terminal, run:
 npm run test:verbose
 ```
 
-The KnowledgeWorks renderer, MediaBridge, and ArticleFlow use isolated strict
-TypeScript configurations:
+Run the strict TypeScript check for the KnowledgeWorks renderer, Electron code,
+shared modules, MediaBridge, ArticleFlow, and tests with:
 
 ```sh
 npm run typecheck
-npm run typecheck:app
-npm run typecheck:mediabridge
-npm run typecheck:articleflow
 ```
 
 Use Node.js 22.18 or newer when running the MediaBridge command-line automation

@@ -34,6 +34,7 @@ Refactored
 - Organized KnowledgeWorks as a modular monolith with shared platform services and tool-owned modules.
 - Migrated the hub, shared log console, MediaBridge, and ArticleFlow renderers to TypeScript incrementally.
 - Shared eGain workspace detection and editor locators across automation tools.
+- Consolidated redundant tool-specific TypeScript configurations into one strict workspace check.
 
 1.2.0 - July 11, 2026
 

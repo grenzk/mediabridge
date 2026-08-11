@@ -22,11 +22,7 @@
     "script:media-linking": "node src/tools/mediabridge/scripts/run-media-linking.ts",
     "test": "vitest run",
     "test:verbose": "vitest run --reporter=verbose",
-    "typecheck": "npm run typecheck:workspace && npm run typecheck:app && npm run typecheck:articleflow && npm run typecheck:mediabridge",
-    "typecheck:workspace": "vue-tsc --noEmit -p tsconfig.json",
-    "typecheck:app": "vue-tsc --noEmit -p tsconfig.app.json",
-    "typecheck:articleflow": "vue-tsc --noEmit -p tsconfig.articleflow.json",
-    "typecheck:mediabridge": "vue-tsc --noEmit -p tsconfig.mediabridge.json"
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json"
   },
   "build": {
     "appId": "com.mediabridge.toolbar",
