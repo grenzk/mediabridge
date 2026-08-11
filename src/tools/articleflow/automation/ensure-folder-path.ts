@@ -144,9 +144,7 @@ async function resolveFolderPathOnce(
     const child = await findDirectChildFolder(articlePage, current.folder.id, folderName)
 
     if (!child) {
-      throw new FolderTreeChangedError(
-        `Could not find folder "${folderName}" directly under "${current.folder.name}".`,
-      )
+      throw new FolderTreeChangedError(`Could not find folder "${folderName}" directly under "${current.folder.name}".`)
     }
 
     current = await resolveVisibleFolder(articlePage, child)
@@ -155,10 +153,7 @@ async function resolveFolderPathOnce(
   return current
 }
 
-async function resolveImportParentOnce(
-  articlePage: Page,
-  importParent: EgainImportParent,
-): Promise<ResolvedFolder> {
+async function resolveImportParentOnce(articlePage: Page, importParent: EgainImportParent): Promise<ResolvedFolder> {
   const importPath = [...importParent.ancestorPath, toFolderReference(importParent)]
   const [topLevelFolder, ...nestedFolders] = importPath
 
@@ -175,9 +170,7 @@ async function resolveImportParentOnce(
     const matchingFolder = directChildren.find(folder => folder.id === expectedFolder.id)
 
     if (!matchingFolder) {
-      throw new FolderTreeChangedError(
-        `Folder "${expectedFolder.name}" disappeared while reopening the import parent.`,
-      )
+      throw new FolderTreeChangedError(`Folder "${expectedFolder.name}" disappeared while reopening the import parent.`)
     }
 
     current = await resolveVisibleFolder(articlePage, matchingFolder)
@@ -306,10 +299,7 @@ async function selectResolvedFolder(articlePage: Page, destination: ResolvedFold
   await waitForFolderUiReady(articlePage)
 }
 
-async function waitForFolderSelection(
-  articlePage: Page,
-  expectedFolder: EgainFolderReference,
-): Promise<void> {
+async function waitForFolderSelection(articlePage: Page, expectedFolder: EgainFolderReference): Promise<void> {
   const deadline = Date.now() + folderUiTimeoutMs
 
   while (Date.now() < deadline) {
@@ -394,10 +384,7 @@ async function waitForFolderExpansion(articlePage: Page, folder: EgainFolderRefe
   throw new FolderTreeChangedError(`Folder "${folder.name}" did not finish expanding.`)
 }
 
-async function resolveVisibleFolder(
-  articlePage: Page,
-  folder: EgainFolderReference,
-): Promise<ResolvedFolder> {
+async function resolveVisibleFolder(articlePage: Page, folder: EgainFolderReference): Promise<ResolvedFolder> {
   const row = getFolderRowById(articlePage, folder.id)
   const rowCount = await row.count()
 
@@ -432,13 +419,8 @@ async function findDirectChildFolder(
   return matchingFolders[0] ?? null
 }
 
-async function getDirectChildFolderReferences(
-  articlePage: Page,
-  parentId: string,
-): Promise<EgainFolderReference[]> {
-  return (await getFolderTreeEntries(articlePage))
-    .filter(entry => entry.parentId === parentId)
-    .map(toFolderReference)
+async function getDirectChildFolderReferences(articlePage: Page, parentId: string): Promise<EgainFolderReference[]> {
+  return (await getFolderTreeEntries(articlePage)).filter(entry => entry.parentId === parentId).map(toFolderReference)
 }
 
 async function getFolderTreeEntries(articlePage: Page): Promise<FolderTreeEntry[]> {

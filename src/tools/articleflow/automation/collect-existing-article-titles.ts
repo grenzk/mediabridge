@@ -38,14 +38,7 @@ export async function collectExistingArticleTitles(articlePage: Page): Promise<S
 
   if (currentPage !== 1) {
     await requireUniqueLocator(firstPageButton, 'article-list first-page button')
-    await changeArticleListPage(
-      articlePage,
-      currentPageInput,
-      articleIds,
-      titleLabels,
-      firstPageButton,
-      1,
-    )
+    await changeArticleListPage(articlePage, currentPageInput, articleIds, titleLabels, firstPageButton, 1)
     currentPage = 1
   }
 
@@ -54,34 +47,23 @@ export async function collectExistingArticleTitles(articlePage: Page): Promise<S
   while (currentPage <= totalPages) {
     const pageTitles = await titleLabels.allTextContents()
 
-    pageTitles.map(title => title.trim()).filter(Boolean).forEach(title => titles.add(title))
+    pageTitles
+      .map(title => title.trim())
+      .filter(Boolean)
+      .forEach(title => titles.add(title))
 
     if (currentPage === totalPages) {
       break
     }
 
     await requireUniqueLocator(nextPageButton, 'article-list next-page button')
-    await changeArticleListPage(
-      articlePage,
-      currentPageInput,
-      articleIds,
-      titleLabels,
-      nextPageButton,
-      currentPage + 1,
-    )
+    await changeArticleListPage(articlePage, currentPageInput, articleIds, titleLabels, nextPageButton, currentPage + 1)
     currentPage += 1
   }
 
   if (totalPages > 1) {
     await requireUniqueLocator(firstPageButton, 'article-list first-page button')
-    await changeArticleListPage(
-      articlePage,
-      currentPageInput,
-      articleIds,
-      titleLabels,
-      firstPageButton,
-      1,
-    )
+    await changeArticleListPage(articlePage, currentPageInput, articleIds, titleLabels, firstPageButton, 1)
   }
 
   return titles

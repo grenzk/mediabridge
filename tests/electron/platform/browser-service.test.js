@@ -39,10 +39,7 @@ describe('browser service', () => {
 
   test('deduplicates concurrent launches and publishes connection state', async () => {
     const browserProcess = createBrowserProcess()
-    const fetch = vi
-      .fn()
-      .mockResolvedValueOnce({ ok: false })
-      .mockResolvedValueOnce({ ok: true })
+    const fetch = vi.fn().mockResolvedValueOnce({ ok: false }).mockResolvedValueOnce({ ok: true })
 
     vi.stubGlobal('fetch', fetch)
     spawn.mockReturnValue(browserProcess)

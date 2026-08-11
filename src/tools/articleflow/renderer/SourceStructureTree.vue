@@ -16,9 +16,7 @@ const props = defineProps<{
 }>()
 
 const currentDepth = computed(() => props.depth ?? 0)
-const treeNodes = computed(
-  () => props.nodes ?? buildSourceTree(props.folderPaths ?? [], props.filePaths ?? []),
-)
+const treeNodes = computed(() => props.nodes ?? buildSourceTree(props.folderPaths ?? [], props.filePaths ?? []))
 
 function buildSourceTree(folderPaths: string[][], filePaths: string[][]): SourceTreeNode[] {
   const roots: SourceTreeNode[] = []
@@ -66,11 +64,7 @@ function addPath(roots: SourceTreeNode[], path: string[], leafKind: SourceTreeNo
         <span>{{ node.name }}</span>
       </div>
 
-      <SourceStructureTree
-        v-if="node.children.length"
-        :depth="currentDepth + 1"
-        :nodes="node.children"
-      />
+      <SourceStructureTree v-if="node.children.length" :depth="currentDepth + 1" :nodes="node.children" />
     </li>
   </ul>
 </template>

@@ -85,9 +85,11 @@ describe('collectExistingArticleTitles', () => {
       totalPagesLabel: createSingleLocator({ textContent: () => ' of 1' }),
     })
 
-    const titles = await collectExistingArticleTitles(createPage(() => {
-      pollCount += 1
-    }))
+    const titles = await collectExistingArticleTitles(
+      createPage(() => {
+        pollCount += 1
+      }),
+    )
 
     expect([...titles]).toEqual(['Manuals'])
   })

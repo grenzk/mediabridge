@@ -249,7 +249,9 @@ function getErrorMessage(error: unknown) {
                 importPlan.articles.length === 1 ? '' : 's'
               }}</span
             >
-            <span><strong>{{ importPlan.ignoredPaths.length }}</strong> ignored</span>
+            <span
+              ><strong>{{ importPlan.ignoredPaths.length }}</strong> ignored</span
+            >
           </div>
         </div>
 
@@ -268,10 +270,7 @@ function getErrorMessage(error: unknown) {
                 </span>
               </summary>
               <div class="source-tree-frame">
-                <SourceStructureTree
-                  :file-paths="sourceFilePaths"
-                  :folder-paths="importPlan.folderPaths"
-                />
+                <SourceStructureTree :file-paths="sourceFilePaths" :folder-paths="importPlan.folderPaths" />
               </div>
             </details>
           </div>

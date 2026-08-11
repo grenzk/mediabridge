@@ -75,29 +75,29 @@ KnowledgeWorks should not feel:
 
 ### Core palette
 
-| Token | Value | Usage |
-| --- | --- | --- |
-| `color-canvas` | `#101617` | Main dark application background |
-| `color-surface` | `#171D1E` | Tool panels and raised dark surfaces |
-| `color-surface-hover` | `#1D2526` | Hovered dark surfaces |
-| `color-quiet-surface` | `#202426` | Default Quiet Utility window surface |
-| `color-quiet-header` | `#282D2F` | Quiet Utility command header |
-| `color-header` | `#F2EDE2` | Warm light command header |
-| `color-floating-header` | `#E8E2D7` | Floating-window command surface |
-| `color-primary` | `#0757E8` | Primary actions and active accents |
-| `color-primary-hover` | `#1768F2` | Primary action hover |
-| `color-primary-pressed` | `#0647BF` | Primary action pressed state |
-| `color-accent` | `#F05A16` | Registration marks and focused emphasis |
-| `color-success` | `#44D487` | Connected, ready, and healthy states |
-| `color-warning` | `#F2B94B` | Delayed or attention-needed states |
-| `color-danger` | `#F05D62` | Failed, disconnected, or destructive states |
-| `color-text-dark` | `#151A1B` | Primary text on light surfaces |
-| `color-text-light` | `#F4F2EC` | Primary text on dark surfaces |
-| `color-text-muted` | `#B4B8B5` | Descriptions and metadata |
-| `color-text-disabled` | `#747A7B` | Disabled labels |
-| `color-border` | `#485052` | Default panel and control borders |
-| `color-border-subtle` | `#303839` | Low-emphasis separators |
-| `color-focus` | `#6EA0FF` | Keyboard focus ring |
+| Token                   | Value     | Usage                                       |
+| ----------------------- | --------- | ------------------------------------------- |
+| `color-canvas`          | `#101617` | Main dark application background            |
+| `color-surface`         | `#171D1E` | Tool panels and raised dark surfaces        |
+| `color-surface-hover`   | `#1D2526` | Hovered dark surfaces                       |
+| `color-quiet-surface`   | `#202426` | Default Quiet Utility window surface        |
+| `color-quiet-header`    | `#282D2F` | Quiet Utility command header                |
+| `color-header`          | `#F2EDE2` | Warm light command header                   |
+| `color-floating-header` | `#E8E2D7` | Floating-window command surface             |
+| `color-primary`         | `#0757E8` | Primary actions and active accents          |
+| `color-primary-hover`   | `#1768F2` | Primary action hover                        |
+| `color-primary-pressed` | `#0647BF` | Primary action pressed state                |
+| `color-accent`          | `#F05A16` | Registration marks and focused emphasis     |
+| `color-success`         | `#44D487` | Connected, ready, and healthy states        |
+| `color-warning`         | `#F2B94B` | Delayed or attention-needed states          |
+| `color-danger`          | `#F05D62` | Failed, disconnected, or destructive states |
+| `color-text-dark`       | `#151A1B` | Primary text on light surfaces              |
+| `color-text-light`      | `#F4F2EC` | Primary text on dark surfaces               |
+| `color-text-muted`      | `#B4B8B5` | Descriptions and metadata                   |
+| `color-text-disabled`   | `#747A7B` | Disabled labels                             |
+| `color-border`          | `#485052` | Default panel and control borders           |
+| `color-border-subtle`   | `#303839` | Low-emphasis separators                     |
+| `color-focus`           | `#6EA0FF` | Keyboard focus ring                         |
 
 ### Color rules
 
@@ -114,8 +114,8 @@ KnowledgeWorks should not feel:
 
 ```css
 :root {
-  --kw-font-sans: "Inter", system-ui, sans-serif;
-  --kw-font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --kw-font-sans: 'Inter', system-ui, sans-serif;
+  --kw-font-mono: 'IBM Plex Mono', ui-monospace, monospace;
   --kw-canvas: #101617;
   --kw-surface: #171d1e;
   --kw-surface-hover: #1d2526;
@@ -154,16 +154,16 @@ where fixed-width alignment materially improves scanning.
 
 ### Type scale
 
-| Role | Size / line height | Weight | Notes |
-| --- | --- | --- | --- |
-| App wordmark | `24px / 30px` | 650 | Inter; title case |
-| Tool name | `18px / 24px` | 600 | Inter |
-| Section label | `14px / 20px` | 600 | Inter; sentence case |
-| Body | `15px / 22px` | 400 | Default descriptive copy |
-| Button | `14px / 20px` | 600 | Inter; concise label |
-| Metadata | `13px / 18px` | 400 | Inter; muted |
-| Status chip | `12px / 16px` | 500 | Inter; sentence case |
-| Footer | `13px / 18px` | 500 | Status and version information |
+| Role          | Size / line height | Weight | Notes                          |
+| ------------- | ------------------ | ------ | ------------------------------ |
+| App wordmark  | `24px / 30px`      | 650    | Inter; title case              |
+| Tool name     | `18px / 24px`      | 600    | Inter                          |
+| Section label | `14px / 20px`      | 600    | Inter; sentence case           |
+| Body          | `15px / 22px`      | 400    | Default descriptive copy       |
+| Button        | `14px / 20px`      | 600    | Inter; concise label           |
+| Metadata      | `13px / 18px`      | 400    | Inter; muted                   |
+| Status chip   | `12px / 16px`      | 500    | Inter; sentence case           |
+| Footer        | `13px / 18px`      | 500    | Status and version information |
 
 ### Typography rules
 
@@ -180,15 +180,15 @@ where fixed-width alignment materially improves scanning.
 Use a base spacing unit of `4px`, with most layout decisions aligned to an
 `8px` rhythm.
 
-| Token | Value |
-| --- | --- |
-| `space-1` | `4px` |
-| `space-2` | `8px` |
-| `space-3` | `12px` |
-| `space-4` | `16px` |
-| `space-5` | `20px` |
-| `space-6` | `24px` |
-| `space-8` | `32px` |
+| Token      | Value  |
+| ---------- | ------ |
+| `space-1`  | `4px`  |
+| `space-2`  | `8px`  |
+| `space-3`  | `12px` |
+| `space-4`  | `16px` |
+| `space-5`  | `20px` |
+| `space-6`  | `24px` |
+| `space-8`  | `32px` |
 | `space-10` | `40px` |
 
 Recommended control heights:
@@ -460,14 +460,14 @@ must have an accessible name and a tooltip on hover or focus.
 
 Use a border, semantic dot, and explicit label.
 
-| Status | Treatment |
-| --- | --- |
-| `Ready` | Green dot and green text |
-| `Running` | Cobalt dot, label, and nearby progress |
-| `Needs attention` | Amber dot and label |
-| `Failed` | Red dot and label |
-| `Coming soon` | Neutral border and muted text |
-| `Disconnected` | Red dot and label |
+| Status            | Treatment                              |
+| ----------------- | -------------------------------------- |
+| `Ready`           | Green dot and green text               |
+| `Running`         | Cobalt dot, label, and nearby progress |
+| `Needs attention` | Amber dot and label                    |
+| `Failed`          | Red dot and label                      |
+| `Coming soon`     | Neutral border and muted text          |
+| `Disconnected`    | Red dot and label                      |
 
 ### Footer status
 
@@ -487,12 +487,12 @@ Use a semantic dot plus readable text such as `Browser connected`.
 
 Motion should confirm state changes rather than decorate the interface.
 
-| Interaction | Duration | Easing |
-| --- | --- | --- |
-| Hover and focus | `120ms` | ease-out |
-| Panel expansion | `180ms` | ease-out |
+| Interaction      | Duration    | Easing   |
+| ---------------- | ----------- | -------- |
+| Hover and focus  | `120ms`     | ease-out |
+| Panel expansion  | `180ms`     | ease-out |
 | Modal or overlay | `180–220ms` | ease-out |
-| Progress | Continuous | linear |
+| Progress         | Continuous  | linear   |
 
 Respect `prefers-reduced-motion`. Disable nonessential movement when requested.
 Do not use parallax, bouncing, or looping ambient animation.
