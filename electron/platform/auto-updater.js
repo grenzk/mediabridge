@@ -61,13 +61,13 @@ export function configureAutoUpdater(addLog) {
   autoUpdater.on('update-downloaded', async updateInfo => {
     const version = formatUpdateVersion(updateInfo)
 
-    addLog('success', 'Updates', `${version} is ready to install.`, 'Restart MediaBridge to complete the update.')
+    addLog('success', 'Updates', `${version} is ready to install.`, 'Restart KnowledgeWorks to complete the update.')
 
     const { response } = await dialog.showMessageBox({
       type: 'question',
       title: 'Update Ready',
       message: `${version} is ready to install.`,
-      detail: 'Restart MediaBridge now?',
+      detail: 'Restart KnowledgeWorks now?',
       buttons: ['Restart Now', 'Later'],
       defaultId: 0,
       cancelId: 1,
@@ -103,7 +103,7 @@ function getAutoUpdater() {
 }
 
 function formatUpdateVersion(updateInfo) {
-  return updateInfo?.version ? `MediaBridge ${updateInfo.version}` : 'MediaBridge'
+  return updateInfo?.version ? `KnowledgeWorks ${updateInfo.version}` : 'KnowledgeWorks'
 }
 
 function shouldCheckForUpdates() {

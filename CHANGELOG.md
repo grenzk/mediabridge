@@ -1,6 +1,6 @@
 KnowledgeWorks Changelog
 
-Unreleased - August 11, 2026
+2.0.0-beta.1 - August 11, 2026
 
 Added
 
@@ -17,6 +17,7 @@ Changed
 - Updated MediaBridge, ArticleFlow, the KnowledgeWorks hub, and the shared log window to use the Quiet Utility design system.
 - Made ArticleFlow a compact resizable workflow window with consistent tool branding and a simplified header.
 - Updated the KnowledgeWorks hub to use compact logo-only branding while retaining the full native window title.
+- Updated package and packaged application metadata from MediaBridge to KnowledgeWorks while preserving the existing update identity.
 - Updated the Windows app icon sizing and geometry for better taskbar legibility while retaining macOS-specific icon padding.
 - Standardized project formatting with a pinned Prettier development dependency.
 
