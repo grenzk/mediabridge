@@ -1,4 +1,39 @@
-MediaBridge Changelog
+KnowledgeWorks Changelog
+
+Unreleased - August 11, 2026
+
+Added
+
+- Added KnowledgeWorks as the default desktop hub for opening MediaBridge and ArticleFlow.
+- Added shared browser controls, connection status, and logging for all KnowledgeWorks tools.
+- Added the ArticleFlow desktop workflow for importing filesystem folder structures and HTML articles into the current eGain folder.
+- Added ArticleFlow support for creating missing eGain folders, choosing check-in or publish completion, and skipping articles that already exist.
+- Added a source structure tree that previews folders, HTML files, and ignored items before an ArticleFlow import runs.
+- Added native KnowledgeWorks icons tailored for macOS and Windows.
+- Added a project-level Prettier configuration with format and formatting-check commands.
+
+Changed
+
+- Updated MediaBridge, ArticleFlow, the KnowledgeWorks hub, and the shared log window to use the Quiet Utility design system.
+- Made ArticleFlow a compact resizable workflow window with consistent tool branding and a simplified header.
+- Updated the KnowledgeWorks hub to use compact logo-only branding while retaining the full native window title.
+- Updated the Windows app icon sizing and geometry for better taskbar legibility while retaining macOS-specific icon padding.
+- Standardized project formatting with a pinned Prettier development dependency.
+
+Fixed
+
+- Fixed ArticleFlow folder traversal and selection when eGain collapses, reloads, or replaces folder-tree rows.
+- Fixed ArticleFlow reruns so existing folders and articles are reused instead of recreated.
+- Fixed ArticleFlow editor synchronization and Windows line-ending comparisons before check-in or publication.
+- Fixed ArticleFlow publication by confirming the summary dialog after Publish is selected.
+- Fixed transparent areas in the macOS and Windows app icons so they no longer render with white backgrounds.
+- Removed the MediaBridge window shadow that produced sharp outer corners on Windows.
+
+Refactored
+
+- Organized KnowledgeWorks as a modular monolith with shared platform services and tool-owned modules.
+- Migrated the hub, shared log console, MediaBridge, and ArticleFlow renderers to TypeScript incrementally.
+- Shared eGain workspace detection and editor locators across automation tools.
 
 1.2.0 - July 11, 2026
 
