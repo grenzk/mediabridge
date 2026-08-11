@@ -1,4 +1,4 @@
-import { app, ipcMain } from 'electron'
+import { ipcMain } from 'electron'
 import type { IpcMainInvokeEvent } from 'electron'
 import { connectToBrowser } from '../../../src/shared/browser/connect-to-browser.ts'
 import type { BrowserSession } from '../../../src/shared/browser/connect-to-browser.ts'
@@ -23,10 +23,6 @@ type MediaBridgeHandlerDependencies = {
 }
 
 export function registerMediaBridgeHandlers({ addLog, browserService, launchBrowser }: MediaBridgeHandlerDependencies) {
-  ipcMain.handle('session:get-app-version', () => {
-    return app.getVersion()
-  })
-
   ipcMain.handle('session:launch-browser', () => launchBrowser())
 
   ipcMain.handle('session:get-target-count', async (_event: IpcMainInvokeEvent, mode: string = 'pdf') => {

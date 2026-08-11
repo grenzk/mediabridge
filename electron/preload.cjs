@@ -188,10 +188,5 @@ contextBridge.exposeInMainWorld('mediabridge', {
    */
   runMediaLinking: mode => ipcRenderer.invoke('session:run-media-linking', mode),
 
-  /**
-   * @returns {Promise<string>}
-   */
-  getAppVersion: () => ipcRenderer.invoke('session:get-app-version'),
-
   writeLog,
 })

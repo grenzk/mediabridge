@@ -1,9 +1,7 @@
 <script setup lang="ts">
-import { onBeforeMount, ref } from 'vue'
 import { useMediaLinking } from './composables/useMediaLinking.ts'
 import { useToolbarActions } from './composables/useToolbarActions.ts'
 
-const appVersion = ref<string | null>(null)
 const toolbarActions = useToolbarActions()
 const { currentMessage, errorMessage, isBusy, reportActionError, showProgressDots } = toolbarActions
 const {
@@ -22,15 +20,6 @@ const {
   unlinkedTargetCount,
 } = useMediaLinking(toolbarActions)
 
-/**
- * Reads the packaged app version for the status badge.
- *
- * @returns {Promise<void>}
- */
-async function showAppVersion() {
-  appVersion.value = await window.mediabridge.getAppVersion()
-}
-
 function closeToolbar() {
   window.mediabridge.closeToolbar()
 }
@@ -46,8 +35,6 @@ async function openLogs() {
     await reportActionError('Logs', error)
   }
 }
-
-onBeforeMount(async () => await showAppVersion())
 </script>
 
 <template>
@@ -164,11 +151,6 @@ onBeforeMount(async () => await showAppVersion())
             <dd>{{ doneTargetCount ?? '--' }}</dd>
           </div>
         </dl>
-
-        <div v-if="appVersion" class="version-badge" aria-label="MediaBridge version">
-          <span class="sr-only">Version</span>
-          <span>v{{ appVersion }}</span>
-        </div>
       </div>
     </section>
   </main>

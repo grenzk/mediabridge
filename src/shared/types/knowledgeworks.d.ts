@@ -76,7 +76,6 @@ export type ArticleFlowApi = {
 export type MediaBridgeApi = {
   clearLogs: () => Promise<MediaBridgeOkResult>
   closeToolbar: () => Promise<void>
-  getAppVersion: () => Promise<string>
   getTargetCount: (mode: MediaBridgeLinkingMode) => Promise<MediaBridgeActionResult>
   getLogs: () => Promise<MediaBridgeLogEntry[]>
   launchBrowser: () => Promise<MediaBridgeActionResult>
