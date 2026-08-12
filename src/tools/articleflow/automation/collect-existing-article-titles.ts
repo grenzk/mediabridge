@@ -4,6 +4,7 @@ import { getArticleListLocators } from '../../../shared/egain/editor/get-article
 const articleListTimeoutMs = 60000
 const articleListPollIntervalMs = 100
 const articleListStablePollCount = 20
+const articleListSnapshotTimeoutMs = 1000
 
 /**
  * Collects exact article titles across every article-list page for the selected
@@ -95,6 +96,13 @@ async function waitForArticleListState(
         emptyStateVisible,
       )
 
+      if (signature === undefined) {
+        previousSignature = ''
+        stablePollCount = 0
+        await articlePage.waitForTimeout(articleListPollIntervalMs)
+        continue
+      }
+
       if (signature === previousSignature) {
         stablePollCount += 1
       } else {
@@ -122,19 +130,23 @@ async function getArticleListStateSignature(
   titleLabels: Locator,
   totalPagesLabel: Locator,
   emptyStateVisible: boolean,
-): Promise<string> {
+): Promise<string | undefined> {
   if (emptyStateVisible) {
     return 'empty'
   }
 
-  const [currentPage, ids, titles, totalPages] = await Promise.all([
-    currentPageInput.inputValue(),
-    articleIds.allTextContents(),
-    titleLabels.allTextContents(),
-    totalPagesLabel.textContent(),
-  ])
+  try {
+    const [currentPage, ids, titles, totalPages] = await Promise.all([
+      currentPageInput.inputValue({ timeout: articleListSnapshotTimeoutMs }),
+      articleIds.allTextContents(),
+      titleLabels.allTextContents(),
+      totalPagesLabel.textContent({ timeout: articleListSnapshotTimeoutMs }),
+    ])
 
-  return [currentPage, totalPages ?? '', ...ids, '|', ...titles].join('\u0000')
+    return [currentPage, totalPages ?? '', ...ids, '|', ...titles].join('\u0000')
+  } catch {
+    return undefined
+  }
 }
 
 async function changeArticleListPage(

@@ -14,6 +14,8 @@ const editorSyncTimeoutMs = 10000
 const editorSyncPollIntervalMs = 100
 const articleCompletionTimeoutMs = 60000
 const articleCompletionSettleDelayMs = 5000
+const newArticleDialogSubmitAttempts = 3
+const newArticleDialogSubmitTimeoutMs = 10000
 const saveSettleDelayMs = 1000
 
 export type ArticleCompletionAction = 'check-in' | 'publish'
@@ -160,8 +162,7 @@ async function createArticle(
   await titleInput.fill(article.title)
 
   await requireUniqueLocator(doneButton, 'New Article Done button')
-  await doneButton.click()
-  await dialog.waitFor({ state: 'hidden' })
+  await submitNewArticleDialog(articlePage, dialog, doneButton)
 
   await requireUniqueLocator(articleTitleInput, 'article title input')
   await waitForInputValue(articlePage, articleTitleInput, article.title, 'created article title')
@@ -208,6 +209,27 @@ async function requireUniqueLocator(locator: Locator, description: string) {
 
   if (matchCount !== 1) {
     throw new Error(`Expected one ${description}, but found ${matchCount}.`)
+  }
+}
+
+async function submitNewArticleDialog(articlePage: Page, dialog: Locator, doneButton: Locator) {
+  const duplicateConflict = articlePage.getByText('Conflicts Article with same name already exists.', { exact: true })
+
+  for (let attempt = 1; attempt <= newArticleDialogSubmitAttempts; attempt += 1) {
+    await doneButton.click()
+
+    try {
+      await dialog.waitFor({ state: 'hidden', timeout: newArticleDialogSubmitTimeoutMs })
+      return
+    } catch {
+      if (await duplicateConflict.isVisible()) {
+        throw new Error('eGain rejected the article because an article with the same title already exists.')
+      }
+
+      if (attempt === newArticleDialogSubmitAttempts) {
+        throw new Error(`eGain did not close the New Article dialog after ${newArticleDialogSubmitAttempts} attempts.`)
+      }
+    }
   }
 }
 

@@ -93,6 +93,33 @@ describe('collectExistingArticleTitles', () => {
 
     expect([...titles]).toEqual(['Manuals'])
   })
+
+  it('retries when eGain replaces pagination controls while reading the list', async () => {
+    let inputReadCount = 0
+
+    locatorMocks.getArticleListLocators.mockReturnValue({
+      articleIds: createTextListLocator(() => ['ECV3-200']),
+      currentPageInput: createSingleLocator({
+        inputValue: () => {
+          inputReadCount += 1
+
+          if (inputReadCount === 1) {
+            throw new Error('Pagination control was replaced')
+          }
+
+          return '1'
+        },
+      }),
+      emptyState: createSingleLocator({ isVisible: () => false }),
+      firstPageButton: createSingleLocator(),
+      nextPageButton: createSingleLocator(),
+      titleLabels: createTextListLocator(() => ['Startup Procedures']),
+      totalPagesLabel: createSingleLocator({ textContent: () => ' of 1' }),
+    })
+
+    await expect(collectExistingArticleTitles(createPage())).resolves.toEqual(new Set(['Startup Procedures']))
+    expect(inputReadCount).toBeGreaterThan(1)
+  })
 })
 
 function createPage(onWait?: () => void): Page {
