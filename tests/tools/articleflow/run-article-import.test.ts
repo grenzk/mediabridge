@@ -72,4 +72,31 @@ describe('runArticleImport rerun safety', () => {
       { article: plan.articles[1], status: 'existing', type: 'article' },
     ])
   })
+
+  it('finishes ensuring every folder before processing articles', async () => {
+    const firstFolderPath = ['Sample Product']
+    const secondFolderPath = ['Sample Product', 'Manuals']
+    const plan: ArticleImportPlan = {
+      articles: [
+        {
+          folderPath: secondFolderPath,
+          relativeSourcePath: 'Manuals/Installation.htm',
+          sourcePath: '/tmp/Manuals/Installation.htm',
+          title: 'Installation',
+        },
+      ],
+      folderPaths: [firstFolderPath, secondFolderPath],
+      ignoredPaths: [],
+      rootPath: '/tmp/Sample Product',
+    }
+
+    articleListMocks.collectExistingArticleTitles.mockResolvedValue(new Set(['Installation']))
+
+    await runArticleImport({} as unknown as Page, plan, 'check-in')
+
+    expect(folderMocks.ensureFolderPath).toHaveBeenCalledTimes(2)
+    expect(folderMocks.ensureFolderPath.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      folderMocks.selectFolderPath.mock.invocationCallOrder[0],
+    )
+  })
 })

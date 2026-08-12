@@ -218,6 +218,11 @@ async function openCreateFolderForm(
     `open Create Folder under "${formatFolderPath(parentPath, importParent.name)}"`,
     async () => {
       const parent = await resolveFolderPathOnce(articlePage, importParent, parentPath)
+
+      if (!(await isFolderSelectionComplete(articlePage, parent.folder.id))) {
+        await selectResolvedFolder(articlePage, parent)
+      }
+
       const freshParent = await resolveVisibleFolder(articlePage, parent.folder)
       const { addFolderMenuItem, contextMenuButton } = getArticleFolderLocators(
         freshParent.row,
@@ -226,6 +231,10 @@ async function openCreateFolderForm(
 
       if ((await contextMenuButton.count()) !== 1) {
         throw new FolderTreeChangedError(`The context menu for "${freshParent.folder.name}" disappeared.`)
+      }
+
+      if (!(await contextMenuButton.isVisible())) {
+        throw new FolderTreeChangedError(`The context menu for "${freshParent.folder.name}" remained hidden.`)
       }
 
       if (!(await addFolderMenuItem.isVisible())) {
