@@ -26,6 +26,7 @@ Fixed
 
 - Fixed ArticleFlow folder traversal and selection when eGain collapses, reloads, or replaces folder-tree rows.
 - Fixed nested folder creation by reselecting the intended parent before opening its eGain context menu.
+- Fixed ArticleFlow article sequencing by waiting for CKEditor rendering and eGain completion before continuing.
 - Fixed ArticleFlow reruns so existing folders and articles are reused instead of recreated.
 - Fixed ArticleFlow editor synchronization and Windows line-ending comparisons before check-in or publication.
 - Fixed ArticleFlow publication by confirming the summary dialog after Publish is selected.

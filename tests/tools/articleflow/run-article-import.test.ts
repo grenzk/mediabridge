@@ -15,6 +15,7 @@ vi.mock('../../../src/tools/articleflow/automation/collect-existing-article-titl
 vi.mock('../../../src/tools/articleflow/automation/ensure-folder-path.ts', () => folderMocks)
 
 import {
+  hasRenderedEditorContent,
   normalizeHtmlLineEndings,
   runArticleImport,
   type ArticleImportProgress,
@@ -30,6 +31,11 @@ beforeEach(() => {
 describe('runArticleImport rerun safety', () => {
   it('normalizes Windows and legacy line endings before comparing source HTML', () => {
     expect(normalizeHtmlLineEndings('<p>Line one\r\nLine two\r</p>')).toBe('<p>Line one\nLine two\n</p>')
+  })
+
+  it('accepts rendered editor markup without comparing transformed preview text', () => {
+    expect(hasRenderedEditorContent('  <div><strong>Rendered content</strong></div>  ')).toBe(true)
+    expect(hasRenderedEditorContent('   ')).toBe(false)
   })
 
   it('skips exact-title matches and scans each destination folder once', async () => {

@@ -12,6 +12,8 @@ import { ensureFolderPath, getSelectedFolderReference, selectFolderPath } from '
 
 const editorSyncTimeoutMs = 10000
 const editorSyncPollIntervalMs = 100
+const articleCompletionTimeoutMs = 60000
+const articleCompletionSettleDelayMs = 5000
 const saveSettleDelayMs = 1000
 
 export type ArticleCompletionAction = 'check-in' | 'publish'
@@ -172,7 +174,7 @@ async function createArticle(
   await sourceButton.click()
   await sourceEditor.waitFor({ state: 'hidden' })
   await editorBody.waitFor({ state: 'visible' })
-  await waitForEditorContent(articlePage, editorBody, html)
+  await waitForEditorPreview(articlePage, editorBody)
 
   await requireUniqueLocator(saveArticleButton, 'Save button')
   await saveArticleButton.click()
@@ -192,6 +194,8 @@ async function createArticle(
     await publishDoneButton.click()
     await publishDialog.waitFor({ state: 'hidden' })
   }
+
+  await waitForArticleCompletion(articlePage, completionButton)
 }
 
 async function requireUniqueLocator(locator: Locator, description: string) {
@@ -246,33 +250,27 @@ async function waitForInputValue(articlePage: Page, input: Locator, expectedValu
   throw new Error(`Expected the ${description} to be "${expectedValue}", but found "${actualValue}".`)
 }
 
-async function waitForEditorContent(articlePage: Page, editorBody: Locator, expectedHtml: string) {
+async function waitForEditorPreview(articlePage: Page, editorBody: Locator) {
   const deadline = Date.now() + editorSyncTimeoutMs
 
   while (Date.now() < deadline) {
-    const editorIsSynchronized = await editorBody.evaluate((element, html) => {
-      const template = element.ownerDocument.createElement('template')
-      const normalizeText = (value: string) => value.replace(/\s+/g, ' ').trim()
+    const editorIsReady = hasRenderedEditorContent(await editorBody.innerHTML())
 
-      template.innerHTML = html
-      template.content.querySelectorAll('script, style').forEach(ignoredElement => ignoredElement.remove())
-
-      const expectedText = normalizeText(template.content.textContent ?? '')
-      const actualText = normalizeText(element.textContent ?? '')
-
-      if (expectedText) {
-        return actualText.includes(expectedText.slice(0, 120))
-      }
-
-      return element.innerHTML.trim().length > 0
-    }, expectedHtml)
-
-    if (editorIsSynchronized) {
+    if (editorIsReady) {
       return
     }
 
     await articlePage.waitForTimeout(editorSyncPollIntervalMs)
   }
 
-  throw new Error('CKEditor did not display the inserted article content before saving.')
+  throw new Error('CKEditor did not render the inserted article content before saving.')
+}
+
+export function hasRenderedEditorContent(editorHtml: string): boolean {
+  return editorHtml.trim().length > 0
+}
+
+async function waitForArticleCompletion(articlePage: Page, completionButton: Locator) {
+  await completionButton.waitFor({ state: 'hidden', timeout: articleCompletionTimeoutMs })
+  await articlePage.waitForTimeout(articleCompletionSettleDelayMs)
 }
