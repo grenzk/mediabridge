@@ -161,7 +161,6 @@ export async function createArticleFlowBrowserWindow({
 
 /**
  * @param {{
- *   appRoot: string,
  *   devServerUrl?: string,
  *   electronDirectory: string,
  *   existingWindow?: BrowserWindow,
@@ -169,7 +168,7 @@ export async function createArticleFlowBrowserWindow({
  * }} options
  * @returns {Promise<BrowserWindow>}
  */
-export async function createHubBrowserWindow({ appRoot, devServerUrl, electronDirectory, existingWindow, onClosed }) {
+export async function createHubBrowserWindow({ devServerUrl, electronDirectory, existingWindow, onClosed }) {
   const focusedWindow = focusWindow(existingWindow)
 
   if (focusedWindow) {
@@ -184,7 +183,6 @@ export async function createHubBrowserWindow({ appRoot, devServerUrl, electronDi
     resizable: false,
     title: 'KnowledgeWorks',
     backgroundColor: '#202426',
-    icon: getRuntimeIcon(appRoot),
     webPreferences: {
       preload: join(electronDirectory, 'preload.cjs'),
       nodeIntegration: false,
