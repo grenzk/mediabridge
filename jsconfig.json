@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "allowJs": true,
     "checkJs": false,
     "module": "ESNext",
     "moduleResolution": "Bundler",
+    "noEmit": true,
     "target": "ES2022",
     "types": ["vite/client"]
   },
-  "include": ["electron/**/*.cjs", "electron/**/*.js", "src/**/*.d.ts", "src/**/*.js", "src/**/*.vue", "vite.config.js"]
+  "include": ["electron/**/*.cjs", "electron/**/*.js", "src/**/*.js", "vite.config.js"]
 }

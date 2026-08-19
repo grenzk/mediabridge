@@ -1,39 +1,52 @@
 import 'dotenv/config'
-import { app, BrowserWindow } from 'electron'
+import { app } from 'electron'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { configureApplicationMenu } from './app-menu.js'
-import { checkForUpdates, configureAutoUpdater } from './auto-updater.js'
-import { createBrowserProcessController } from './browser-process.js'
+import { registerAppHandlers } from './ipc/app-handlers.js'
+import { registerBrowserHandlers } from './ipc/browser-handlers.js'
 import { registerLogHandlers } from './ipc/log-handlers.js'
-import { registerSessionHandlers } from './ipc/session-handlers.js'
 import { registerToolbarHandlers } from './ipc/toolbar-handlers.js'
-import { configureDockIcon } from './runtime-icon.js'
-import { createLogsBrowserWindow, createToolbarBrowserWindow } from './windows.js'
+import { configureApplicationMenu } from './platform/app-menu.js'
+import { checkForUpdates, configureAutoUpdater } from './platform/auto-updater.js'
+import { createBrowserService } from './platform/browser-service.js'
+import { getErrorDetail, getErrorMessage } from './platform/error-format.ts'
+import { createLogService } from './platform/log-service.js'
+import { configureDockIcon } from './platform/runtime-icon.js'
+import {
+  createArticleFlowBrowserWindow,
+  createHubBrowserWindow,
+  createLogsBrowserWindow,
+  createToolbarBrowserWindow,
+} from './platform/windows.js'
+import { registerArticleFlowHandlers } from './tools/articleflow/handlers.ts'
+import { registerMediaBridgeHandlers } from './tools/mediabridge/handlers.ts'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
 const browserStartupTimeout = Number(process.env.MEDIABRIDGE_BROWSER_STARTUP_TIMEOUT_MS) || 30000
 const hasSingleInstanceLock = app.requestSingleInstanceLock()
-const browserProcessController = createBrowserProcessController({
+const browserService = createBrowserService({
   appRoot,
   startupTimeout: browserStartupTimeout,
 })
+const logService = createLogService()
+const addLog = logService.add
 
 let toolbarWindow
 let logsWindow
-let nextLogId = 1
-let shouldFocusToolbarOnReady = false
-const logs = []
-const maxLogEntries = 500
+let hubWindow
+let articleFlowWindow
+let toolbarWindowPromise
+let logsWindowPromise
+let hubWindowPromise
+let articleFlowWindowPromise
+let launchBrowserPromise
 
 /**
- * Restores and focuses the existing toolbar after another launch attempt.
+ * Restores and focuses the existing toolbar.
  */
 function focusToolbarWindow() {
   if (!toolbarWindow || toolbarWindow.isDestroyed()) {
-    shouldFocusToolbarOnReady = true
-
     return
   }
 
@@ -44,7 +57,6 @@ function focusToolbarWindow() {
   toolbarWindow.show()
   toolbarWindow.focus()
   toolbarWindow.moveTop()
-  shouldFocusToolbarOnReady = false
 }
 
 function getDevServerUrl() {
@@ -54,72 +66,106 @@ function getDevServerUrl() {
 }
 
 async function createToolbarWindow() {
-  toolbarWindow = await createToolbarBrowserWindow({
-    appRoot,
-    devServerUrl: getDevServerUrl(),
-    electronDirectory: __dirname,
-    focusToolbarWindow,
-    shouldFocusOnReady: shouldFocusToolbarOnReady,
-  })
+  if (toolbarWindow && !toolbarWindow.isDestroyed()) {
+    focusToolbarWindow()
+
+    return
+  }
+
+  if (!toolbarWindowPromise) {
+    toolbarWindowPromise = createToolbarBrowserWindow({
+      appRoot,
+      devServerUrl: getDevServerUrl(),
+      electronDirectory: __dirname,
+    })
+      .then(createdWindow => {
+        toolbarWindow = createdWindow
+      })
+      .finally(() => {
+        toolbarWindowPromise = undefined
+      })
+  }
+
+  return toolbarWindowPromise
+}
+
+async function createHubWindow() {
+  if (!hubWindowPromise) {
+    hubWindowPromise = createHubBrowserWindow({
+      devServerUrl: getDevServerUrl(),
+      electronDirectory: __dirname,
+      existingWindow: hubWindow,
+      onClosed: closedWindow => {
+        if (hubWindow === closedWindow) {
+          hubWindow = undefined
+        }
+      },
+    })
+      .then(createdWindow => {
+        hubWindow = createdWindow
+      })
+      .finally(() => {
+        hubWindowPromise = undefined
+      })
+  }
+
+  return hubWindowPromise
 }
 
 async function createLogsWindow() {
-  logsWindow = await createLogsBrowserWindow({
-    devServerUrl: getDevServerUrl(),
-    electronDirectory: __dirname,
-    existingWindow: logsWindow,
-    onClosed: () => {
-      logsWindow = undefined
-    },
-  })
+  if (!logsWindowPromise) {
+    logsWindowPromise = createLogsBrowserWindow({
+      devServerUrl: getDevServerUrl(),
+      electronDirectory: __dirname,
+      existingWindow: logsWindow,
+      onClosed: closedWindow => {
+        if (logsWindow === closedWindow) {
+          logsWindow = undefined
+        }
+      },
+    })
+      .then(createdWindow => {
+        logsWindow = createdWindow
+      })
+      .finally(() => {
+        logsWindowPromise = undefined
+      })
+  }
+
+  return logsWindowPromise
 }
 
-function getLogTimestamp() {
-  return new Date().toLocaleTimeString([], {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    hour12: false,
-  })
+async function createArticleFlowWindow() {
+  if (!articleFlowWindowPromise) {
+    articleFlowWindowPromise = createArticleFlowBrowserWindow({
+      appRoot,
+      devServerUrl: getDevServerUrl(),
+      electronDirectory: __dirname,
+      existingWindow: articleFlowWindow,
+      onClosed: closedWindow => {
+        if (articleFlowWindow === closedWindow) {
+          articleFlowWindow = undefined
+        }
+      },
+    })
+      .then(createdWindow => {
+        articleFlowWindow = createdWindow
+      })
+      .finally(() => {
+        articleFlowWindowPromise = undefined
+      })
+  }
+
+  return articleFlowWindowPromise
 }
 
-function publishLogs() {
+logService.subscribe(logs => {
   if (logsWindow && !logsWindow.isDestroyed()) {
     logsWindow.webContents.send('logs:updated', logs)
   }
-}
-
-/**
- * @param {'info' | 'success' | 'error'} level
- * @param {string} scope
- * @param {string} message
- * @param {string} [detail]
- */
-function addLog(level, scope, message, detail = '') {
-  logs.push({
-    id: nextLogId,
-    timestamp: getLogTimestamp(),
-    level,
-    scope,
-    message,
-    detail,
-  })
-  nextLogId += 1
-
-  if (logs.length > maxLogEntries) {
-    logs.splice(0, logs.length - maxLogEntries)
-  }
-
-  publishLogs()
-}
-
-function clearLogs() {
-  logs.splice(0)
-  publishLogs()
-}
+})
 
 function closeToolbar() {
-  logsWindow?.close()
   toolbarWindow?.close()
 }
 
@@ -127,16 +173,61 @@ function minimizeToolbar() {
   toolbarWindow?.minimize()
 }
 
-registerSessionHandlers({
+function launchBrowser() {
+  if (!launchBrowserPromise) {
+    addLog('info', 'Browser', 'Opening controlled browser.')
+    launchBrowserPromise = browserService
+      .launch()
+      .then(cdpUrl => {
+        addLog('success', 'Browser', `Connected to ${cdpUrl}.`)
+
+        return { ok: true }
+      })
+      .catch(error => {
+        addLog('error', 'Browser', getErrorMessage(error), getErrorDetail(error))
+        throw error
+      })
+      .finally(() => {
+        launchBrowserPromise = undefined
+      })
+  }
+
+  return launchBrowserPromise
+}
+
+registerAppHandlers({
+  getAppVersion: () => app.getVersion(),
+  openTool: async tool => {
+    if (tool === 'mediabridge') {
+      await createToolbarWindow()
+      return
+    }
+
+    if (tool === 'articleflow') {
+      await createArticleFlowWindow()
+    }
+  },
+})
+
+registerBrowserHandlers({
+  browserService,
+  launchBrowser,
+})
+
+registerMediaBridgeHandlers({
   addLog,
-  browserProcessController,
+  browserService,
+  launchBrowser,
+})
+
+registerArticleFlowHandlers({
+  addLog,
+  browserService,
 })
 
 registerLogHandlers({
-  addLog,
-  clearLogs,
   createLogsWindow,
-  getLogs: () => logs,
+  logService,
 })
 
 registerToolbarHandlers({
@@ -147,28 +238,27 @@ registerToolbarHandlers({
 if (!hasSingleInstanceLock) {
   app.quit()
 } else {
-  app.on('second-instance', focusToolbarWindow)
+  app.on('second-instance', createHubWindow)
 
   app.whenReady().then(async () => {
     configureApplicationMenu()
     configureDockIcon(appRoot)
     configureAutoUpdater(addLog)
-    addLog('info', 'App', `MediaBridge ${app.getVersion()} started.`)
-    await createToolbarWindow()
+    addLog('info', 'App', `KnowledgeWorks ${app.getVersion()} started.`)
+    await createHubWindow()
+
     checkForUpdates(addLog)
   })
 }
 
 app.on('window-all-closed', () => {
   if (process.env.MEDIABRIDGE_CLOSE_BROWSER_ON_EXIT === '1') {
-    browserProcessController.close()
+    browserService.close()
   }
 
   app.quit()
 })
 
 app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createToolbarWindow()
-  }
+  createHubWindow()
 })

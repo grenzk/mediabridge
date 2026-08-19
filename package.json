@@ -1,27 +1,32 @@
 {
-  "name": "mediabridge",
-  "version": "1.2.0",
-  "description": "Floating toolbar for linking documents, images, and articles into the eGain article editor.",
-  "author": "MediaBridge",
+  "name": "knowledgeworks",
+  "version": "2.0.0-beta.1",
+  "description": "Desktop automation hub for MediaBridge, ArticleFlow, and future eGain workflows.",
+  "author": "grenzk",
   "private": true,
   "type": "module",
   "main": "electron/main.js",
   "scripts": {
     "start": "npm run build && electron .",
     "dev": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron . --dev-server=http://127.0.0.1:5173\"",
-    "build": "vite build",
+    "dev:hub": "concurrently -k \"vite --host 127.0.0.1\" \"wait-on http://127.0.0.1:5173 && electron . --dev-server=http://127.0.0.1:5173 --show-hub\"",
+    "build": "npm run typecheck && vite build",
     "package": "npm run build && electron-builder --dir",
     "dist:mac": "npm run build && electron-builder --mac",
     "install:packaging": "npm install --include=peer",
     "dist:win": "npm run build && electron-builder --win --x64",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "preview": "vite preview",
-    "script:media-linking": "node src/scripts/run-media-linking.js",
+    "script:articleflow": "node src/tools/articleflow/scripts/run-article-flow.ts",
+    "script:media-linking": "node src/tools/mediabridge/scripts/run-media-linking.ts",
     "test": "vitest run",
-    "test:verbose": "vitest run --reporter=verbose"
+    "test:verbose": "vitest run --reporter=verbose",
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json"
   },
   "build": {
     "appId": "com.mediabridge.toolbar",
-    "productName": "MediaBridge",
+    "productName": "KnowledgeWorks",
     "directories": {
       "output": "release"
     },
@@ -35,11 +40,9 @@
     "files": [
       "dist/renderer/**/*",
       "electron/**/*",
-      "src/automation/**/*",
-      "src/config/**/*",
-      "src/browser.js",
-      "src/editor/**/*",
-      "src/helpers/**/*",
+      "src/shared/**/*",
+      "src/tools/articleflow/**/*",
+      "src/tools/mediabridge/**/*",
       "package.json"
     ],
     "extraResources": [
@@ -97,12 +100,16 @@
     "vue": "^3.5.39"
   },
   "devDependencies": {
+    "@types/node": "^22.19.19",
     "@vitejs/plugin-vue": "^6.0.7",
     "concurrently": "^9.2.4",
     "electron": "^39.8.10",
     "electron-builder": "^26.15.3",
+    "prettier": "3.9.6",
+    "typescript": "^6.0.3",
     "vite": "^7.3.6",
     "vitest": "^4.1.10",
+    "vue-tsc": "^3.3.8",
     "wait-on": "^9.0.10"
   },
   "allowScripts": {

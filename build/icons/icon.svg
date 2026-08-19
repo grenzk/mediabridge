@@ -1,14 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
-  <rect x="76" y="76" width="872" height="872" rx="196" fill="#f7d54a"/>
+  <rect
+    x="76"
+    y="76"
+    width="872"
+    height="872"
+    rx="196"
+    fill="#171d1e"
+    stroke="#0757e8"
+    stroke-width="40"
+  />
   <text
-    x="508"
+    x="512"
     y="542"
-    fill="#101419"
+    fill="#f4f2ec"
     font-family="Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-    font-size="372"
-    font-weight="900"
+    font-size="300"
+    font-weight="800"
     letter-spacing="0"
     text-anchor="middle"
     dominant-baseline="middle"
-  >MB</text>
+  >KW</text>
+  <rect x="790" y="790" width="80" height="80" fill="#f05a16"/>
 </svg>
