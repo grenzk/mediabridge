@@ -14,12 +14,14 @@ import { createLogService } from './platform/log-service.js'
 import { configureDockIcon } from './platform/runtime-icon.js'
 import {
   createArticleFlowBrowserWindow,
+  createDocSweepBrowserWindow,
   createHubBrowserWindow,
   createLogsBrowserWindow,
   createToolbarBrowserWindow,
 } from './platform/windows.js'
 import { registerArticleFlowHandlers } from './tools/articleflow/handlers.ts'
 import { registerMediaBridgeHandlers } from './tools/mediabridge/handlers.ts'
+import { registerDocSweepHandlers } from './tools/docsweep/handlers.ts'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
 const appRoot = join(__dirname, '..')
@@ -41,6 +43,8 @@ let logsWindowPromise
 let hubWindowPromise
 let articleFlowWindowPromise
 let launchBrowserPromise
+let docSweepWindow
+let docSweepWindowPromise
 
 /**
  * Restores and focuses the existing toolbar.
@@ -160,6 +164,30 @@ async function createArticleFlowWindow() {
   return articleFlowWindowPromise
 }
 
+async function createDocSweepWindow() {
+  if (!docSweepWindowPromise) {
+    docSweepWindowPromise = createDocSweepBrowserWindow({
+      appRoot,
+      devServerUrl: getDevServerUrl(),
+      electronDirectory: __dirname,
+      existingWindow: docSweepWindow,
+      onClosed: closedWindow => {
+        if (docSweepWindow === closedWindow) {
+          docSweepWindow = undefined
+        }
+      },
+    })
+      .then(createdWindow => {
+        docSweepWindow = createdWindow
+      })
+      .finally(() => {
+        docSweepWindowPromise = undefined
+      })
+  }
+
+  return docSweepWindowPromise
+}
+
 logService.subscribe(logs => {
   if (logsWindow && !logsWindow.isDestroyed()) {
     logsWindow.webContents.send('logs:updated', logs)
@@ -207,6 +235,10 @@ registerAppHandlers({
     if (tool === 'articleflow') {
       await createArticleFlowWindow()
     }
+
+    if (tool === 'docsweep') {
+      await createDocSweepWindow()
+    }
   },
 })
 
@@ -222,6 +254,11 @@ registerMediaBridgeHandlers({
 })
 
 registerArticleFlowHandlers({
+  addLog,
+  browserService,
+})
+
+registerDocSweepHandlers({
   addLog,
   browserService,
 })

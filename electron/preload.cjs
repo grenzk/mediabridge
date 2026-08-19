@@ -16,6 +16,11 @@ const { contextBridge, ipcRenderer } = require('electron')
  *   unlinkedTargetCount?: number,
  * }} MediaBridgeActionResult
  *
+ * @typedef {{
+ *   ok: boolean,
+ *   status: string,
+ * }} DocSweepRunResult
+ *
  * @typedef {{ ok: boolean }} MediaBridgeOkResult
  *
  * @typedef {{
@@ -189,4 +194,12 @@ contextBridge.exposeInMainWorld('mediabridge', {
   runMediaLinking: mode => ipcRenderer.invoke('session:run-media-linking', mode),
 
   writeLog,
+})
+
+contextBridge.exposeInMainWorld('docsweep', {
+  /**
+   * @param {string} controlNumber
+   * @returns {Promise<DocSweepRunResult>}
+   */
+  runSweep: controlNumber => ipcRenderer.invoke('docsweep:run', controlNumber),
 })
