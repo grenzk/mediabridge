@@ -214,6 +214,20 @@ contextBridge.exposeInMainWorld('docsweep', {
   openSite: (url, matchUrl) => ipcRenderer.invoke('docsweep:open-site', url, matchUrl),
 
   /**
+   * @param {string[]} includedSites
+   * @returns {Promise<{
+   *   ok: boolean
+   *   results: Array<{
+   *     name: string
+   *     status: string
+   *     reason?: string
+   *   }>
+   *   error?: string
+   * }>}
+   */
+  verifySites: includedSites => ipcRenderer.invoke('docsweep:verify-sites', includedSites),
+
+  /**
    * @param {string} controlNumber
    * @returns {Promise<DocSweepRunResult>}
    */

@@ -109,6 +109,15 @@ export type MediaBridgeApi = {
 export type DocSweepApi = {
   selectExcelFile: () => Promise<DocSweepFileSelectionResult>
   openSite: (url: string, matchUrl: string) => Promise<DocSweepActionResult>
+  verifySites: (includedSites: Array<'Vertiv' | 'Asset Library' | 'PD Cloud' | 'MASW'>) => Promise<{
+    ok: boolean
+    results: Array<{
+      name: 'Vertiv' | 'Asset Library' | 'PD Cloud' | 'MASW'
+      status: 'Ready' | 'Not connected' | 'Error'
+      reason?: string
+    }>
+    error?: string
+  }>
   runSweep: (controlNumber: string) => Promise<DocSweepRunResult>
 }
 

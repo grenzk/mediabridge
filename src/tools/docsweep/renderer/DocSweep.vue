@@ -3,12 +3,14 @@ import { computed, ref } from 'vue'
 import InputText from 'primevue/inputtext'
 import ToggleSwitch from 'primevue/toggleswitch'
 
-type SiteStatus = 'Ready' | 'Not connected' | 'Checking'
-
 type DocSweepSiteStatus = 'Not connected' | 'Verifying' | 'Ready' | 'Error'
 
+type DocSweepSiteName = 'Vertiv' | 'Asset Library' | 'PD Cloud' | 'MASW'
+
+type FooterStatus = 'ready' | 'warning' | 'error'
+
 type DocSweepSite = {
-  name: string
+  name: DocSweepSiteName
   status: DocSweepSiteStatus
   url: string
   matchUrl: string
@@ -27,8 +29,9 @@ const excelFile = ref('')
 
 const isVerifying = ref(false)
 const isRunning = ref(false)
+const isSitesVerified = ref(false)
 
-const sweepStatus = ref('Ready')
+const sweepStatus = ref('Select an Excel file.')
 const currentSite = ref('-')
 const currentControlNumber = ref('-')
 const completedCount = ref(0)
@@ -133,40 +136,111 @@ async function selectExcelFile(): Promise<void> {
   }
 
   excelFile.value = result.filePath
+
+  if (isSitesVerified.value && canStartSweep.value) {
+    footerStatus.value = 'ready'
+    sweepStatus.value = 'Ready to start sweep.'
+  } else {
+    footerStatus.value = 'warning'
+  }
 }
 
 async function openSite(url: string, matchUrl: string): Promise<void> {
   await window.docsweep.openSite(url, matchUrl)
 }
 
-async function verifySites() {
+async function verifySites(): Promise<void> {
+  if (isVerifying.value) {
+    return
+  }
+
+  isSitesVerified.value = false
+
+  const includedSites = sites.value.filter(site => site.enabled).map(site => site.name)
+
+  if (includedSites.length === 0) {
+    sweepStatus.value = 'Select at least one site to verify.'
+    return
+  }
+
   isVerifying.value = true
   sweepStatus.value = 'Checking sites...'
 
+  for (const site of sites.value) {
+    if (site.enabled) {
+      site.status = 'Verifying'
+    }
+  }
+
   try {
-    // TODO:
-    // Replace this temporary implementation with the
-    // actual Electron / Playwright site verification.
-    await new Promise(resolve => setTimeout(resolve, 500))
+    const result = await window.docsweep.verifySites(includedSites)
 
-    sites.value = sites.value.map(site => ({
-      ...site,
-      status: 'Not connected',
-    }))
+    if (!result.ok) {
+      footerStatus.value = 'error'
+      sweepStatus.value = result.error ?? 'Site verification failed.'
 
-    sweepStatus.value = 'Ready'
+      for (const site of sites.value) {
+        if (site.enabled) {
+          site.status = 'Error'
+        }
+      }
+
+      return
+    }
+
+    for (const verification of result.results) {
+      const site = sites.value.find(item => item.name === verification.name)
+
+      if (!site) {
+        continue
+      }
+
+      site.status = verification.status
+    }
+
+    const allEnabledSitesReady =
+      result.results.length === includedSites.length && result.results.every(site => site.status === 'Ready')
+
+    isSitesVerified.value = allEnabledSitesReady
+
+    footerStatus.value = allEnabledSitesReady && canStartSweep.value ? 'ready' : 'warning'
+
+    sweepStatus.value = allEnabledSitesReady
+      ? 'All enabled sites are ready.'
+      : 'One or more enabled sites are not ready.'
   } finally {
     isVerifying.value = false
   }
 }
 
-async function startSweep() {
-  if (!excelFile.value) {
-    sweepStatus.value = 'Select an Excel file first.'
+const canStartSweep = computed(() => {
+  if (!excelFile.value.trim()) {
+    return false
+  }
+
+  const enabledSites = sites.value.filter(site => site.enabled)
+
+  if (enabledSites.length === 0) {
+    return false
+  }
+
+  return isSitesVerified.value && enabledSites.every(site => site.status === 'Ready')
+})
+
+function invalidateSiteVerification(): void {
+  isSitesVerified.value = false
+  footerStatus.value = 'warning'
+  sweepStatus.value = 'Site configuration changed. Verify sites again.'
+}
+
+async function startSweep(): Promise<void> {
+  if (!canStartSweep.value) {
+    footerStatus.value = 'warning'
     return
   }
 
   isRunning.value = true
+  footerStatus.value = 'warning'
   sweepStatus.value = 'Starting sweep...'
   completedCount.value = 0
   totalCount.value = 0
@@ -177,11 +251,51 @@ async function startSweep() {
     // actual DocSweep IPC call.
     await new Promise(resolve => setTimeout(resolve, 500))
 
+    footerStatus.value = 'ready'
     sweepStatus.value = 'Ready'
+  } catch (error) {
+    footerStatus.value = 'error'
+    sweepStatus.value = error instanceof Error ? error.message : 'Sweep failed.'
   } finally {
     isRunning.value = false
   }
 }
+
+const footerStatus = ref<FooterStatus>('warning')
+
+const footerStatusMessage = computed(() => {
+  if (footerStatus.value === 'error') {
+    return sweepStatus.value
+  }
+
+  if (isRunning.value) {
+    return sweepStatus.value
+  }
+
+  if (canStartSweep.value) {
+    return 'Ready to start sweep.'
+  }
+
+  if (!excelFile.value.trim()) {
+    return 'Select an Excel file.'
+  }
+
+  const enabledSites = sites.value.filter(site => site.enabled)
+
+  if (enabledSites.length === 0) {
+    return 'Select at least one site.'
+  }
+
+  if (!isSitesVerified.value) {
+    return 'Verify enabled sites before starting.'
+  }
+
+  if (!enabledSites.every(site => site.status === 'Ready')) {
+    return 'One or more enabled sites are not ready.'
+  }
+
+  return sweepStatus.value
+})
 </script>
 
 <template>
@@ -290,6 +404,7 @@ async function startSweep() {
                 <div class="site-actions">
                   <ToggleSwitch
                     v-model="site.enabled"
+                    @update:model-value="invalidateSiteVerification"
                     :disabled="isRunning"
                     :aria-label="`Enable ${site.name} for sweep`"
                   />
@@ -449,16 +564,16 @@ async function startSweep() {
          ===================================================== -->
     <footer class="docsweep-footer">
       <div class="footer-status">
-        <span class="footer-status-dot" :class="{ running: isRunning }" />
+        <span class="footer-status-dot" :class="`footer-status-${footerStatus}`" />
 
-        <span>{{ sweepStatus }}</span>
+        <span>{{ footerStatusMessage }}</span>
       </div>
 
       <Button
         label="Start Sweep"
         icon="pi pi-play"
         :loading="isRunning"
-        :disabled="isRunning"
+        :disabled="isRunning || !canStartSweep"
         class="start-sweep-button"
         @click="startSweep"
       />
@@ -535,7 +650,7 @@ async function startSweep() {
 
   color: var(--kw-text-light);
 
-  border: 2px solid var(--kw-vertiv-color);
+  border: 2px solid var(--kw-primary);
   border-radius: 8px;
 
   background: var(--kw-surface);
@@ -866,7 +981,7 @@ async function startSweep() {
 
 .sites-table-header,
 .site-row {
- display: grid;
+  display: grid;
   grid-template-columns: minmax(160px, 1.2fr) minmax(140px, 1fr) 96px;
   align-items: center;
   gap: 6px;
@@ -880,7 +995,8 @@ async function startSweep() {
   background: var(--kw-surface-hover);
   color: var(--kw-text-muted);
   font-size: 0.68rem;
-  font-weight: 600;min-height: 30px;
+  font-weight: 600;
+  min-height: 30px;
   color: var(--kw-text-muted);
   background: var(--kw-quiet-surface);
   font-size: 0.7rem;
@@ -1312,14 +1428,23 @@ async function startSweep() {
 }
 
 .footer-status-dot {
-  width: 7px;
-  height: 7px;
-
-  flex: 0 0 7px;
-
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
   border-radius: 50%;
+  background: var(--kw-text-disabled);
+}
 
+.footer-status-dot.footer-status-ready {
   background: var(--kw-success);
+}
+
+.footer-status-dot.footer-status-warning {
+  background: var(--kw-vertiv-color);
+}
+
+.footer-status-dot.footer-status-error {
+  background: var(--kw-danger);
 }
 
 .footer-status-dot.running {

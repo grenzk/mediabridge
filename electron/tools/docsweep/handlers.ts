@@ -3,6 +3,7 @@ import type { IpcMainInvokeEvent } from 'electron'
 import { connectToBrowser } from '../../../src/shared/browser/connect-to-browser.ts'
 import type { BrowserSession } from '../../../src/shared/browser/connect-to-browser.ts'
 import { getErrorDetail, getErrorMessage } from '../../platform/error-format.ts'
+import { verifySites, type DocSweepSiteName } from '../../../src/tools/docsweep/automation/verification.ts'
 
 type BrowserService = {
   getCdpUrl: () => string
@@ -74,6 +75,53 @@ export function registerDocSweepHandlers({ addLog, browserService }: Dependencie
       addLog('error', 'DocSweep', getErrorMessage(error), getErrorDetail(error))
 
       throw error
+    }
+  })
+
+  ipcMain.handle('docsweep:verify-sites', async (_event: IpcMainInvokeEvent, includedSites: DocSweepSiteName[]) => {
+    let session: BrowserSession | undefined
+
+    try {
+      addLog('info', 'DocSweep', `Verifying ${includedSites.length} included site(s).`)
+
+      session = await getSession(browserService)
+
+      const results = await verifySites(session.pages, includedSites)
+
+      for (const result of results) {
+        if (result.status === 'Ready') {
+          addLog('success', 'DocSweep', `${result.name} is ready.`)
+
+          continue
+        }
+
+        addLog(
+          result.status === 'Error' ? 'error' : 'info',
+          'DocSweep',
+          `${result.name}: ${result.reason ?? 'Site is not ready.'}`,
+        )
+      }
+
+      const readyCount = results.filter(result => result.status === 'Ready').length
+
+      addLog('info', 'DocSweep', `${readyCount} of ${results.length} included site(s) are ready.`)
+
+      return {
+        ok: true,
+        results,
+      }
+    } catch (error) {
+      addLog('error', 'DocSweep', getErrorMessage(error), getErrorDetail(error))
+
+      return {
+        ok: false,
+        results: [],
+        error: getErrorMessage(error),
+      }
+    } finally {
+      // Do not close the browser.
+      // This is the existing controlled browser.
+      session = undefined
     }
   })
 
