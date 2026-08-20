@@ -36,6 +36,7 @@ const errorMessage = ref<string | null>(null)
 const browserStatus = ref<KnowledgeWorksBrowserStatus>({ state: 'idle' })
 const isOpeningArticleFlow = ref(false)
 const isOpeningMediaBridge = ref(false)
+const isOpeningDocSweep = ref(false)
 let removeBrowserStatusListener: (() => void) | undefined
 let browserStatusTimer: ReturnType<typeof setInterval> | undefined
 
@@ -75,6 +76,22 @@ async function openArticleFlow() {
     errorMessage.value = getErrorMessage(error)
   } finally {
     isOpeningArticleFlow.value = false
+  }
+}
+
+/**
+ * Opens or focuses the DocSweep window.
+ */
+async function openDocSweep() {
+  errorMessage.value = null
+  isOpeningDocSweep.value = true
+
+  try {
+    await window.knowledgeworks.openTool('docsweep')
+  } catch (error) {
+    errorMessage.value = getErrorMessage(error)
+  } finally {
+    isOpeningDocSweep.value = false
   }
 }
 
@@ -202,6 +219,21 @@ onBeforeUnmount(() => {
           label="Open"
           :loading="isOpeningArticleFlow"
           @click="openArticleFlow"
+        />
+      </article>
+
+      <article class="tool-row">
+        <span class="tool-mark docsweep-mark" aria-hidden="true">DS</span>
+        <div class="tool-copy">
+          <strong>DocSweep</strong>
+          <span>Manual and drawing sweep</span>
+        </div>
+        <Button
+          class="open-tool-button"
+          icon="pi pi-arrow-up-right"
+          label="Open"
+          :loading="isOpeningDocSweep"
+          @click="openDocSweep"
         />
       </article>
     </section>
@@ -335,6 +367,8 @@ onBeforeUnmount(() => {
   gap: 12px;
   min-height: 0;
   padding: 20px;
+  overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .hub-tools h1 {
@@ -373,6 +407,11 @@ onBeforeUnmount(() => {
 }
 
 .article-mark {
+  color: var(--kw-accent);
+  border-color: var(--kw-accent);
+}
+
+.docsweep-mark {
   color: var(--kw-accent);
   border-color: var(--kw-accent);
 }

@@ -2,7 +2,7 @@ export type MediaBridgeLinkingMode = 'pdf' | 'word' | 'excel' | 'powerpoint' | '
 export type ArticleFlowCompletionAction = 'check-in' | 'publish'
 export type KnowledgeWorksLogLevel = 'info' | 'success' | 'error'
 export type MediaBridgeLogLevel = KnowledgeWorksLogLevel
-export type KnowledgeWorksTool = 'articleflow' | 'mediabridge'
+export type KnowledgeWorksTool = 'articleflow' | 'mediabridge' | 'docsweep'
 export type KnowledgeWorksBrowserState = 'idle' | 'launching' | 'connected' | 'disconnected' | 'error'
 
 export type KnowledgeWorksBrowserStatus = {
@@ -23,6 +23,11 @@ export type MediaBridgeActionResult = {
 
 export type MediaBridgeOkResult = {
   ok: boolean
+}
+
+export type DocSweepRunResult = {
+  ok: boolean
+  status: string
 }
 
 export type KnowledgeWorksLogEntry = {
@@ -91,6 +96,10 @@ export type MediaBridgeApi = {
   ) => Promise<MediaBridgeOkResult>
 }
 
+export type DocSweepApi = {
+  runSweep: (controlNumber: string) => Promise<DocSweepRunResult>
+}
+
 export type KnowledgeWorksApi = {
   clearLogs: () => Promise<MediaBridgeOkResult>
   getAppVersion: () => Promise<string>
@@ -112,6 +121,7 @@ export type KnowledgeWorksApi = {
 declare global {
   interface Window {
     articleflow: ArticleFlowApi
+    docsweep: DocSweepApi
     knowledgeworks: KnowledgeWorksApi
     mediabridge: MediaBridgeApi
   }

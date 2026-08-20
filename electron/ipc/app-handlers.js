@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron'
 
-const supportedTools = new Set(['articleflow', 'mediabridge'])
+const supportedTools = new Set(['articleflow', 'mediabridge', 'docsweep'])
 
 /**
  * @param {{

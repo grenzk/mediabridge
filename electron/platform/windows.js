@@ -168,6 +168,57 @@ export async function createArticleFlowBrowserWindow({
  * }} options
  * @returns {Promise<BrowserWindow>}
  */
+export async function createDocSweepBrowserWindow({
+  appRoot,
+  devServerUrl,
+  electronDirectory,
+  existingWindow,
+  onClosed,
+}) {
+  const focusedWindow = focusWindow(existingWindow)
+
+  if (focusedWindow) {
+    return focusedWindow
+  }
+
+  const docSweepWindow = new BrowserWindow({
+    width: 1100,
+    height: 850,
+    minWidth: 1100,
+    minHeight: 850,
+    title: 'DocSweep',
+    backgroundColor: '#202426',
+    icon: getRuntimeIcon(appRoot),
+    webPreferences: {
+      preload: join(electronDirectory, 'preload.cjs'),
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  })
+
+  docSweepWindow.once('closed', () => onClosed(docSweepWindow))
+
+  if (devServerUrl) {
+    await docSweepWindow.loadURL(`${devServerUrl}?view=docsweep`)
+  } else {
+    await docSweepWindow.loadFile(join(electronDirectory, '../dist/renderer/index.html'), {
+      query: { view: 'docsweep' },
+    })
+  }
+
+  return docSweepWindow
+}
+
+/**
+ * @param {{
+ *   appRoot: string,
+ *   devServerUrl?: string,
+ *   electronDirectory: string,
+ *   existingWindow?: BrowserWindow,
+ *   onClosed: (closedWindow: BrowserWindow) => void,
+ * }} options
+ * @returns {Promise<BrowserWindow>}
+ */
 export async function createHubBrowserWindow({ devServerUrl, electronDirectory, existingWindow, onClosed }) {
   const focusedWindow = focusWindow(existingWindow)
 

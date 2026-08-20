@@ -5,6 +5,7 @@ import Button from 'primevue/button'
 import Tooltip from 'primevue/tooltip'
 import ArticleFlow from '../../tools/articleflow/renderer/ArticleFlow.vue'
 import MediaBridge from '../../tools/mediabridge/renderer/MediaBridge.vue'
+import DocSweep from '../../tools/docsweep/renderer/DocSweep.vue'
 import Hub from './Hub.vue'
 import LogConsole from './LogConsole.vue'
 import './styles.css'
@@ -26,6 +27,10 @@ const views = {
   mediabridge: {
     component: MediaBridge,
     title: 'MediaBridge',
+  },
+  docsweep: {
+    component: DocSweep,
+    title: 'DocSweep',
   },
 }
 const requestedView = params.get('view')

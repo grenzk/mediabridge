@@ -18,6 +18,9 @@
   --kw-border: #485052;
   --kw-border-subtle: #303839;
   --kw-focus: #6ea0ff;
+  --kw-vertiv-color: #fe5b1b;
+  --kw-vertiv-hover: #ff6f38;
+  --kw-vertiv-pressed: #d9470f;
   color-scheme: dark;
   font-family:
     Inter,
