@@ -198,6 +198,22 @@ contextBridge.exposeInMainWorld('mediabridge', {
 
 contextBridge.exposeInMainWorld('docsweep', {
   /**
+   * @returns {Promise<{
+   *   canceled: boolean,
+   *   ok: boolean,
+   *   filePath?: string,
+   * }>}
+   */
+  selectExcelFile: () => ipcRenderer.invoke('docsweep:select-excel-file'),
+
+  /**
+   * @param {string} url
+   * @param {string} matchUrl
+   * @returns {Promise<{ ok: boolean }>}
+   */
+  openSite: (url, matchUrl) => ipcRenderer.invoke('docsweep:open-site', url, matchUrl),
+
+  /**
    * @param {string} controlNumber
    * @returns {Promise<DocSweepRunResult>}
    */

@@ -1,11 +1,18 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import InputText from 'primevue/inputtext'
+import ToggleSwitch from 'primevue/toggleswitch'
 
 type SiteStatus = 'Ready' | 'Not connected' | 'Checking'
 
-type Site = {
+type DocSweepSiteStatus = 'Not connected' | 'Verifying' | 'Ready' | 'Error'
+
+type DocSweepSite = {
   name: string
-  status: SiteStatus
+  status: DocSweepSiteStatus
+  url: string
+  matchUrl: string
+  enabled: boolean
 }
 
 type SiteSummary = {
@@ -27,22 +34,35 @@ const currentControlNumber = ref('-')
 const completedCount = ref(0)
 const totalCount = ref(0)
 
-const sites = ref<Site[]>([
+const sites = ref<DocSweepSite[]>([
   {
     name: 'Vertiv',
     status: 'Not connected',
+    url: 'https://www.vertiv.com/en-us/',
+    matchUrl: 'https://www.vertiv.com/en-us/',
+    enabled: true,
   },
   {
     name: 'Asset Library',
     status: 'Not connected',
+    url: 'https://asset-library.vertiv.com/#/home?tabName=HOME',
+    matchUrl: 'https://asset-library.vertiv.com/',
+    enabled: true,
   },
   {
     name: 'PD Cloud',
     status: 'Not connected',
+    url: 'https://egup.fa.us2.oraclecloud.com/fscmUI/faces/FndOverview?pageParams=fndGlobalItemNodeId%3DitemNode_product_management_product_development&fndGlobalItemNodeId=itemNode_product_management_product_development&_adf.ctrl-state=CTzs-5yoqQZV_1&_adf.no-new-window-redirect=true&_afrLoop=2780622838863036&_afrWindowMode=2&_afrWindowId=null&_afrFS=16&_afrMT=screen&_afrMFW=944&_afrMFH=882&_afrMFDW=1920&_afrMFDH=1080&_afrMFC=8&_afrMFCI=0&_afrMFM=0&_afrMFR=96&_afrMFG=0&_afrMFS=0&_afrMFO=0',
+    matchUrl:
+      'https://egup.fa.us2.oraclecloud.com/fscmUI/faces/FndOverview?pageParams=fndGlobalItemNodeId%3DitemNode_product_management_product_development&fndGlobalItemNodeId=itemNode_product_management_product_development',
+    enabled: true,
   },
   {
     name: 'MASW',
     status: 'Not connected',
+    url: 'https://amerplmpwiap01.int.vertivco.com/File_Display_MBD/faces/UserManualDisplay.xhtml',
+    matchUrl: 'https://amerplmpwiap01.int.vertivco.com/File_Display_MBD/faces/UserManualDisplay.xhtml',
+    enabled: true,
   },
 ])
 
@@ -100,6 +120,24 @@ const successRate = computed(() => {
 
   return Math.round((totalFound.value / totalResults.value) * 1000) / 10
 })
+
+async function showLogs(): Promise<void> {
+  await window.knowledgeworks.openLogs()
+}
+
+async function selectExcelFile(): Promise<void> {
+  const result = await window.docsweep.selectExcelFile()
+
+  if (!result.ok || !result.filePath) {
+    return
+  }
+
+  excelFile.value = result.filePath
+}
+
+async function openSite(url: string, matchUrl: string): Promise<void> {
+  await window.docsweep.openSite(url, matchUrl)
+}
 
 async function verifySites() {
   isVerifying.value = true
@@ -166,6 +204,7 @@ async function startSweep() {
         class="docsweep-icon-button"
         text
         aria-label="Show logs"
+        @click="showLogs"
       />
     </header>
 
@@ -198,7 +237,14 @@ async function startSweep() {
                   :disabled="isRunning"
                 />
 
-                <Button icon="pi pi-folder-open" label="Browse" severity="secondary" outlined :disabled="isRunning" />
+                <Button
+                  icon="pi pi-folder-open"
+                  label="Browse"
+                  severity="secondary"
+                  outlined
+                  :disabled="isRunning"
+                  @click="selectExcelFile"
+                />
               </div>
             </div>
 
@@ -223,7 +269,7 @@ async function startSweep() {
               <div class="sites-table-header">
                 <span>Site</span>
                 <span>Status</span>
-                <span />
+                <span class="include-header">Include</span>
               </div>
 
               <div v-for="site in sites" :key="site.name" class="site-row">
@@ -241,7 +287,22 @@ async function startSweep() {
                   <span>{{ site.status }}</span>
                 </div>
 
-                <Button icon="pi pi-external-link" severity="secondary" text rounded aria-label="Open site" />
+                <div class="site-actions">
+                  <ToggleSwitch
+                    v-model="site.enabled"
+                    :disabled="isRunning"
+                    :aria-label="`Enable ${site.name} for sweep`"
+                  />
+
+                  <Button
+                    icon="pi pi-external-link"
+                    severity="secondary"
+                    text
+                    rounded
+                    aria-label="Open site"
+                    @click="openSite(site.url, site.matchUrl)"
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -263,7 +324,6 @@ async function startSweep() {
         <div class="progress-content">
           <!-- Progress information -->
           <div class="progress-details">
-
             <div class="progress-detail">
               <span>Current Site</span>
               <strong>{{ currentSite }}</strong>
@@ -663,10 +723,14 @@ async function startSweep() {
    ========================================================= */
 
 .configuration-input {
+  width: 100%;
   min-width: 0;
 }
 
 .field-row {
+  width: 100%;
+  min-width: 0;
+
   display: grid;
 
   gap: 6px;
@@ -682,6 +746,9 @@ async function startSweep() {
 .input-with-button {
   display: grid;
 
+  width: 100%;
+  min-width: 0;
+
   grid-template-columns:
     minmax(0, 1fr)
     auto;
@@ -693,6 +760,7 @@ async function startSweep() {
 
 .input-with-button :deep(.p-inputtext) {
   width: 100%;
+  min-width: 0;
   height: 34px;
 
   box-sizing: border-box;
@@ -763,6 +831,8 @@ async function startSweep() {
 
   font-size: 0.65rem;
   font-weight: 600;
+  color: var(--kw-text-light);
+  border: 1px solid var(--kw-border);
 }
 
 .configuration-actions :deep(.p-button:enabled:hover) {
@@ -783,54 +853,47 @@ async function startSweep() {
 
 .section-label {
   margin-bottom: 7px;
-
   color: var(--kw-text-light);
-
   font-size: 0.75rem;
   font-weight: 600;
 }
 
 .sites-table {
   width: 100%;
-
   overflow: hidden;
-
   border-radius: 4px;
 }
 
 .sites-table-header,
 .site-row {
-  display: grid;
-
-  grid-template-columns:
-    minmax(110px, 1.2fr)
-    minmax(90px, 1fr)
-    28px;
-
+ display: grid;
+  grid-template-columns: minmax(160px, 1.2fr) minmax(140px, 1fr) 96px;
   align-items: center;
-
   gap: 6px;
-
   padding: 4px 6px;
-
   box-sizing: border-box;
 }
 
 .sites-table-header {
-  min-height: 30px;
-
+  min-height: 28px;
+  padding: 0 8px;
+  background: var(--kw-surface-hover);
   color: var(--kw-text-muted);
-
+  font-size: 0.68rem;
+  font-weight: 600;min-height: 30px;
+  color: var(--kw-text-muted);
   background: var(--kw-quiet-surface);
-
   font-size: 0.7rem;
   font-weight: 700;
 }
 
 .site-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(120px, 1fr) 76px;
+  align-items: center;
   min-height: 38px;
-
-  border-top: 1px solid var(--kw-border-subtle);
+  padding: 0 8px;
+  border-bottom: none;
 }
 
 .site-row:hover {
@@ -839,42 +902,31 @@ async function startSweep() {
 
 .site-name {
   display: flex;
-
-  min-width: 0;
-
   align-items: center;
-
-  gap: 7px;
+  gap: 8px;
+  min-width: 0;
 }
 
 .site-name strong {
   overflow: hidden;
-
   color: var(--kw-text-light);
-
   font-size: 0.75rem;
   font-weight: 600;
-
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .site-icon {
-  display: grid;
-
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 24px;
   height: 24px;
-
   flex: 0 0 24px;
-
-  place-items: center;
-
   color: var(--kw-text-muted);
-
   border: 1px solid var(--kw-border);
   border-radius: 6px;
-
-  background: var(--kw-quiet-surface);
+  font-size: 0.7rem;
 }
 
 .site-icon i {
@@ -883,29 +935,31 @@ async function startSweep() {
 
 .site-status {
   display: flex;
-
   align-items: center;
-
-  gap: 5px;
-
+  gap: 6px;
+  min-width: 0;
+  color: var(--kw-text-muted);
   font-size: 0.7rem;
-  font-weight: 600;
 }
 
 .site-status i {
-  font-size: 0.38rem;
-}
-
-.status-ready {
-  color: var(--kw-success);
+  font-size: 0.4rem;
 }
 
 .status-not-connected {
   color: var(--kw-text-muted);
 }
 
-.status-checking {
-  color: var(--kw-vertiv-color);
+.status-verifying {
+  color: var(--kw-accent);
+}
+
+.status-ready {
+  color: var(--kw-success);
+}
+
+.status-error {
+  color: var(--kw-danger);
 }
 
 .site-row :deep(.p-button) {
@@ -923,6 +977,60 @@ async function startSweep() {
   color: var(--kw-text-light);
 
   background: var(--kw-surface-hover);
+}
+
+.include-header {
+  text-align: center;
+}
+
+.site-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+/* Toggle switch */
+.site-actions :deep(.p-toggleswitch) {
+  width: 32px;
+  height: 18px;
+  flex: 0 0 32px;
+}
+
+/* Toggle track */
+.site-actions :deep(.p-toggleswitch-slider) {
+  width: 36px;
+  height: 18px;
+}
+
+/* Toggle handle */
+.site-actions :deep(.p-toggleswitch-handle) {
+  width: 16px;
+  height: 16px;
+}
+
+.site-actions :deep(.p-toggleswitch:not(.p-toggleswitch-checked) .p-toggleswitch-handle) {
+  inset-inline-start: 2px;
+}
+
+/* Open-site button */
+.site-actions :deep(.p-button) {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  padding: 0;
+  flex: 0 0 26px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Open-site icon */
+.site-actions :deep(.p-button .p-button-icon) {
+  margin: 0;
+  font-size: 0.75rem;
 }
 
 /* =========================================================

@@ -25,11 +25,6 @@ export type MediaBridgeOkResult = {
   ok: boolean
 }
 
-export type DocSweepRunResult = {
-  ok: boolean
-  status: string
-}
-
 export type KnowledgeWorksLogEntry = {
   detail?: string
   id: number
@@ -73,6 +68,21 @@ export type ArticleFlowRunResult = {
   ok: boolean
 }
 
+export type DocSweepRunResult = {
+  ok: boolean
+  status: string
+}
+
+export type DocSweepFileSelectionResult = {
+  canceled: boolean
+  ok: boolean
+  filePath?: string
+}
+
+export type DocSweepActionResult = {
+  ok: boolean
+}
+
 export type ArticleFlowApi = {
   runImport: (rootPath: string, completionAction: ArticleFlowCompletionAction) => Promise<ArticleFlowRunResult>
   selectRoot: () => Promise<ArticleFlowSelectionResult>
@@ -97,6 +107,8 @@ export type MediaBridgeApi = {
 }
 
 export type DocSweepApi = {
+  selectExcelFile: () => Promise<DocSweepFileSelectionResult>
+  openSite: (url: string, matchUrl: string) => Promise<DocSweepActionResult>
   runSweep: (controlNumber: string) => Promise<DocSweepRunResult>
 }
 
