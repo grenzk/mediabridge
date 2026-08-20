@@ -96,7 +96,6 @@ async function createToolbarWindow() {
 async function createHubWindow() {
   if (!hubWindowPromise) {
     hubWindowPromise = createHubBrowserWindow({
-      appRoot,
       devServerUrl: getDevServerUrl(),
       electronDirectory: __dirname,
       existingWindow: hubWindow,
