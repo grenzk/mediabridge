@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import type { Locator, Page } from 'playwright'
+import { isAutomationCancellationError, throwIfAutomationCancelled } from '../../../shared/automation/cancellation.ts'
 import {
   getArticleEditorLocators,
   getArticlePageActionLocators,
@@ -26,6 +27,7 @@ export type ArticleImportFailure = {
 }
 
 export type ArticleImportResult = {
+  canceled: boolean
   createdArticles: ArticleImportEntry[]
   createdFolderPaths: string[][]
   existingArticles: ArticleImportEntry[]
@@ -53,6 +55,7 @@ export type ArticleImportProgress =
 
 export type ArticleImportOptions = {
   onProgress?: (progress: ArticleImportProgress) => void
+  signal?: AbortSignal
 }
 
 /**
@@ -66,61 +69,82 @@ export async function runArticleImport(
   completionAction: ArticleCompletionAction,
   options: ArticleImportOptions = {},
 ): Promise<ArticleImportResult> {
-  const importParent = await getSelectedFolderReference(articlePage)
+  const { signal } = options
   const createdArticles: ArticleImportEntry[] = []
   const createdFolderPaths: string[][] = []
   const existingArticles: ArticleImportEntry[] = []
   const existingFolderPaths: string[][] = []
   const failedArticles: ArticleImportFailure[] = []
   const existingTitlesByFolder = new Map<string, Set<string>>()
+  let canceled = false
 
-  for (const folderPath of plan.folderPaths) {
-    const createdFinalFolder = await ensureFolderPath(articlePage, importParent, folderPath)
+  try {
+    throwIfAutomationCancelled(signal)
+    const importParent = await getSelectedFolderReference(articlePage, signal)
 
-    if (createdFinalFolder) {
-      createdFolderPaths.push(folderPath)
-      options.onProgress?.({ folderPath, status: 'created', type: 'folder' })
+    for (const folderPath of plan.folderPaths) {
+      throwIfAutomationCancelled(signal)
+      const createdFinalFolder = await ensureFolderPath(articlePage, importParent, folderPath, signal)
+
+      if (createdFinalFolder) {
+        createdFolderPaths.push(folderPath)
+        options.onProgress?.({ folderPath, status: 'created', type: 'folder' })
+      } else {
+        existingFolderPaths.push(folderPath)
+        options.onProgress?.({ folderPath, status: 'existing', type: 'folder' })
+      }
+    }
+
+    for (const article of plan.articles) {
+      try {
+        throwIfAutomationCancelled(signal)
+        await selectFolderPath(articlePage, importParent, article.folderPath, signal)
+
+        const folderKey = JSON.stringify(article.folderPath)
+        let existingTitles = existingTitlesByFolder.get(folderKey)
+
+        if (!existingTitles) {
+          existingTitles = await collectExistingArticleTitles(articlePage, signal)
+          existingTitlesByFolder.set(folderKey, existingTitles)
+        }
+
+        if (existingTitles.has(article.title)) {
+          existingArticles.push(article)
+          options.onProgress?.({ article, status: 'existing', type: 'article' })
+          continue
+        }
+
+        options.onProgress?.({ article, status: 'started', type: 'article' })
+        await createArticle(articlePage, article, completionAction)
+        existingTitles.add(article.title)
+        createdArticles.push(article)
+        options.onProgress?.({ article, status: 'created', type: 'article' })
+      } catch (error) {
+        if (isAutomationCancellationError(error)) {
+          canceled = true
+          break
+        }
+
+        const message = error instanceof Error ? error.message : String(error)
+
+        failedArticles.push({
+          article,
+          message,
+        })
+        options.onProgress?.({ article, message, status: 'failed', type: 'article' })
+      }
+    }
+  } catch (error) {
+    if (isAutomationCancellationError(error)) {
+      canceled = true
     } else {
-      existingFolderPaths.push(folderPath)
-      options.onProgress?.({ folderPath, status: 'existing', type: 'folder' })
+      throw error
     }
   }
 
-  for (const article of plan.articles) {
-    try {
-      await selectFolderPath(articlePage, importParent, article.folderPath)
+  canceled ||= signal?.aborted ?? false
 
-      const folderKey = JSON.stringify(article.folderPath)
-      let existingTitles = existingTitlesByFolder.get(folderKey)
-
-      if (!existingTitles) {
-        existingTitles = await collectExistingArticleTitles(articlePage)
-        existingTitlesByFolder.set(folderKey, existingTitles)
-      }
-
-      if (existingTitles.has(article.title)) {
-        existingArticles.push(article)
-        options.onProgress?.({ article, status: 'existing', type: 'article' })
-        continue
-      }
-
-      options.onProgress?.({ article, status: 'started', type: 'article' })
-      await createArticle(articlePage, article, completionAction)
-      existingTitles.add(article.title)
-      createdArticles.push(article)
-      options.onProgress?.({ article, status: 'created', type: 'article' })
-    } catch (error) {
-      const message = error instanceof Error ? error.message : String(error)
-
-      failedArticles.push({
-        article,
-        message,
-      })
-      options.onProgress?.({ article, message, status: 'failed', type: 'article' })
-    }
-  }
-
-  return { createdArticles, createdFolderPaths, existingArticles, existingFolderPaths, failedArticles }
+  return { canceled, createdArticles, createdFolderPaths, existingArticles, existingFolderPaths, failedArticles }
 }
 
 async function createArticle(

@@ -2,6 +2,7 @@ import { ipcMain } from 'electron'
 import type { IpcMainInvokeEvent } from 'electron'
 import { connectToBrowser } from '../../../src/shared/browser/connect-to-browser.ts'
 import type { BrowserSession } from '../../../src/shared/browser/connect-to-browser.ts'
+import { isAutomationCancellationError } from '../../../src/shared/automation/cancellation.ts'
 import { analyzeArticleLinks, runMediaLinking } from '../../../src/tools/mediabridge/automation/media-linking.ts'
 import { getErrorDetail, getErrorMessage } from '../../platform/error-format.ts'
 import { formatUnlinkedTargetsDetail } from './unlinked-target-logs.ts'
@@ -23,7 +24,20 @@ type MediaBridgeHandlerDependencies = {
 }
 
 export function registerMediaBridgeHandlers({ addLog, browserService, launchBrowser }: MediaBridgeHandlerDependencies) {
+  let activeLinkingController: AbortController | undefined
+
   ipcMain.handle('session:launch-browser', () => launchBrowser())
+
+  ipcMain.handle('session:cancel-media-linking', () => {
+    if (!activeLinkingController) {
+      return { cancellationRequested: false, ok: true }
+    }
+
+    activeLinkingController.abort()
+    addLog('info', 'Linking', 'Stopping MediaBridge after the current operation.')
+
+    return { cancellationRequested: true, ok: true }
+  })
 
   ipcMain.handle('session:get-target-count', async (_event: IpcMainInvokeEvent, mode: string = 'pdf') => {
     let session: MediaBridgeSession | undefined
@@ -60,18 +74,31 @@ export function registerMediaBridgeHandlers({ addLog, browserService, launchBrow
   ipcMain.handle('session:run-media-linking', async (_event: IpcMainInvokeEvent, mode: string = 'pdf') => {
     let session: MediaBridgeSession | undefined
 
+    if (activeLinkingController) {
+      throw new Error('MediaBridge linking is already running.')
+    }
+
+    const controller = new AbortController()
+    activeLinkingController = controller
+
     try {
       addLog('info', 'Linking', `Running ${mode} linking.`)
       session = await getSession(browserService)
-      const result = await runMediaLinking(session, mode)
-      addLog(
-        'success',
-        'Linking',
-        `Inserted ${result.processedCount} ${result.mode.label} target(s).`,
-        formatUnlinkedTargetsDetail(result),
-      )
+      const result = await runMediaLinking(session, mode, { signal: controller.signal })
+
+      if (result.canceled) {
+        addLog('info', 'Linking', `MediaBridge stopped after inserting ${result.processedCount} target(s).`)
+      } else {
+        addLog(
+          'success',
+          'Linking',
+          `Inserted ${result.processedCount} ${result.mode.label} target(s).`,
+          formatUnlinkedTargetsDetail(result),
+        )
+      }
 
       return {
+        canceled: result.canceled,
         ok: true,
         targetCount: result.targets.length,
         unlinkedTargetCount: result.unlinkedTargetCount,
@@ -80,9 +107,19 @@ export function registerMediaBridgeHandlers({ addLog, browserService, launchBrow
         skippedCount: result.skippedCount,
       }
     } catch (error) {
+      if (isAutomationCancellationError(error)) {
+        addLog('info', 'Linking', 'MediaBridge stopped before linking began.')
+
+        return { canceled: true, ok: true, processedCount: 0 }
+      }
+
       addLog('error', 'Linking', getErrorMessage(error), getErrorDetail(error))
       throw error
     } finally {
+      if (activeLinkingController === controller) {
+        activeLinkingController = undefined
+      }
+
       if (session?.ownsBrowser) {
         await session.browser.close()
       }

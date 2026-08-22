@@ -8,11 +8,14 @@ const {
   chooseLinkingType,
   doneTargetCount,
   isLinkingTypeMenuOpen,
+  isRunningMediaLinking,
+  isStoppingMediaLinking,
   linkingOptions,
   refreshTargetCount,
   runMediaLinking,
   selectedLinkingType,
   selectedLinkingTypeConfig,
+  stopMediaLinking,
   targetCount,
   targetLabel,
   targetSingularLabel,
@@ -45,19 +48,19 @@ async function openLogs() {
       </div>
 
       <div
-        v-tooltip.bottom="`Run ${selectedLinkingTypeConfig.label}`"
+        v-tooltip.bottom="isRunningMediaLinking ? 'Stop automation' : `Run ${selectedLinkingTypeConfig.label}`"
         class="run-control"
         :class="{ open: isLinkingTypeMenuOpen }"
       >
         <button
           class="run-button"
           type="button"
-          :disabled="isBusy"
-          aria-label="Run selected link automation"
-          @click="runMediaLinking"
+          :disabled="isStoppingMediaLinking || (isBusy && !isRunningMediaLinking)"
+          :aria-label="isRunningMediaLinking ? 'Stop link automation' : 'Run selected link automation'"
+          @click="isRunningMediaLinking ? stopMediaLinking() : runMediaLinking()"
         >
-          <i class="pi pi-play" aria-hidden="true" />
-          <span>Run</span>
+          <i :class="isRunningMediaLinking ? 'pi pi-stop' : 'pi pi-play'" aria-hidden="true" />
+          <span>{{ isRunningMediaLinking ? 'Stop' : 'Run' }}</span>
         </button>
 
         <button

@@ -1,4 +1,5 @@
 import type { Locator, Page } from 'playwright'
+import { throwIfAutomationCancelled } from '../../../shared/automation/cancellation.ts'
 import { getArticleListLocators } from '../../../shared/egain/editor/get-article-editor-locators.ts'
 
 const articleListTimeoutMs = 60000
@@ -10,7 +11,7 @@ const articleListSnapshotTimeoutMs = 1000
  * Collects exact article titles across every article-list page for the selected
  * eGain folder, then restores the list to its first page.
  */
-export async function collectExistingArticleTitles(articlePage: Page): Promise<Set<string>> {
+export async function collectExistingArticleTitles(articlePage: Page, signal?: AbortSignal): Promise<Set<string>> {
   const { articleIds, currentPageInput, emptyState, firstPageButton, nextPageButton, titleLabels, totalPagesLabel } =
     getArticleListLocators(articlePage)
 
@@ -22,6 +23,7 @@ export async function collectExistingArticleTitles(articlePage: Page): Promise<S
       emptyState,
       titleLabels,
       totalPagesLabel,
+      signal,
     )) === 'empty'
   ) {
     return new Set()
@@ -39,13 +41,14 @@ export async function collectExistingArticleTitles(articlePage: Page): Promise<S
 
   if (currentPage !== 1) {
     await requireUniqueLocator(firstPageButton, 'article-list first-page button')
-    await changeArticleListPage(articlePage, currentPageInput, articleIds, titleLabels, firstPageButton, 1)
+    await changeArticleListPage(articlePage, currentPageInput, articleIds, titleLabels, firstPageButton, 1, signal)
     currentPage = 1
   }
 
   const titles = new Set<string>()
 
   while (currentPage <= totalPages) {
+    throwIfAutomationCancelled(signal)
     const pageTitles = await titleLabels.allTextContents()
 
     pageTitles
@@ -58,13 +61,21 @@ export async function collectExistingArticleTitles(articlePage: Page): Promise<S
     }
 
     await requireUniqueLocator(nextPageButton, 'article-list next-page button')
-    await changeArticleListPage(articlePage, currentPageInput, articleIds, titleLabels, nextPageButton, currentPage + 1)
+    await changeArticleListPage(
+      articlePage,
+      currentPageInput,
+      articleIds,
+      titleLabels,
+      nextPageButton,
+      currentPage + 1,
+      signal,
+    )
     currentPage += 1
   }
 
   if (totalPages > 1) {
     await requireUniqueLocator(firstPageButton, 'article-list first-page button')
-    await changeArticleListPage(articlePage, currentPageInput, articleIds, titleLabels, firstPageButton, 1)
+    await changeArticleListPage(articlePage, currentPageInput, articleIds, titleLabels, firstPageButton, 1, signal)
   }
 
   return titles
@@ -77,12 +88,14 @@ async function waitForArticleListState(
   emptyState: Locator,
   titleLabels: Locator,
   totalPagesLabel: Locator,
+  signal?: AbortSignal,
 ): Promise<'empty' | 'ready'> {
   const deadline = Date.now() + articleListTimeoutMs
   let previousSignature = ''
   let stablePollCount = 0
 
   while (Date.now() < deadline) {
+    throwIfAutomationCancelled(signal)
     const emptyStateVisible = await emptyState.isVisible()
     const readyStateVisible = (await currentPageInput.isVisible()) && (await totalPagesLabel.isVisible())
     const state = emptyStateVisible ? 'empty' : readyStateVisible ? 'ready' : undefined
@@ -156,7 +169,9 @@ async function changeArticleListPage(
   titleLabels: Locator,
   navigationButton: Locator,
   expectedPage: number,
+  signal?: AbortSignal,
 ) {
+  throwIfAutomationCancelled(signal)
   const previousSignature = await getArticlePageSignature(articleIds, titleLabels)
 
   await navigationButton.click()
@@ -164,6 +179,7 @@ async function changeArticleListPage(
   const deadline = Date.now() + articleListTimeoutMs
 
   while (Date.now() < deadline) {
+    throwIfAutomationCancelled(signal)
     const currentPage = await getCurrentPageNumber(currentPageInput)
     const currentSignature = await getArticlePageSignature(articleIds, titleLabels)
 
