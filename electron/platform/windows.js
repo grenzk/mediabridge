@@ -23,13 +23,12 @@ function focusWindow(window) {
 
 /**
  * @param {{
- *   appRoot: string,
  *   devServerUrl?: string,
  *   electronDirectory: string,
  * }} options
  * @returns {Promise<BrowserWindow>}
  */
-export async function createToolbarBrowserWindow({ appRoot, devServerUrl, electronDirectory }) {
+export async function createToolbarBrowserWindow({ devServerUrl, electronDirectory }) {
   const toolbarWindow = new BrowserWindow({
     width: 530,
     height: 116,
@@ -41,7 +40,6 @@ export async function createToolbarBrowserWindow({ appRoot, devServerUrl, electr
     alwaysOnTop: true,
     skipTaskbar: false,
     title: 'MediaBridge',
-    icon: getRuntimeIcon(appRoot),
     trafficLightPosition: { x: 12, y: 12 },
     webPreferences: {
       preload: join(electronDirectory, 'preload.cjs'),
@@ -110,7 +108,6 @@ export async function createLogsBrowserWindow({ devServerUrl, electronDirectory,
 
 /**
  * @param {{
- *   appRoot: string,
  *   devServerUrl?: string,
  *   electronDirectory: string,
  *   existingWindow?: BrowserWindow,
@@ -118,13 +115,7 @@ export async function createLogsBrowserWindow({ devServerUrl, electronDirectory,
  * }} options
  * @returns {Promise<BrowserWindow>}
  */
-export async function createArticleFlowBrowserWindow({
-  appRoot,
-  devServerUrl,
-  electronDirectory,
-  existingWindow,
-  onClosed,
-}) {
+export async function createArticleFlowBrowserWindow({ devServerUrl, electronDirectory, existingWindow, onClosed }) {
   const focusedWindow = focusWindow(existingWindow)
 
   if (focusedWindow) {
@@ -138,7 +129,6 @@ export async function createArticleFlowBrowserWindow({
     minHeight: 500,
     title: 'ArticleFlow',
     backgroundColor: '#202426',
-    icon: getRuntimeIcon(appRoot),
     webPreferences: {
       preload: join(electronDirectory, 'preload.cjs'),
       nodeIntegration: false,
