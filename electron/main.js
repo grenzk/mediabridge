@@ -78,7 +78,6 @@ async function createToolbarWindow() {
 
   if (!toolbarWindowPromise) {
     toolbarWindowPromise = createToolbarBrowserWindow({
-      appRoot,
       devServerUrl: getDevServerUrl(),
       electronDirectory: __dirname,
     })
@@ -142,7 +141,6 @@ async function createLogsWindow() {
 async function createArticleFlowWindow() {
   if (!articleFlowWindowPromise) {
     articleFlowWindowPromise = createArticleFlowBrowserWindow({
-      appRoot,
       devServerUrl: getDevServerUrl(),
       electronDirectory: __dirname,
       existingWindow: articleFlowWindow,
