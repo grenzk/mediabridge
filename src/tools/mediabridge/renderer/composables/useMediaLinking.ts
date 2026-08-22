@@ -34,7 +34,9 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }: Too
   const processedTargetCount = ref<number | null>(null)
   const selectedLinkingType = ref<MediaBridgeLinkingMode>('pdf')
   const isLinkingTypeMenuOpen = ref(false)
+  const isCountingTargets = ref(false)
   const isRunningMediaLinking = ref(false)
+  const isStoppingTargetCount = ref(false)
   const isStoppingMediaLinking = ref(false)
 
   const targetLabel = computed(() => {
@@ -94,25 +96,52 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }: Too
   }
 
   /** @returns {Promise<void>} */
-  function refreshTargetCount() {
+  async function refreshTargetCount() {
     resetCounts()
     closeLinkingTypeMenu()
+    isCountingTargets.value = true
 
-    return runAction(
-      `Counting ${targetPluralLabel.value}`,
-      () => window.mediabridge.getTargetCount(selectedLinkingType.value),
-      result => {
-        const noun =
-          selectedLinkingType.value === 'image'
-            ? result.unlinkedTargetCount === 1
-              ? 'image'
-              : 'images'
-            : `${result.mode} ${result.unlinkedTargetCount === 1 ? 'link' : 'links'}`
+    try {
+      await runAction(
+        `Counting ${targetPluralLabel.value}`,
+        () => window.mediabridge.getTargetCount(selectedLinkingType.value),
+        result => {
+          if (result.canceled) {
+            return 'Counting stopped'
+          }
 
-        return `${result.unlinkedTargetCount} ${noun} ready`
-      },
-      updateCounts,
-    )
+          const noun =
+            selectedLinkingType.value === 'image'
+              ? result.unlinkedTargetCount === 1
+                ? 'image'
+                : 'images'
+              : `${result.mode} ${result.unlinkedTargetCount === 1 ? 'link' : 'links'}`
+
+          return `${result.unlinkedTargetCount} ${noun} ready`
+        },
+        updateCounts,
+      )
+    } finally {
+      isCountingTargets.value = false
+      isStoppingTargetCount.value = false
+    }
+  }
+
+  async function stopTargetCount() {
+    if (!isCountingTargets.value || isStoppingTargetCount.value) {
+      return
+    }
+
+    isStoppingTargetCount.value = true
+    status.value = 'Stopping count'
+
+    try {
+      await window.mediabridge.cancelTargetCount()
+    } catch (error) {
+      isStoppingTargetCount.value = false
+      await window.mediabridge.writeLog('error', 'Counter', 'Could not stop target counting.', String(error))
+      status.value = 'Could not stop. See logs.'
+    }
   }
 
   /** @returns {Promise<void>} */
@@ -191,7 +220,9 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }: Too
     closeLinkingTypeMenu,
     doneTargetCount,
     isLinkingTypeMenuOpen,
+    isCountingTargets,
     isRunningMediaLinking,
+    isStoppingTargetCount,
     isStoppingMediaLinking,
     linkingOptions,
     refreshTargetCount,
@@ -199,6 +230,7 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }: Too
     selectedLinkingType,
     selectedLinkingTypeConfig,
     stopMediaLinking,
+    stopTargetCount,
     targetCount,
     targetLabel,
     targetSingularLabel,

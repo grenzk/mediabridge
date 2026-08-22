@@ -168,6 +168,9 @@ contextBridge.exposeInMainWorld('mediabridge', {
   /** @returns {Promise<AutomationCancelResult>} */
   cancelMediaLinking: () => ipcRenderer.invoke('session:cancel-media-linking'),
 
+  /** @returns {Promise<AutomationCancelResult>} */
+  cancelTargetCount: () => ipcRenderer.invoke('session:cancel-target-count'),
+
   clearLogs,
 
   /**
