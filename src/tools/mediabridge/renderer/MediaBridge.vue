@@ -7,8 +7,10 @@ const { currentMessage, errorMessage, isBusy, reportActionError, showProgressDot
 const {
   chooseLinkingType,
   doneTargetCount,
+  isCountingTargets,
   isLinkingTypeMenuOpen,
   isRunningMediaLinking,
+  isStoppingTargetCount,
   isStoppingMediaLinking,
   linkingOptions,
   refreshTargetCount,
@@ -16,6 +18,7 @@ const {
   selectedLinkingType,
   selectedLinkingTypeConfig,
   stopMediaLinking,
+  stopTargetCount,
   targetCount,
   targetLabel,
   targetSingularLabel,
@@ -76,14 +79,18 @@ async function openLogs() {
       </div>
 
       <button
-        v-tooltip.bottom="`Refresh ${targetSingularLabel} count`"
+        v-tooltip.bottom="isCountingTargets ? 'Stop counting' : `Refresh ${targetSingularLabel} count`"
         class="target-counter"
         type="button"
-        :disabled="isBusy"
-        @click="refreshTargetCount"
+        :disabled="isStoppingTargetCount || (isBusy && !isCountingTargets)"
+        :aria-label="isCountingTargets ? 'Stop counting targets' : `Refresh ${targetSingularLabel} count`"
+        @click="isCountingTargets ? stopTargetCount() : refreshTargetCount()"
       >
-        <span class="counter-number">{{ targetCount ?? '--' }}</span>
-        <span class="counter-label">{{ targetLabel }}</span>
+        <span class="counter-number">
+          <i v-if="isCountingTargets" class="pi pi-stop" aria-hidden="true" />
+          <template v-else>{{ targetCount ?? '--' }}</template>
+        </span>
+        <span class="counter-label">{{ isCountingTargets ? 'Stop' : targetLabel }}</span>
       </button>
 
       <div class="divider" aria-hidden="true" />

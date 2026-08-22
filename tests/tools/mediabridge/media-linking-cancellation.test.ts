@@ -12,6 +12,9 @@ const mocks = vi.hoisted(() => ({
   highlightArticleLink: vi.fn(),
   insertMediaLink: vi.fn(),
   restoreLinkedTargets: vi.fn(),
+  sourceButtonClick: vi.fn(),
+  sourceEditorInputValue: vi.fn(),
+  sourceEditorIsVisible: vi.fn(),
 }))
 
 vi.mock('../../../src/shared/egain/editor/get-article-editor-locators.ts', () => ({
@@ -50,7 +53,7 @@ vi.mock('../../../src/tools/mediabridge/automation/restore-linked-targets.ts', (
   restoreLinkedTargets: mocks.restoreLinkedTargets,
 }))
 
-import { runMediaLinking } from '../../../src/tools/mediabridge/automation/media-linking.ts'
+import { analyzeArticleLinks, runMediaLinking } from '../../../src/tools/mediabridge/automation/media-linking.ts'
 
 const linkingMode: LinkingMode = {
   className: 'pdf',
@@ -65,12 +68,17 @@ const targets: ArticleEditorTarget[] = [
 
 beforeEach(() => {
   vi.clearAllMocks()
-  const sourceButton = { click: vi.fn() }
+  mocks.sourceButtonClick.mockResolvedValue(undefined)
+  mocks.sourceEditorInputValue.mockResolvedValue('<a href="./first.pdf">First</a>')
+  mocks.sourceEditorIsVisible.mockResolvedValue(true)
 
   mocks.getArticleEditorLocators.mockReturnValue({
     editorBody: {},
-    sourceButton,
-    sourceEditor: {},
+    sourceButton: { click: mocks.sourceButtonClick },
+    sourceEditor: {
+      inputValue: mocks.sourceEditorInputValue,
+      isVisible: mocks.sourceEditorIsVisible,
+    },
   })
   mocks.getLinkingMode.mockReturnValue(linkingMode)
   mocks.extractArticleLinks.mockResolvedValue(targets)
@@ -80,6 +88,33 @@ beforeEach(() => {
 })
 
 describe('runMediaLinking cancellation', () => {
+  it('stops promptly and restores preview mode while source mode is opening', async () => {
+    const controller = new AbortController()
+
+    mocks.sourceEditorIsVisible.mockResolvedValue(false)
+    mocks.sourceButtonClick.mockImplementationOnce(async () => controller.abort())
+
+    await expect(analyzeArticleLinks([] as Page[], 'pdf', { signal: controller.signal })).rejects.toMatchObject({
+      name: 'AutomationCancellationError',
+    })
+    expect(mocks.sourceButtonClick).toHaveBeenCalledTimes(2)
+    expect(mocks.extractArticleLinks).not.toHaveBeenCalled()
+  })
+
+  it('stops counting after source targets have been read', async () => {
+    const controller = new AbortController()
+
+    mocks.extractArticleLinks.mockImplementationOnce(async () => {
+      controller.abort()
+      return targets
+    })
+
+    await expect(analyzeArticleLinks([] as Page[], 'pdf', { signal: controller.signal })).rejects.toMatchObject({
+      name: 'AutomationCancellationError',
+    })
+    expect(mocks.filterTargetsByMode).not.toHaveBeenCalled()
+  })
+
   it('stops before the next target and still restores the editor source', async () => {
     const controller = new AbortController()
     const pages = [] as Page[]

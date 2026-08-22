@@ -11,6 +11,7 @@ import { filterTargetsByLinkedState, filterTargetsByMode } from './linked-target
 import { getLinkingMode } from './linking-modes.ts'
 import { findRequiredPage } from './required-pages.ts'
 import { restoreLinkedTargets } from './restore-linked-targets.ts'
+import { readArticleSourceHtml } from './article-source.ts'
 import type { ArticleEditorImage, ArticleEditorLink, ArticleEditorTarget, LinkingMode } from '../types.ts'
 import { throwIfAutomationCancelled } from '../../../shared/automation/cancellation.ts'
 
@@ -21,16 +22,20 @@ type MediaLinkingOptions = {
 /**
  * Reads the source editor targets that match the selected automation mode.
  */
-async function extractTargetsForMode(articlePage: Page, linkingMode: LinkingMode): Promise<ArticleEditorTarget[]> {
+async function extractTargetsForMode(
+  articlePage: Page,
+  linkingMode: LinkingMode,
+  html: string,
+): Promise<ArticleEditorTarget[]> {
   if (linkingMode.targetType === 'image') {
-    return extractArticleImages(articlePage)
+    return extractArticleImages(articlePage, html)
   }
 
   if (linkingMode.targetType === 'article') {
-    return extractArticleReferenceLinks(articlePage)
+    return extractArticleReferenceLinks(articlePage, html)
   }
 
-  return extractArticleLinks(articlePage)
+  return extractArticleLinks(articlePage, html)
 }
 
 /**
@@ -58,10 +63,18 @@ function getMediaDisplayName(text: string, filename: string) {
  * Reads the article editor source and counts targets matching the selected
  * mode without modifying the article editor.
  */
-export async function analyzeArticleLinks(pages: Page[], mode: string = 'pdf') {
+export async function analyzeArticleLinks(pages: Page[], mode: string = 'pdf', options: MediaLinkingOptions = {}) {
+  const { signal } = options
+
+  throwIfAutomationCancelled(signal)
+
   const articlePage = findRequiredPage(pages, '/article/', 'an article page')
   const linkingMode = getLinkingMode(mode)
-  const targets = await extractTargetsForMode(articlePage, linkingMode)
+  const html = await readArticleSourceHtml(articlePage, { restorePreview: true, signal })
+  const targets = await extractTargetsForMode(articlePage, linkingMode, html)
+
+  throwIfAutomationCancelled(signal)
+
   const modeTargets = filterTargetsByMode(targets, mode)
   const unlinkedTargets = filterTargetsByLinkedState(modeTargets, linkingMode, false)
   const linkedTargets = filterTargetsByLinkedState(modeTargets, linkingMode, true)
@@ -89,7 +102,8 @@ export async function runMediaLinking(
   const editorLocators = getArticleEditorLocators(articlePage)
   const { sourceEditor, editorBody, sourceButton } = editorLocators
 
-  const targets = await extractTargetsForMode(articlePage, linkingMode)
+  const html = await readArticleSourceHtml(articlePage, { signal })
+  const targets = await extractTargetsForMode(articlePage, linkingMode, html)
   const modeTargets = filterTargetsByMode(targets, mode)
   const unlinkedTargetsBeforeRun = filterTargetsByLinkedState(modeTargets, linkingMode, false)
   const preparedTargets: ArticleEditorTarget[] = unlinkedTargetsBeforeRun.map(target => {

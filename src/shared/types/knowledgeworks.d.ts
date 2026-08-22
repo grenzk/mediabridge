@@ -98,6 +98,7 @@ export type ArticleFlowApi = {
 
 export type MediaBridgeApi = {
   cancelMediaLinking: () => Promise<AutomationCancelResult>
+  cancelTargetCount: () => Promise<AutomationCancelResult>
   clearLogs: () => Promise<MediaBridgeOkResult>
   closeToolbar: () => Promise<void>
   getTargetCount: (mode: MediaBridgeLinkingMode) => Promise<MediaBridgeActionResult>
