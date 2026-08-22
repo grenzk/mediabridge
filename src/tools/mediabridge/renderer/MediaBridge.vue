@@ -50,6 +50,25 @@ async function openLogs() {
         <span class="brand-mark">MB</span>
       </div>
 
+      <button
+        v-tooltip.bottom="isCountingTargets ? 'Stop counting' : `Refresh ${targetSingularLabel} count`"
+        class="target-counter"
+        :class="{ 'stop-state': isCountingTargets }"
+        type="button"
+        :disabled="isStoppingTargetCount || (isBusy && !isCountingTargets)"
+        :aria-label="isCountingTargets ? 'Stop counting targets' : `Refresh ${targetSingularLabel} count`"
+        @click="isCountingTargets ? stopTargetCount() : refreshTargetCount()"
+      >
+        <template v-if="isCountingTargets">
+          <i class="pi pi-stop stop-count-icon" aria-hidden="true" />
+          <span>Stop</span>
+        </template>
+        <template v-else>
+          <span class="counter-number">{{ targetCount ?? '--' }}</span>
+          <span class="counter-label">{{ targetLabel }}</span>
+        </template>
+      </button>
+
       <div
         v-tooltip.bottom="isRunningMediaLinking ? 'Stop automation' : `Run ${selectedLinkingTypeConfig.label}`"
         class="run-control"
@@ -77,25 +96,6 @@ async function openLogs() {
           <i class="pi pi-chevron-down run-chevron" aria-hidden="true" />
         </button>
       </div>
-
-      <button
-        v-tooltip.bottom="isCountingTargets ? 'Stop counting' : `Refresh ${targetSingularLabel} count`"
-        class="target-counter"
-        :class="{ 'stop-state': isCountingTargets }"
-        type="button"
-        :disabled="isStoppingTargetCount || (isBusy && !isCountingTargets)"
-        :aria-label="isCountingTargets ? 'Stop counting targets' : `Refresh ${targetSingularLabel} count`"
-        @click="isCountingTargets ? stopTargetCount() : refreshTargetCount()"
-      >
-        <template v-if="isCountingTargets">
-          <i class="pi pi-stop stop-count-icon" aria-hidden="true" />
-          <span>Stop</span>
-        </template>
-        <template v-else>
-          <span class="counter-number">{{ targetCount ?? '--' }}</span>
-          <span class="counter-label">{{ targetLabel }}</span>
-        </template>
-      </button>
 
       <div class="divider" aria-hidden="true" />
 
