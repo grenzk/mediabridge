@@ -81,16 +81,20 @@ async function openLogs() {
       <button
         v-tooltip.bottom="isCountingTargets ? 'Stop counting' : `Refresh ${targetSingularLabel} count`"
         class="target-counter"
+        :class="{ 'stop-state': isCountingTargets }"
         type="button"
         :disabled="isStoppingTargetCount || (isBusy && !isCountingTargets)"
         :aria-label="isCountingTargets ? 'Stop counting targets' : `Refresh ${targetSingularLabel} count`"
         @click="isCountingTargets ? stopTargetCount() : refreshTargetCount()"
       >
-        <span class="counter-number">
-          <i v-if="isCountingTargets" class="pi pi-stop" aria-hidden="true" />
-          <template v-else>{{ targetCount ?? '--' }}</template>
-        </span>
-        <span class="counter-label">{{ isCountingTargets ? 'Stop' : targetLabel }}</span>
+        <template v-if="isCountingTargets">
+          <i class="pi pi-stop stop-count-icon" aria-hidden="true" />
+          <span>Stop</span>
+        </template>
+        <template v-else>
+          <span class="counter-number">{{ targetCount ?? '--' }}</span>
+          <span class="counter-label">{{ targetLabel }}</span>
+        </template>
       </button>
 
       <div class="divider" aria-hidden="true" />

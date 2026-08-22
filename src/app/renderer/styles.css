@@ -269,6 +269,22 @@ button {
   opacity: 0.72;
 }
 
+.target-counter.stop-state {
+  grid-template-columns: auto auto;
+  justify-content: center;
+  gap: 8px;
+  color: var(--kw-danger);
+  border-color: var(--kw-danger);
+}
+
+.target-counter.stop-state:hover {
+  border-color: var(--kw-danger);
+}
+
+.stop-count-icon {
+  font-size: 0.72rem;
+}
+
 .counter-number {
   display: grid;
   place-items: center;
