@@ -12,6 +12,7 @@ export type KnowledgeWorksBrowserStatus = {
 
 export type MediaBridgeActionResult = {
   articleUrl?: string
+  canceled?: boolean
   linkedTargetCount?: number
   mode?: string
   ok: boolean
@@ -57,6 +58,7 @@ export type ArticleFlowSelectionResult = {
 }
 
 export type ArticleFlowRunResult = {
+  canceled: boolean
   createdArticleCount: number
   createdFolderCount: number
   existingArticleCount: number
@@ -65,6 +67,11 @@ export type ArticleFlowRunResult = {
     message: string
     relativeSourcePath: string
   }>
+  ok: boolean
+}
+
+export type AutomationCancelResult = {
+  cancellationRequested: boolean
   ok: boolean
 }
 
@@ -84,11 +91,13 @@ export type DocSweepActionResult = {
 }
 
 export type ArticleFlowApi = {
+  cancelImport: () => Promise<AutomationCancelResult>
   runImport: (rootPath: string, completionAction: ArticleFlowCompletionAction) => Promise<ArticleFlowRunResult>
   selectRoot: () => Promise<ArticleFlowSelectionResult>
 }
 
 export type MediaBridgeApi = {
+  cancelMediaLinking: () => Promise<AutomationCancelResult>
   clearLogs: () => Promise<MediaBridgeOkResult>
   closeToolbar: () => Promise<void>
   getTargetCount: (mode: MediaBridgeLinkingMode) => Promise<MediaBridgeActionResult>

@@ -1,4 +1,5 @@
 import type { Locator, Page } from 'playwright'
+import { throwIfAutomationCancelled } from '../../../shared/automation/cancellation.ts'
 import {
   getArticleFolderLocators,
   getCreateFolderFormLocators,
@@ -40,8 +41,8 @@ class FolderTreeStructureError extends Error {}
  * Returns the selected eGain folder and its visible ancestor path when an
  * ArticleFlow import starts.
  */
-export async function getSelectedFolderReference(articlePage: Page): Promise<EgainImportParent> {
-  await waitForFolderUiReady(articlePage)
+export async function getSelectedFolderReference(articlePage: Page, signal?: AbortSignal): Promise<EgainImportParent> {
+  await waitForFolderUiReady(articlePage, signal)
 
   const entries = await getFolderTreeEntries(articlePage)
   const selectedEntries = entries.filter(entry => entry.selected)
@@ -77,18 +78,20 @@ export async function ensureFolderPath(
   articlePage: Page,
   importParent: EgainImportParent,
   folderPath: string[],
+  signal?: AbortSignal,
 ): Promise<boolean> {
   let createdFinalFolder = false
 
   for (const [index, folderName] of folderPath.entries()) {
+    throwIfAutomationCancelled(signal)
     const parentPath = folderPath.slice(0, index)
-    const existingChild = await resolveDirectChild(articlePage, importParent, parentPath, folderName)
+    const existingChild = await resolveDirectChild(articlePage, importParent, parentPath, folderName, signal)
 
     if (existingChild) {
       continue
     }
 
-    await createChildFolder(articlePage, importParent, parentPath, folderName)
+    await createChildFolder(articlePage, importParent, parentPath, folderName, signal)
 
     if (index === folderPath.length - 1) {
       createdFinalFolder = true
@@ -105,12 +108,18 @@ export async function selectFolderPath(
   articlePage: Page,
   importParent: EgainImportParent,
   folderPath: string[],
+  signal?: AbortSignal,
 ): Promise<void> {
-  await retryFolderTreeOperation(articlePage, `select folder path "${formatFolderPath(folderPath)}"`, async () => {
-    const destination = await resolveFolderPathOnce(articlePage, importParent, folderPath)
+  await retryFolderTreeOperation(
+    articlePage,
+    `select folder path "${formatFolderPath(folderPath)}"`,
+    async () => {
+      const destination = await resolveFolderPathOnce(articlePage, importParent, folderPath, signal)
 
-    await selectResolvedFolder(articlePage, destination)
-  })
+      await selectResolvedFolder(articlePage, destination, signal)
+    },
+    signal,
+  )
 }
 
 async function resolveDirectChild(
@@ -118,16 +127,18 @@ async function resolveDirectChild(
   importParent: EgainImportParent,
   parentPath: string[],
   folderName: string,
+  signal?: AbortSignal,
 ): Promise<EgainFolderReference | null> {
   return retryFolderTreeOperation(
     articlePage,
     `resolve folder "${folderName}" under "${formatFolderPath(parentPath, importParent.name)}"`,
     async () => {
-      const parent = await resolveFolderPathOnce(articlePage, importParent, parentPath)
-      const expandedParent = await expandResolvedFolder(articlePage, parent)
+      const parent = await resolveFolderPathOnce(articlePage, importParent, parentPath, signal)
+      const expandedParent = await expandResolvedFolder(articlePage, parent, signal)
 
       return findDirectChildFolder(articlePage, expandedParent.folder.id, folderName)
     },
+    signal,
   )
 }
 
@@ -135,11 +146,13 @@ async function resolveFolderPathOnce(
   articlePage: Page,
   importParent: EgainImportParent,
   folderPath: string[],
+  signal?: AbortSignal,
 ): Promise<ResolvedFolder> {
-  let current = await resolveImportParentOnce(articlePage, importParent)
+  let current = await resolveImportParentOnce(articlePage, importParent, signal)
 
   for (const folderName of folderPath) {
-    current = await expandResolvedFolder(articlePage, current)
+    throwIfAutomationCancelled(signal)
+    current = await expandResolvedFolder(articlePage, current, signal)
 
     const child = await findDirectChildFolder(articlePage, current.folder.id, folderName)
 
@@ -153,7 +166,11 @@ async function resolveFolderPathOnce(
   return current
 }
 
-async function resolveImportParentOnce(articlePage: Page, importParent: EgainImportParent): Promise<ResolvedFolder> {
+async function resolveImportParentOnce(
+  articlePage: Page,
+  importParent: EgainImportParent,
+  signal?: AbortSignal,
+): Promise<ResolvedFolder> {
   const importPath = [...importParent.ancestorPath, toFolderReference(importParent)]
   const [topLevelFolder, ...nestedFolders] = importPath
 
@@ -164,7 +181,8 @@ async function resolveImportParentOnce(articlePage: Page, importParent: EgainImp
   let current = await resolveVisibleFolder(articlePage, topLevelFolder)
 
   for (const expectedFolder of nestedFolders) {
-    current = await expandResolvedFolder(articlePage, current)
+    throwIfAutomationCancelled(signal)
+    current = await expandResolvedFolder(articlePage, current, signal)
 
     const directChildren = await getDirectChildFolderReferences(articlePage, current.folder.id)
     const matchingFolder = directChildren.find(folder => folder.id === expectedFolder.id)
@@ -184,8 +202,10 @@ async function createChildFolder(
   importParent: EgainImportParent,
   parentPath: string[],
   folderName: string,
+  signal?: AbortSignal,
 ): Promise<void> {
-  const selectedParent = await openCreateFolderForm(articlePage, importParent, parentPath)
+  throwIfAutomationCancelled(signal)
+  const selectedParent = await openCreateFolderForm(articlePage, importParent, parentPath, signal)
   const { backButton, heading, nameInput, saveButton } = getCreateFolderFormLocators(articlePage)
 
   await requireUniqueLocator(heading, 'Create Folder heading')
@@ -204,23 +224,24 @@ async function createChildFolder(
   await heading.waitFor({ state: 'hidden' })
   await articlePage.getByRole('heading', { exact: true, name: 'Folders' }).waitFor({ state: 'visible' })
 
-  await waitForCreatedFolder(articlePage, importParent, parentPath, folderName)
-  await selectFolderPath(articlePage, importParent, [...parentPath, folderName])
+  await waitForCreatedFolder(articlePage, importParent, parentPath, folderName, signal)
+  await selectFolderPath(articlePage, importParent, [...parentPath, folderName], signal)
 }
 
 async function openCreateFolderForm(
   articlePage: Page,
   importParent: EgainImportParent,
   parentPath: string[],
+  signal?: AbortSignal,
 ): Promise<EgainFolderReference> {
   return retryFolderTreeOperation(
     articlePage,
     `open Create Folder under "${formatFolderPath(parentPath, importParent.name)}"`,
     async () => {
-      const parent = await resolveFolderPathOnce(articlePage, importParent, parentPath)
+      const parent = await resolveFolderPathOnce(articlePage, importParent, parentPath, signal)
 
       if (!(await isFolderSelectionComplete(articlePage, parent.folder.id))) {
-        await selectResolvedFolder(articlePage, parent)
+        await selectResolvedFolder(articlePage, parent, signal)
       }
 
       const freshParent = await resolveVisibleFolder(articlePage, parent.folder)
@@ -241,11 +262,12 @@ async function openCreateFolderForm(
         await contextMenuButton.click({ timeout: folderUiTimeoutMs })
       }
 
-      await waitForFolderMenuItem(articlePage, freshParent.folder, addFolderMenuItem)
+      await waitForFolderMenuItem(articlePage, freshParent.folder, addFolderMenuItem, signal)
       await addFolderMenuItem.click({ timeout: folderUiTimeoutMs })
 
       return freshParent.folder
     },
+    signal,
   )
 }
 
@@ -253,10 +275,12 @@ async function waitForFolderMenuItem(
   articlePage: Page,
   parentFolder: EgainFolderReference,
   menuItem: Locator,
+  signal?: AbortSignal,
 ): Promise<void> {
   const deadline = Date.now() + folderUiTimeoutMs
 
   while (Date.now() < deadline) {
+    throwIfAutomationCancelled(signal)
     if ((await getFolderRowById(articlePage, parentFolder.id).count()) === 0) {
       throw new FolderTreeChangedError(`Folder "${parentFolder.name}" disappeared while opening its context menu.`)
     }
@@ -276,11 +300,13 @@ async function waitForCreatedFolder(
   importParent: EgainImportParent,
   parentPath: string[],
   folderName: string,
+  signal?: AbortSignal,
 ): Promise<void> {
   const deadline = Date.now() + folderUiTimeoutMs
 
   while (Date.now() < deadline) {
-    const createdFolder = await resolveDirectChild(articlePage, importParent, parentPath, folderName)
+    throwIfAutomationCancelled(signal)
+    const createdFolder = await resolveDirectChild(articlePage, importParent, parentPath, folderName, signal)
 
     if (createdFolder) {
       return
@@ -292,8 +318,12 @@ async function waitForCreatedFolder(
   throw new Error(`eGain did not display the newly created folder "${folderName}".`)
 }
 
-async function selectResolvedFolder(articlePage: Page, destination: ResolvedFolder): Promise<void> {
-  await waitForFolderUiReady(articlePage)
+async function selectResolvedFolder(
+  articlePage: Page,
+  destination: ResolvedFolder,
+  signal?: AbortSignal,
+): Promise<void> {
+  await waitForFolderUiReady(articlePage, signal)
 
   const freshDestination = await resolveVisibleFolder(articlePage, destination.folder)
   const { cell } = getArticleFolderLocators(freshDestination.row, freshDestination.folder.name)
@@ -303,17 +333,22 @@ async function selectResolvedFolder(articlePage: Page, destination: ResolvedFold
   }
 
   await cell.click({ timeout: folderUiTimeoutMs })
-  await waitForFolderSelection(articlePage, freshDestination.folder)
+  await waitForFolderSelection(articlePage, freshDestination.folder, signal)
   await articlePage.waitForTimeout(folderSelectionSettleDelayMs)
-  await waitForFolderUiReady(articlePage)
+  await waitForFolderUiReady(articlePage, signal)
 }
 
-async function waitForFolderSelection(articlePage: Page, expectedFolder: EgainFolderReference): Promise<void> {
+async function waitForFolderSelection(
+  articlePage: Page,
+  expectedFolder: EgainFolderReference,
+  signal?: AbortSignal,
+): Promise<void> {
   const deadline = Date.now() + folderUiTimeoutMs
 
   while (Date.now() < deadline) {
+    throwIfAutomationCancelled(signal)
     if (await isFolderSelectionComplete(articlePage, expectedFolder.id)) {
-      await waitForFolderUiReady(articlePage)
+      await waitForFolderUiReady(articlePage, signal)
 
       if (await isFolderSelectionComplete(articlePage, expectedFolder.id)) {
         return
@@ -336,8 +371,12 @@ async function isFolderSelectionComplete(articlePage: Page, folderId: string): P
   return selectedEntries.length === 1 && selectedEntries[0].id === folderId
 }
 
-async function expandResolvedFolder(articlePage: Page, folder: ResolvedFolder): Promise<ResolvedFolder> {
-  await waitForFolderUiReady(articlePage)
+async function expandResolvedFolder(
+  articlePage: Page,
+  folder: ResolvedFolder,
+  signal?: AbortSignal,
+): Promise<ResolvedFolder> {
+  await waitForFolderUiReady(articlePage, signal)
 
   const current = await resolveVisibleFolder(articlePage, folder.folder)
   const { collapseButton, expandButton } = getArticleFolderLocators(current.row, current.folder.name)
@@ -361,16 +400,21 @@ async function expandResolvedFolder(articlePage: Page, folder: ResolvedFolder): 
   }
 
   await expandButton.click({ timeout: folderUiTimeoutMs })
-  await waitForFolderExpansion(articlePage, current.folder)
+  await waitForFolderExpansion(articlePage, current.folder, signal)
 
   return resolveVisibleFolder(articlePage, current.folder)
 }
 
-async function waitForFolderExpansion(articlePage: Page, folder: EgainFolderReference): Promise<void> {
+async function waitForFolderExpansion(
+  articlePage: Page,
+  folder: EgainFolderReference,
+  signal?: AbortSignal,
+): Promise<void> {
   const deadline = Date.now() + folderUiTimeoutMs
 
   while (Date.now() < deadline) {
-    await waitForFolderUiReady(articlePage)
+    throwIfAutomationCancelled(signal)
+    await waitForFolderUiReady(articlePage, signal)
 
     const row = getFolderRowById(articlePage, folder.id)
 
@@ -483,12 +527,14 @@ async function retryFolderTreeOperation<T>(
   articlePage: Page,
   description: string,
   operation: () => Promise<T>,
+  signal?: AbortSignal,
 ): Promise<T> {
   let lastError: unknown
 
   for (let attempt = 1; attempt <= folderTreeRetryLimit; attempt += 1) {
     try {
-      await waitForFolderUiReady(articlePage)
+      throwIfAutomationCancelled(signal)
+      await waitForFolderUiReady(articlePage, signal)
 
       return await operation()
     } catch (error) {
@@ -525,11 +571,12 @@ function isRetryableFolderTreeError(error: unknown): boolean {
   )
 }
 
-async function waitForFolderUiReady(articlePage: Page): Promise<void> {
+async function waitForFolderUiReady(articlePage: Page, signal?: AbortSignal): Promise<void> {
   const activeLoaders = articlePage.locator(activeFolderLoaderSelector)
   const deadline = Date.now() + folderUiTimeoutMs
 
   while (Date.now() < deadline) {
+    throwIfAutomationCancelled(signal)
     if ((await activeLoaders.count()) === 0) {
       return
     }

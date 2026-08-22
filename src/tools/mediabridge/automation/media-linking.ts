@@ -12,6 +12,11 @@ import { getLinkingMode } from './linking-modes.ts'
 import { findRequiredPage } from './required-pages.ts'
 import { restoreLinkedTargets } from './restore-linked-targets.ts'
 import type { ArticleEditorImage, ArticleEditorLink, ArticleEditorTarget, LinkingMode } from '../types.ts'
+import { throwIfAutomationCancelled } from '../../../shared/automation/cancellation.ts'
+
+type MediaLinkingOptions = {
+  signal?: AbortSignal
+}
 
 /**
  * Reads the source editor targets that match the selected automation mode.
@@ -68,7 +73,15 @@ export async function analyzeArticleLinks(pages: Page[], mode: string = 'pdf') {
  * Inserts media server links or inline images for matching article targets,
  * then restores source HTML details that the media server dialog cannot preserve.
  */
-export async function runMediaLinking({ pages }: { pages: Page[] }, mode: string = 'pdf') {
+export async function runMediaLinking(
+  { pages }: { pages: Page[] },
+  mode: string = 'pdf',
+  options: MediaLinkingOptions = {},
+) {
+  const { signal } = options
+
+  throwIfAutomationCancelled(signal)
+
   const articlePage = findRequiredPage(pages, '/article/', 'an article page')
   const linkingMode = getLinkingMode(mode)
   const mediaPage = linkingMode.targetType === 'article' ? null : findRequiredPage(pages, '/media', 'a media page')
@@ -90,13 +103,20 @@ export async function runMediaLinking({ pages }: { pages: Page[] }, mode: string
     }
   })
 
+  throwIfAutomationCancelled(signal)
   await sourceButton.click()
 
   let processedCount = 0
+  let canceled = false
   const processedTargets: ArticleEditorTarget[] = []
   const unlinkedTargets: ArticleEditorTarget[] = []
 
   for (const target of preparedTargets) {
+    if (signal?.aborted) {
+      canceled = true
+      break
+    }
+
     if (linkingMode.targetType === 'image') {
       if (!isArticleEditorImage(target)) {
         throw new Error(`Invalid image target: ${target.filename}`)
@@ -109,6 +129,11 @@ export async function runMediaLinking({ pages }: { pages: Page[] }, mode: string
       }
 
       await highlightArticleLink(editorBody, target)
+    }
+
+    if (signal?.aborted) {
+      canceled = true
+      break
     }
 
     let inserted
@@ -129,12 +154,19 @@ export async function runMediaLinking({ pages }: { pages: Page[] }, mode: string
     } else {
       unlinkedTargets.push(target)
     }
+
+    if (signal?.aborted) {
+      canceled = true
+      break
+    }
   }
 
   await sourceButton.click()
   await restoreLinkedTargets(articlePage, sourceEditor, processedTargets, linkingMode)
+  canceled ||= signal?.aborted ?? false
 
   return {
+    canceled,
     mode: linkingMode,
     processedCount,
     targets,
@@ -148,11 +180,11 @@ export async function runMediaLinking({ pages }: { pages: Page[] }, mode: string
  * CLI-friendly entry point for running the media-linking workflow against an
  * existing Chrome DevTools Protocol endpoint.
  */
-export async function runMediaLinkingFromCdp(cdpUrl: string, mode: string = 'pdf') {
+export async function runMediaLinkingFromCdp(cdpUrl: string, mode: string = 'pdf', options: MediaLinkingOptions = {}) {
   const session = await connectToBrowser(cdpUrl)
 
   try {
-    return await runMediaLinking(session, mode)
+    return await runMediaLinking(session, mode, options)
   } finally {
     await session.browser.close()
   }

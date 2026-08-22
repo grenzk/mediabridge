@@ -34,6 +34,8 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }: Too
   const processedTargetCount = ref<number | null>(null)
   const selectedLinkingType = ref<MediaBridgeLinkingMode>('pdf')
   const isLinkingTypeMenuOpen = ref(false)
+  const isRunningMediaLinking = ref(false)
+  const isStoppingMediaLinking = ref(false)
 
   const targetLabel = computed(() => {
     if (selectedLinkingType.value === 'image') {
@@ -114,25 +116,52 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }: Too
   }
 
   /** @returns {Promise<void>} */
-  function runMediaLinking() {
+  async function runMediaLinking() {
     closeLinkingTypeMenu()
+    isRunningMediaLinking.value = true
 
-    return runAction(
-      'Running script',
-      () => window.mediabridge.runMediaLinking(selectedLinkingType.value),
-      result => {
-        const noun =
-          selectedLinkingType.value === 'image'
-            ? result.processedCount === 1
-              ? 'image'
-              : 'images'
-            : `${result.mode} ${result.processedCount === 1 ? 'link' : 'links'}`
-        const skippedText = result.skippedCount ? `, skipped ${result.skippedCount} missing` : ''
+    try {
+      await runAction(
+        'Running script',
+        () => window.mediabridge.runMediaLinking(selectedLinkingType.value),
+        result => {
+          if (result.canceled) {
+            return `Stopped after ${result.processedCount ?? 0} completed`
+          }
 
-        return `Inserted ${result.processedCount} ${noun}${skippedText}`
-      },
-      updateCounts,
-    )
+          const noun =
+            selectedLinkingType.value === 'image'
+              ? result.processedCount === 1
+                ? 'image'
+                : 'images'
+              : `${result.mode} ${result.processedCount === 1 ? 'link' : 'links'}`
+          const skippedText = result.skippedCount ? `, skipped ${result.skippedCount} missing` : ''
+
+          return `Inserted ${result.processedCount} ${noun}${skippedText}`
+        },
+        updateCounts,
+      )
+    } finally {
+      isRunningMediaLinking.value = false
+      isStoppingMediaLinking.value = false
+    }
+  }
+
+  async function stopMediaLinking() {
+    if (!isRunningMediaLinking.value || isStoppingMediaLinking.value) {
+      return
+    }
+
+    isStoppingMediaLinking.value = true
+    status.value = 'Stopping script'
+
+    try {
+      await window.mediabridge.cancelMediaLinking()
+    } catch (error) {
+      isStoppingMediaLinking.value = false
+      await window.mediabridge.writeLog('error', 'Linking', 'Could not request automation cancellation.', String(error))
+      status.value = 'Could not stop. See logs.'
+    }
   }
 
   function toggleLinkingTypeMenu() {
@@ -162,11 +191,14 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }: Too
     closeLinkingTypeMenu,
     doneTargetCount,
     isLinkingTypeMenuOpen,
+    isRunningMediaLinking,
+    isStoppingMediaLinking,
     linkingOptions,
     refreshTargetCount,
     runMediaLinking,
     selectedLinkingType,
     selectedLinkingTypeConfig,
+    stopMediaLinking,
     targetCount,
     targetLabel,
     targetSingularLabel,

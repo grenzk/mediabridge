@@ -13,6 +13,7 @@ const completionAction = ref<ArticleFlowCompletionAction>('check-in')
 const importPlan = ref<ArticleFlowImportPlan | null>(null)
 const isSelectingRoot = ref(false)
 const isRunning = ref(false)
+const isStopping = ref(false)
 const statusMessage = ref('No source folder selected.')
 const statusTone = ref<ArticleFlowStatusTone>('idle')
 
@@ -96,6 +97,28 @@ async function runImport() {
     statusTone.value = 'error'
   } finally {
     isRunning.value = false
+    isStopping.value = false
+  }
+}
+
+/**
+ * Requests a cooperative stop after ArticleFlow finishes its current eGain operation.
+ */
+async function stopImport() {
+  if (!isRunning.value || isStopping.value) {
+    return
+  }
+
+  isStopping.value = true
+  statusMessage.value = 'Stopping import after the current operation...'
+  statusTone.value = 'running'
+
+  try {
+    await window.articleflow.cancelImport()
+  } catch (error) {
+    isStopping.value = false
+    statusMessage.value = getErrorMessage(error)
+    statusTone.value = 'error'
   }
 }
 
@@ -112,6 +135,12 @@ async function openLogs() {
 }
 
 function setResultStatus(result: ArticleFlowRunResult) {
+  if (result.canceled) {
+    statusMessage.value = `Import stopped. ${formatCount(result.createdArticleCount, 'article')} completed.`
+    statusTone.value = 'ready'
+    return
+  }
+
   const action = completionAction.value === 'check-in' ? 'checked in' : 'published'
   const parts = [`${formatCount(result.createdArticleCount, 'article')} ${action}`]
 
@@ -299,11 +328,11 @@ function getErrorMessage(error: unknown) {
 
       <Button
         class="run-import-button"
-        icon="pi pi-play"
-        label="Run import"
-        :loading="isRunning"
-        :disabled="!canRun"
-        @click="runImport"
+        :icon="isRunning ? 'pi pi-stop' : 'pi pi-play'"
+        :label="isStopping ? 'Stopping...' : isRunning ? 'Stop import' : 'Run import'"
+        :severity="isRunning ? 'danger' : undefined"
+        :disabled="isRunning ? isStopping : !canRun"
+        @click="isRunning ? stopImport() : runImport()"
       />
     </footer>
   </main>

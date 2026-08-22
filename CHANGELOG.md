@@ -11,6 +11,7 @@ Added
 - Added a source structure tree that previews folders, HTML files, and ignored items before an ArticleFlow import runs.
 - Added native KnowledgeWorks icons tailored for macOS and Windows.
 - Added a project-level Prettier configuration with format and formatting-check commands.
+- Added stop controls for active MediaBridge and ArticleFlow automations without closing the shared browser.
 
 Changed
 

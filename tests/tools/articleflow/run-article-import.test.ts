@@ -105,4 +105,45 @@ describe('runArticleImport rerun safety', () => {
       folderMocks.selectFolderPath.mock.invocationCallOrder[0],
     )
   })
+
+  it('does not start the import when cancellation was already requested', async () => {
+    const controller = new AbortController()
+    const plan: ArticleImportPlan = {
+      articles: [],
+      folderPaths: [['Sample Product']],
+      ignoredPaths: [],
+      rootPath: '/tmp/Sample Product',
+    }
+
+    controller.abort()
+
+    const result = await runArticleImport({} as Page, plan, 'check-in', { signal: controller.signal })
+
+    expect(result.canceled).toBe(true)
+    expect(folderMocks.getSelectedFolderReference).not.toHaveBeenCalled()
+    expect(folderMocks.ensureFolderPath).not.toHaveBeenCalled()
+  })
+
+  it('does not begin the next folder after cancellation is requested', async () => {
+    const controller = new AbortController()
+    const firstFolderPath = ['Sample Product']
+    const secondFolderPath = ['Sample Product', 'Manuals']
+    const plan: ArticleImportPlan = {
+      articles: [],
+      folderPaths: [firstFolderPath, secondFolderPath],
+      ignoredPaths: [],
+      rootPath: '/tmp/Sample Product',
+    }
+
+    folderMocks.ensureFolderPath.mockImplementationOnce(async () => {
+      controller.abort()
+      return false
+    })
+
+    const result = await runArticleImport({} as Page, plan, 'check-in', { signal: controller.signal })
+
+    expect(result.canceled).toBe(true)
+    expect(folderMocks.ensureFolderPath).toHaveBeenCalledTimes(1)
+    expect(folderMocks.selectFolderPath).not.toHaveBeenCalled()
+  })
 })
