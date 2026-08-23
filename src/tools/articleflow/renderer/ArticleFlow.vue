@@ -8,12 +8,20 @@ import type {
 import SourceStructureTree from './SourceStructureTree.vue'
 
 type ArticleFlowStatusTone = 'idle' | 'ready' | 'running' | 'success' | 'error'
+type PrimaryActionButtonState = {
+  disabled: boolean
+  icon: string
+  label: string
+  severity?: 'danger'
+}
 
 const completionAction = ref<ArticleFlowCompletionAction>('check-in')
 const importPlan = ref<ArticleFlowImportPlan | null>(null)
+const isPreparingTemplate = ref(false)
 const isSelectingRoot = ref(false)
 const isRunning = ref(false)
 const isStopping = ref(false)
+const isTemplatePrepared = ref(false)
 const statusMessage = ref('No source folder selected.')
 const statusTone = ref<ArticleFlowStatusTone>('idle')
 
@@ -29,7 +37,54 @@ const sourceFilePaths = computed(
       ...article.relativeSourcePath.split(/[\\/]/).filter(Boolean),
     ]) ?? [],
 )
-const canRun = computed(() => importPlan.value !== null && !isSelectingRoot.value && !isRunning.value)
+const isBusy = computed(() => isPreparingTemplate.value || isRunning.value)
+const canPrepareTemplate = computed(
+  () => importPlan.value !== null && !isSelectingRoot.value && !isBusy.value && !isTemplatePrepared.value,
+)
+const canRun = computed(
+  () => importPlan.value !== null && !isSelectingRoot.value && !isBusy.value && isTemplatePrepared.value,
+)
+const primaryActionButton = computed<PrimaryActionButtonState>(() => {
+  if (isStopping.value) {
+    return {
+      disabled: true,
+      icon: 'pi pi-stop',
+      label: 'Stopping...',
+      severity: 'danger',
+    }
+  }
+
+  if (isRunning.value) {
+    return {
+      disabled: false,
+      icon: 'pi pi-stop',
+      label: 'Stop import',
+      severity: 'danger',
+    }
+  }
+
+  if (isPreparingTemplate.value) {
+    return {
+      disabled: true,
+      icon: 'pi pi-spinner pi-spin',
+      label: 'Preparing...',
+    }
+  }
+
+  if (isTemplatePrepared.value) {
+    return {
+      disabled: !canRun.value,
+      icon: 'pi pi-play',
+      label: 'Continue import',
+    }
+  }
+
+  return {
+    disabled: !canPrepareTemplate.value,
+    icon: 'pi pi-file-edit',
+    label: 'Prepare template',
+  }
+})
 const statusIcon = computed(() => {
   const icons: Record<ArticleFlowStatusTone, string> = {
     error: 'pi pi-exclamation-circle',
@@ -64,6 +119,7 @@ async function selectRoot() {
     }
 
     importPlan.value = result.plan
+    isTemplatePrepared.value = false
     statusMessage.value = formatPlanStatus(result.plan)
     statusTone.value = 'ready'
   } catch (error) {
@@ -71,6 +127,41 @@ async function selectRoot() {
     statusTone.value = 'error'
   } finally {
     isSelectingRoot.value = false
+  }
+}
+
+/**
+ * Creates or reuses the product root and opens its template article for the
+ * user's one-time Custom Attributes setup.
+ */
+async function prepareTemplate() {
+  const plan = importPlan.value
+
+  if (!plan) {
+    return
+  }
+
+  isPreparingTemplate.value = true
+  statusMessage.value = 'Preparing the product template in eGain...'
+  statusTone.value = 'running'
+
+  try {
+    const result = await window.articleflow.prepareTemplate(plan.rootPath)
+
+    if (!result.ok || result.canceled) {
+      statusMessage.value = 'Template preparation did not finish.'
+      statusTone.value = 'error'
+      return
+    }
+
+    isTemplatePrepared.value = true
+    statusMessage.value = 'Set custom attributes in eGain, press Done, then continue.'
+    statusTone.value = 'ready'
+  } catch (error) {
+    statusMessage.value = getErrorMessage(error)
+    statusTone.value = 'error'
+  } finally {
+    isPreparingTemplate.value = false
   }
 }
 
@@ -132,6 +223,20 @@ async function openLogs() {
     statusMessage.value = getErrorMessage(error)
     statusTone.value = 'error'
   }
+}
+
+function handlePrimaryAction() {
+  if (isRunning.value) {
+    void stopImport()
+    return
+  }
+
+  if (isTemplatePrepared.value) {
+    void runImport()
+    return
+  }
+
+  void prepareTemplate()
 }
 
 function setResultStatus(result: ArticleFlowRunResult) {
@@ -218,7 +323,7 @@ function getErrorMessage(error: unknown) {
               severity="secondary"
               outlined
               :loading="isSelectingRoot"
-              :disabled="isRunning"
+              :disabled="isBusy"
               @click="selectRoot"
             />
           </div>
@@ -238,7 +343,7 @@ function getErrorMessage(error: unknown) {
                 :class="{ selected: completionAction === 'check-in' }"
                 :tabindex="completionAction === 'check-in' ? 0 : -1"
                 role="radio"
-                :disabled="isRunning"
+                :disabled="isBusy"
                 @click="selectCompletionAction('check-in')"
                 @keydown.down.prevent="selectCompletionAction('publish', $event)"
                 @keydown.right.prevent="selectCompletionAction('publish', $event)"
@@ -252,7 +357,7 @@ function getErrorMessage(error: unknown) {
                 :class="{ selected: completionAction === 'publish' }"
                 :tabindex="completionAction === 'publish' ? 0 : -1"
                 role="radio"
-                :disabled="isRunning"
+                :disabled="isBusy"
                 @click="selectCompletionAction('publish')"
                 @keydown.left.prevent="selectCompletionAction('check-in', $event)"
                 @keydown.up.prevent="selectCompletionAction('check-in', $event)"
@@ -328,11 +433,11 @@ function getErrorMessage(error: unknown) {
 
       <Button
         class="run-import-button"
-        :icon="isRunning ? 'pi pi-stop' : 'pi pi-play'"
-        :label="isStopping ? 'Stopping...' : isRunning ? 'Stop import' : 'Run import'"
-        :severity="isRunning ? 'danger' : undefined"
-        :disabled="isRunning ? isStopping : !canRun"
-        @click="isRunning ? stopImport() : runImport()"
+        :icon="primaryActionButton.icon"
+        :label="primaryActionButton.label"
+        :severity="primaryActionButton.severity"
+        :disabled="primaryActionButton.disabled"
+        @click="handlePrimaryAction"
       />
     </footer>
   </main>

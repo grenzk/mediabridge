@@ -65,6 +65,15 @@ const { contextBridge, ipcRenderer } = require('electron')
  *
  * @typedef {{
  *   canceled: boolean,
+ *   ok: boolean,
+ *   rootCreated: boolean,
+ *   rootName: string,
+ *   templateCreated: boolean,
+ *   templateTitle: string,
+ * }} ArticleFlowTemplatePreparationResult
+ *
+ * @typedef {{
+ *   canceled: boolean,
  *   createdArticleCount: number,
  *   createdFolderCount: number,
  *   existingArticleCount: number,
@@ -150,6 +159,12 @@ contextBridge.exposeInMainWorld('knowledgeworks', {
 contextBridge.exposeInMainWorld('articleflow', {
   /** @returns {Promise<AutomationCancelResult>} */
   cancelImport: () => ipcRenderer.invoke('articleflow:cancel'),
+
+  /**
+   * @param {string} rootPath
+   * @returns {Promise<ArticleFlowTemplatePreparationResult>}
+   */
+  prepareTemplate: rootPath => ipcRenderer.invoke('articleflow:prepare-template', rootPath),
 
   /**
    * @param {string} rootPath

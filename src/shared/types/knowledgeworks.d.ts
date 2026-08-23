@@ -57,6 +57,15 @@ export type ArticleFlowSelectionResult = {
   plan?: ArticleFlowImportPlan
 }
 
+export type ArticleFlowTemplatePreparationResult = {
+  canceled: boolean
+  ok: boolean
+  rootCreated: boolean
+  rootName: string
+  templateCreated: boolean
+  templateTitle: string
+}
+
 export type ArticleFlowRunResult = {
   canceled: boolean
   createdArticleCount: number
@@ -92,6 +101,7 @@ export type DocSweepActionResult = {
 
 export type ArticleFlowApi = {
   cancelImport: () => Promise<AutomationCancelResult>
+  prepareTemplate: (rootPath: string) => Promise<ArticleFlowTemplatePreparationResult>
   runImport: (rootPath: string, completionAction: ArticleFlowCompletionAction) => Promise<ArticleFlowRunResult>
   selectRoot: () => Promise<ArticleFlowSelectionResult>
 }
