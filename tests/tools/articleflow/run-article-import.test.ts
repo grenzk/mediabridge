@@ -15,6 +15,7 @@ vi.mock('../../../src/tools/articleflow/automation/collect-existing-article-titl
 vi.mock('../../../src/tools/articleflow/automation/ensure-folder-path.ts', () => folderMocks)
 
 import {
+  getImportDestinationPath,
   hasRenderedEditorContent,
   normalizeHtmlLineEndings,
   runArticleImport,
@@ -29,12 +30,24 @@ beforeEach(() => {
 })
 
 describe('runArticleImport rerun safety', () => {
+  it('removes a pre-created product root from template import paths', () => {
+    expect(getImportDestinationPath(['Sample Product', '[004]Manuals'], 'Sample Product')).toEqual(['[004]Manuals'])
+    expect(getImportDestinationPath(['Sample Product'], 'Sample Product')).toEqual([])
+  })
+
+  it('rejects template import paths that do not match the selected product root', () => {
+    expect(() => getImportDestinationPath(['Other Product', '[004]Manuals'], 'Sample Product')).toThrow(
+      'Expected the import path to start with "Sample Product": Other Product > [004]Manuals',
+    )
+  })
+
   it('normalizes Windows and legacy line endings before comparing source HTML', () => {
     expect(normalizeHtmlLineEndings('<p>Line one\r\nLine two\r</p>')).toBe('<p>Line one\nLine two\n</p>')
   })
 
-  it('accepts rendered editor markup without comparing transformed preview text', () => {
-    expect(hasRenderedEditorContent('  <div><strong>Rendered content</strong></div>  ')).toBe(true)
+  it('requires the editor preview to change from the template content', () => {
+    expect(hasRenderedEditorContent('<div><strong>Rendered content</strong></div>', '<p><br></p>')).toBe(true)
+    expect(hasRenderedEditorContent('<p><br></p>', '<p><br></p>')).toBe(false)
     expect(hasRenderedEditorContent('   ')).toBe(false)
   })
 
@@ -104,6 +117,112 @@ describe('runArticleImport rerun safety', () => {
     expect(folderMocks.ensureFolderPath.mock.invocationCallOrder.at(-1)).toBeLessThan(
       folderMocks.selectFolderPath.mock.invocationCallOrder[0],
     )
+  })
+
+  it('reuses a prepared product root for template imports', async () => {
+    const rootFolderPath = ['Sample Product']
+    const manualsFolderPath = ['Sample Product', '[004]Manuals']
+    const plan: ArticleImportPlan = {
+      articles: [
+        {
+          folderPath: manualsFolderPath,
+          relativeSourcePath: '[004]Manuals/Installation.htm',
+          sourcePath: '/tmp/Sample Product/[004]Manuals/Installation.htm',
+          title: 'Installation',
+        },
+      ],
+      folderPaths: [rootFolderPath, manualsFolderPath],
+      ignoredPaths: [],
+      rootPath: '/tmp/Sample Product',
+    }
+
+    folderMocks.getSelectedFolderReference.mockResolvedValue({ id: 'product', name: 'Sample Product' })
+    articleListMocks.collectExistingArticleTitles.mockResolvedValue(new Set(['Installation']))
+
+    const result = await runArticleImport({} as unknown as Page, plan, 'check-in', {
+      articleTemplateTitle: '_ArticleFlow Template',
+    })
+
+    expect(result.existingFolderPaths).toEqual(plan.folderPaths)
+    expect(result.existingArticles).toEqual(plan.articles)
+    expect(folderMocks.ensureFolderPath).toHaveBeenCalledOnce()
+    expect(folderMocks.ensureFolderPath).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ name: 'Sample Product' }),
+      ['[004]Manuals'],
+      undefined,
+    )
+    expect(folderMocks.selectFolderPath).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ name: 'Sample Product' }),
+      ['[004]Manuals'],
+      undefined,
+    )
+  })
+
+  it('waits for the source template row to leave a selected destination', async () => {
+    const folderPath = ['Sample Product', '[004]Manuals']
+    const plan: ArticleImportPlan = {
+      articles: [
+        {
+          folderPath,
+          relativeSourcePath: '[004]Manuals/Installation.htm',
+          sourcePath: '/tmp/Sample Product/[004]Manuals/Installation.htm',
+          title: 'Installation',
+        },
+      ],
+      folderPaths: [folderPath],
+      ignoredPaths: [],
+      rootPath: '/tmp/Sample Product',
+    }
+    const evaluateAll = vi.fn().mockResolvedValueOnce(['source-template-id']).mockResolvedValueOnce([])
+    const articlePage = {
+      getByTestId: vi.fn(() => ({ evaluateAll })),
+      waitForTimeout: vi.fn(),
+    } as unknown as Page
+
+    folderMocks.getSelectedFolderReference.mockResolvedValue({ id: 'product', name: 'Sample Product' })
+    articleListMocks.collectExistingArticleTitles.mockResolvedValue(new Set(['Installation']))
+
+    const result = await runArticleImport(articlePage, plan, 'check-in', {
+      articleTemplateTitle: '_ArticleFlow Template',
+      sourceTemplateArticleId: 'source-template-id',
+    })
+
+    expect(result.existingArticles).toEqual(plan.articles)
+    expect(evaluateAll).toHaveBeenCalledTimes(2)
+    expect(articlePage.waitForTimeout).toHaveBeenCalledOnce()
+  })
+
+  it('keeps the source template available for articles in the product root', async () => {
+    const folderPath = ['Sample Product']
+    const plan: ArticleImportPlan = {
+      articles: [
+        {
+          folderPath,
+          relativeSourcePath: 'Overview.htm',
+          sourcePath: '/tmp/Sample Product/Overview.htm',
+          title: 'Overview',
+        },
+      ],
+      folderPaths: [folderPath],
+      ignoredPaths: [],
+      rootPath: '/tmp/Sample Product',
+    }
+    const articlePage = {
+      getByTestId: vi.fn(),
+    } as unknown as Page
+
+    folderMocks.getSelectedFolderReference.mockResolvedValue({ id: 'product', name: 'Sample Product' })
+    articleListMocks.collectExistingArticleTitles.mockResolvedValue(new Set(['Overview']))
+
+    const result = await runArticleImport(articlePage, plan, 'check-in', {
+      articleTemplateTitle: '_ArticleFlow Template',
+      sourceTemplateArticleId: 'source-template-id',
+    })
+
+    expect(result.existingArticles).toEqual(plan.articles)
+    expect(articlePage.getByTestId).not.toHaveBeenCalled()
   })
 
   it('does not start the import when cancellation was already requested', async () => {
