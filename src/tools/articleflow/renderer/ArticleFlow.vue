@@ -140,7 +140,12 @@ async function selectRoot() {
     }
 
     if (!result.plan) {
-      throw new Error('ArticleFlow did not return an import plan.')
+      await reportRendererError(
+        'Could not read the selected source folder.',
+        'ArticleFlow did not return an import plan.',
+      )
+      setFailureStatus('Could not read the selected source folder.')
+      return
     }
 
     importPlan.value = result.plan
@@ -148,9 +153,8 @@ async function selectRoot() {
     resetImportProgress()
     statusMessage.value = formatPlanStatus(result.plan)
     statusTone.value = 'ready'
-  } catch (error) {
-    statusMessage.value = getErrorMessage(error)
-    statusTone.value = 'error'
+  } catch {
+    setFailureStatus('Could not read the selected source folder.')
   } finally {
     isSelectingRoot.value = false
   }
@@ -174,9 +178,15 @@ async function prepareTemplate() {
   try {
     const result = await window.articleflow.prepareTemplate(plan.rootPath)
 
-    if (!result.ok || result.canceled) {
-      statusMessage.value = 'Template preparation did not finish.'
-      statusTone.value = 'error'
+    if (result.canceled) {
+      statusMessage.value = 'Template preparation canceled.'
+      statusTone.value = 'ready'
+      return
+    }
+
+    if (!result.ok) {
+      await reportRendererError('Template preparation failed.', 'ArticleFlow returned an unsuccessful result.')
+      setFailureStatus('Template preparation failed.')
       return
     }
 
@@ -188,9 +198,8 @@ async function prepareTemplate() {
 
     statusMessage.value = 'Set custom attributes in eGain, press Done, then continue.'
     statusTone.value = 'ready'
-  } catch (error) {
-    statusMessage.value = getErrorMessage(error)
-    statusTone.value = 'error'
+  } catch {
+    setFailureStatus('Template preparation failed.')
   } finally {
     isPreparingTemplate.value = false
   }
@@ -215,13 +224,12 @@ async function runImport() {
     const result = await window.articleflow.runImport(plan.rootPath, completionAction.value)
 
     setResultStatus(result)
-  } catch (error) {
+  } catch {
     if (activeSourcePathKey.value) {
       markSourcePathKeyFailed(activeSourcePathKey.value)
     }
 
-    statusMessage.value = getErrorMessage(error)
-    statusTone.value = 'error'
+    setFailureStatus('Import failed.')
   } finally {
     activeSourcePathKey.value = null
     isRunning.value = false
@@ -245,8 +253,8 @@ async function stopImport() {
     await window.articleflow.cancelImport()
   } catch (error) {
     isStopping.value = false
-    statusMessage.value = getErrorMessage(error)
-    statusTone.value = 'error'
+    await reportRendererError('Could not stop the import.', error)
+    setFailureStatus('Could not stop the import.')
   }
 }
 
@@ -257,8 +265,8 @@ async function openLogs() {
   try {
     await window.knowledgeworks.openLogs()
   } catch (error) {
-    statusMessage.value = getErrorMessage(error)
-    statusTone.value = 'error'
+    await reportRendererError('Could not open the log window.', error)
+    setFailureStatus('Could not open the log window.', false)
   }
 }
 
@@ -384,8 +392,15 @@ function selectCompletionAction(action: ArticleFlowCompletionAction, event?: Key
   }
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
+function setFailureStatus(message: string, directToLogs = true) {
+  statusMessage.value = directToLogs ? `${message} See logs.` : message
+  statusTone.value = 'error'
+}
+
+async function reportRendererError(message: string, error: unknown) {
+  const detail = error instanceof Error ? (error.stack ?? error.message) : String(error)
+
+  await window.knowledgeworks.writeLog('error', 'ArticleFlow', message, detail).catch(() => undefined)
 }
 </script>
 
