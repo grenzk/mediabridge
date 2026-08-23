@@ -123,7 +123,7 @@ export async function createArticleFlowBrowserWindow({ devServerUrl, electronDir
   }
 
   const articleFlowWindow = new BrowserWindow({
-    width: 640,
+    width: 560,
     height: 560,
     minWidth: 560,
     minHeight: 500,
