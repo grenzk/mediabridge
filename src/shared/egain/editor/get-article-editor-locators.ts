@@ -1,6 +1,7 @@
 import type { Locator, Page } from 'playwright'
 
 export type ArticleEditorLocators = {
+  articleTitleEditButton: Locator
   articleTitleInput: Locator
   sourceEditor: Locator
   editorBody: Locator
@@ -11,6 +12,7 @@ export type ArticleEditorLocators = {
 
 export type ArticlePageActionLocators = {
   createArticleButton: Locator
+  editArticleButton: Locator
   saveArticleButton: Locator
   checkInArticleButton: Locator
   publishArticleButton: Locator
@@ -22,8 +24,22 @@ export type ArticleListLocators = {
   emptyState: Locator
   firstPageButton: Locator
   nextPageButton: Locator
+  pasteButton: Locator
   titleLabels: Locator
   totalPagesLabel: Locator
+}
+
+export type ArticleListEntryLocators = {
+  cell: Locator
+  contextMenu: Locator
+  contextMenuButton: Locator
+  copyMenuItem: Locator
+}
+
+export type CustomAttributesLocators = {
+  dialog: Locator
+  doneButton: Locator
+  editButton: Locator
 }
 
 export type ArticleFolderLocators = {
@@ -58,6 +74,8 @@ export type PublishSummaryDialogLocators = {
  */
 export function getArticleEditorLocators(articlePage: Page): ArticleEditorLocators {
   return {
+    articleTitleEditButton: articlePage.getByTestId('button-article-name-edit'),
+
     articleTitleInput: articlePage.getByTestId('text-input-field-article-content-article-name'),
 
     sourceEditor: articlePage.getByRole('textbox', { name: 'Editor' }),
@@ -78,6 +96,8 @@ export function getArticleEditorLocators(articlePage: Page): ArticleEditorLocato
 export function getArticlePageActionLocators(articlePage: Page): ArticlePageActionLocators {
   return {
     createArticleButton: articlePage.getByTestId('button-articles-add'),
+
+    editArticleButton: articlePage.getByTestId('button-article-content-edit'),
 
     saveArticleButton: articlePage.getByTestId('button-article-content-save'),
 
@@ -102,9 +122,45 @@ export function getArticleListLocators(articlePage: Page): ArticleListLocators {
 
     nextPageButton: articlePage.getByTestId('button-articles-next-page'),
 
+    pasteButton: articlePage.getByTestId('button-articles-paste'),
+
     titleLabels: articlePage.locator('[data-testid^="label-articles-article-name-"]'),
 
     totalPagesLabel: articlePage.getByTestId('label-articles-total-pages'),
+  }
+}
+
+/**
+ * Returns the list row and context-menu actions for one exact article title.
+ */
+export function getArticleListEntryLocators(articlePage: Page, articleTitle: string): ArticleListEntryLocators {
+  const contextMenu = articlePage.locator('[data-testid="drop-down-menu-articles-context-menu"]:visible')
+
+  return {
+    cell: articlePage.getByTestId(`grid-body-cell-articles-${articleTitle}`),
+
+    contextMenu,
+
+    contextMenuButton: articlePage.getByTestId(`drop-down-articles-context-menu-control-${articleTitle}`),
+
+    copyMenuItem: contextMenu.getByTestId('drop-down-option-articles-context-menu').filter({
+      hasText: /^Copy$/,
+    }),
+  }
+}
+
+/**
+ * Returns the controls used to open and complete the Custom Attributes dialog.
+ */
+export function getCustomAttributesLocators(articlePage: Page): CustomAttributesLocators {
+  const dialog = articlePage.getByTestId('pop-up-window-custom-attributes')
+
+  return {
+    dialog,
+
+    doneButton: dialog.getByTestId('pop-up-window-button-custom-attributes-done'),
+
+    editButton: articlePage.getByTestId('button-article-custom-attribute-edit'),
   }
 }
 
