@@ -79,6 +79,12 @@ export type ArticleFlowRunResult = {
   ok: boolean
 }
 
+export type ArticleFlowProgressUpdate = {
+  kind: 'article' | 'folder'
+  path: string[]
+  status: 'created' | 'existing' | 'failed' | 'started'
+}
+
 export type AutomationCancelResult = {
   cancellationRequested: boolean
   ok: boolean
@@ -101,6 +107,7 @@ export type DocSweepActionResult = {
 
 export type ArticleFlowApi = {
   cancelImport: () => Promise<AutomationCancelResult>
+  onImportProgress: (callback: (progress: ArticleFlowProgressUpdate) => void) => () => void
   prepareTemplate: (rootPath: string) => Promise<ArticleFlowTemplatePreparationResult>
   runImport: (rootPath: string, completionAction: ArticleFlowCompletionAction) => Promise<ArticleFlowRunResult>
   selectRoot: () => Promise<ArticleFlowSelectionResult>

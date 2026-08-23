@@ -18,6 +18,11 @@ const { contextBridge, ipcRenderer } = require('electron')
  * }} MediaBridgeActionResult
  *
  * @typedef {{ cancellationRequested: boolean, ok: boolean }} AutomationCancelResult
+ * @typedef {{
+ *   kind: 'article' | 'folder',
+ *   path: string[],
+ *   status: 'created' | 'existing' | 'failed' | 'started',
+ * }} ArticleFlowProgressUpdate
  *
  * @typedef {{
  *   ok: boolean,
@@ -159,6 +164,18 @@ contextBridge.exposeInMainWorld('knowledgeworks', {
 contextBridge.exposeInMainWorld('articleflow', {
   /** @returns {Promise<AutomationCancelResult>} */
   cancelImport: () => ipcRenderer.invoke('articleflow:cancel'),
+
+  /**
+   * @param {(progress: ArticleFlowProgressUpdate) => void} callback
+   * @returns {() => void}
+   */
+  onImportProgress: callback => {
+    const listener = (_event, progress) => callback(progress)
+
+    ipcRenderer.on('articleflow:progress', listener)
+
+    return () => ipcRenderer.removeListener('articleflow:progress', listener)
+  },
 
   /**
    * @param {string} rootPath
