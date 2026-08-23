@@ -2,8 +2,13 @@ import { BrowserWindow, dialog, ipcMain } from 'electron'
 import type { IpcMainInvokeEvent, OpenDialogOptions } from 'electron'
 import { basename } from 'node:path'
 import { connectToBrowser } from '../../../src/shared/browser/connect-to-browser.ts'
+import {
+  articleFlowTemplateTitle,
+  completeArticleTemplateSetup,
+  prepareArticleTemplate,
+} from '../../../src/tools/articleflow/automation/article-template.ts'
 import { createArticleImportPlan } from '../../../src/tools/articleflow/automation/create-import-plan.ts'
-import { findFolderWorkspacePage } from '../../../src/tools/articleflow/automation/find-folder-workspace-page.ts'
+import { findArticleFlowWorkspacePage } from '../../../src/tools/articleflow/automation/find-folder-workspace-page.ts'
 import {
   runArticleImport,
   type ArticleCompletionAction,
@@ -69,6 +74,38 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
     }
   })
 
+  ipcMain.handle('articleflow:prepare-template', async (_event: IpcMainInvokeEvent, rootPath: string) => {
+    if (activeImportController) {
+      throw new Error('An ArticleFlow import is already running.')
+    }
+
+    try {
+      validateRootPath(rootPath)
+
+      const plan = await createArticleImportPlan(rootPath)
+
+      addLog('info', 'ArticleFlow', `Preparing the import template for ${basename(plan.rootPath)}.`)
+
+      const session = await connectToBrowser(browserService.getCdpUrl())
+      const articlePage = findArticleFlowWorkspacePage(session.pages)
+      const result = await prepareArticleTemplate(articlePage, plan)
+
+      addLog(
+        'success',
+        'ArticleFlow',
+        `Opened ${result.templateTitle} for custom attribute setup.`,
+        `${result.rootCreated ? 'Created' : 'Reused'} root ${result.rootName}; ${
+          result.templateCreated ? 'created' : 'reused'
+        } template article.`,
+      )
+
+      return { canceled: false, ok: true, ...result }
+    } catch (error) {
+      addLog('error', 'ArticleFlow', getErrorMessage(error), getErrorDetail(error))
+      throw error
+    }
+  })
+
   ipcMain.handle(
     'articleflow:run',
     async (_event: IpcMainInvokeEvent, rootPath: string, completionAction: ArticleCompletionAction) => {
@@ -92,10 +129,15 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
         )
 
         const session = await connectToBrowser(browserService.getCdpUrl())
-        const folderPage = findFolderWorkspacePage(session.pages)
-        const result = await runArticleImport(folderPage, plan, completionAction, {
+        const articlePage = findArticleFlowWorkspacePage(session.pages)
+
+        const templateSetup = await completeArticleTemplateSetup(articlePage, plan, controller.signal)
+
+        const result = await runArticleImport(articlePage, plan, completionAction, {
+          articleTemplateTitle: articleFlowTemplateTitle,
           onProgress: progress => logProgress(addLog, progress, completionAction),
           signal: controller.signal,
+          sourceTemplateArticleId: templateSetup.templateArticleId,
         })
         const failedArticleCount = result.failedArticles.length
         const createdArticleCount = result.createdArticles.length
@@ -146,12 +188,16 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
 }
 
 function validateRunRequest(rootPath: string, completionAction: ArticleCompletionAction) {
-  if (typeof rootPath !== 'string' || rootPath.trim().length === 0) {
-    throw new Error('Select an ArticleFlow source folder before running the import.')
-  }
+  validateRootPath(rootPath)
 
   if (completionAction !== 'check-in' && completionAction !== 'publish') {
     throw new Error(`Unsupported ArticleFlow completion action: ${completionAction}`)
+  }
+}
+
+function validateRootPath(rootPath: string) {
+  if (typeof rootPath !== 'string' || rootPath.trim().length === 0) {
+    throw new Error('Select an ArticleFlow source folder before running the import.')
   }
 }
 
