@@ -1,5 +1,21 @@
 KnowledgeWorks Changelog
 
+Unreleased - August 23, 2026
+
+Added
+
+- Added template-backed ArticleFlow imports so articles can reuse custom attributes configured once on a product template.
+- Added a Prepare Template and Continue Import workflow for configuring the eGain template before an import begins.
+- Added live ArticleFlow source-tree states for folders and articles that are active, created, or failed.
+
+Changed
+
+- Updated the ArticleFlow source tree to follow the active import item automatically while preserving completed and failed states.
+
+Fixed
+
+- Fixed failed ArticleFlow operations leaving the active source item in a permanent loading state.
+
 2.0.0-beta.1 - August 11, 2026
 
 Added

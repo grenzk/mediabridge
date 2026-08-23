@@ -82,7 +82,7 @@ export type ArticleImportProgress =
     }
   | {
       folderPath: string[]
-      status: 'created' | 'existing'
+      status: 'created' | 'existing' | 'failed' | 'started'
       type: 'folder'
     }
 
@@ -126,18 +126,28 @@ export async function runArticleImport(
 
     for (const folderPath of plan.folderPaths) {
       throwIfAutomationCancelled(signal)
-      const destinationFolderPath = getImportDestinationPath(folderPath, importRootName)
-      const createdFinalFolder =
-        destinationFolderPath.length > 0
-          ? await ensureFolderPath(articlePage, importParent, destinationFolderPath, signal)
-          : false
+      options.onProgress?.({ folderPath, status: 'started', type: 'folder' })
 
-      if (createdFinalFolder) {
-        createdFolderPaths.push(folderPath)
-        options.onProgress?.({ folderPath, status: 'created', type: 'folder' })
-      } else {
-        existingFolderPaths.push(folderPath)
-        options.onProgress?.({ folderPath, status: 'existing', type: 'folder' })
+      try {
+        const destinationFolderPath = getImportDestinationPath(folderPath, importRootName)
+        const createdFinalFolder =
+          destinationFolderPath.length > 0
+            ? await ensureFolderPath(articlePage, importParent, destinationFolderPath, signal)
+            : false
+
+        if (createdFinalFolder) {
+          createdFolderPaths.push(folderPath)
+          options.onProgress?.({ folderPath, status: 'created', type: 'folder' })
+        } else {
+          existingFolderPaths.push(folderPath)
+          options.onProgress?.({ folderPath, status: 'existing', type: 'folder' })
+        }
+      } catch (error) {
+        if (!isAutomationCancellationError(error)) {
+          options.onProgress?.({ folderPath, status: 'failed', type: 'folder' })
+        }
+
+        throw error
       }
     }
 

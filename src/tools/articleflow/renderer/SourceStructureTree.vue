@@ -9,7 +9,10 @@ type SourceTreeNode = {
 }
 
 const props = defineProps<{
+  activePathKey?: string | null
+  completedPathKeys?: ReadonlySet<string>
   depth?: number
+  failedPathKeys?: ReadonlySet<string>
   filePaths?: string[][]
   folderPaths?: string[][]
   nodes?: SourceTreeNode[]
@@ -50,21 +53,65 @@ function addPath(roots: SourceTreeNode[], path: string[], leafKind: SourceTreeNo
     siblings = node.children
   }
 }
+
+function getNodeProgressState(node: SourceTreeNode): 'active' | 'completed' | 'failed' | undefined {
+  const pathKey = JSON.stringify(node.path)
+
+  if (props.activePathKey === pathKey) {
+    return 'active'
+  }
+
+  if (props.completedPathKeys?.has(pathKey)) {
+    return 'completed'
+  }
+
+  if (props.failedPathKeys?.has(pathKey)) {
+    return 'failed'
+  }
+}
 </script>
 
 <template>
   <ul class="structure-tree" :class="{ root: currentDepth === 0 }">
     <li v-for="node in treeNodes" :key="node.path.join('/')" class="structure-tree-node">
-      <div class="structure-tree-row" :title="node.path.join(' > ')">
+      <div
+        class="structure-tree-row"
+        :class="getNodeProgressState(node)"
+        :data-progress-state="getNodeProgressState(node)"
+        :aria-current="getNodeProgressState(node) === 'active' ? 'true' : undefined"
+        :title="node.path.join(' > ')"
+      >
         <i
           class="pi"
           :class="node.kind === 'file' ? 'pi-file' : currentDepth === 0 ? 'pi-folder-open' : 'pi-folder'"
           aria-hidden="true"
         />
         <span>{{ node.name }}</span>
+        <i
+          v-if="getNodeProgressState(node) === 'active'"
+          class="pi pi-spinner pi-spin structure-tree-status"
+          aria-label="In progress"
+        />
+        <i
+          v-else-if="getNodeProgressState(node) === 'completed'"
+          class="pi pi-check structure-tree-status"
+          aria-label="Created"
+        />
+        <i
+          v-else-if="getNodeProgressState(node) === 'failed'"
+          class="pi pi-times structure-tree-status"
+          aria-label="Not created"
+        />
       </div>
 
-      <SourceStructureTree v-if="node.children.length" :depth="currentDepth + 1" :nodes="node.children" />
+      <SourceStructureTree
+        v-if="node.children.length"
+        :active-path-key="activePathKey"
+        :completed-path-keys="completedPathKeys"
+        :depth="currentDepth + 1"
+        :failed-path-keys="failedPathKeys"
+        :nodes="node.children"
+      />
     </li>
   </ul>
 </template>
@@ -111,9 +158,14 @@ function addPath(roots: SourceTreeNode[], path: string[], leafKind: SourceTreeNo
   min-height: 28px;
   align-items: center;
   gap: 8px;
+  padding: 2px 6px;
   color: var(--kw-text-muted);
+  border-radius: 4px;
   font-size: 0.8125rem;
   line-height: 1.25rem;
+  transition:
+    color 120ms ease-out,
+    background-color 120ms ease-out;
 }
 
 .structure-tree-row > i {
@@ -124,7 +176,7 @@ function addPath(roots: SourceTreeNode[], path: string[], leafKind: SourceTreeNo
   text-align: center;
 }
 
-.structure-tree.root > .structure-tree-node > .structure-tree-row > i {
+.structure-tree.root > .structure-tree-node > .structure-tree-row:not(.completed) > i:first-child {
   color: var(--kw-focus);
 }
 
@@ -135,5 +187,39 @@ function addPath(roots: SourceTreeNode[], path: string[], leafKind: SourceTreeNo
 .structure-tree-row > span {
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.structure-tree-row.active {
+  color: var(--kw-text-light);
+  background: var(--kw-surface-hover);
+}
+
+.structure-tree-row.active > i:first-child {
+  color: var(--kw-focus);
+}
+
+.structure-tree-row.completed {
+  color: var(--kw-text-light);
+}
+
+.structure-tree-row.completed > i:first-child,
+.structure-tree-row > .structure-tree-status.pi-check {
+  color: var(--kw-success);
+}
+
+.structure-tree-row.failed {
+  color: var(--kw-text-light);
+}
+
+.structure-tree-row.failed > i:first-child,
+.structure-tree-row > .structure-tree-status.pi-times {
+  color: var(--kw-danger);
+}
+
+.structure-tree-row > .structure-tree-status {
+  width: 16px;
+  margin-left: auto;
+  color: var(--kw-focus);
+  font-size: 0.75rem;
 }
 </style>

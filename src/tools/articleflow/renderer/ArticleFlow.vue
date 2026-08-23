@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type {
   ArticleFlowCompletionAction,
   ArticleFlowImportPlan,
+  ArticleFlowProgressUpdate,
   ArticleFlowRunResult,
 } from '../../../shared/types/knowledgeworks'
 import SourceStructureTree from './SourceStructureTree.vue'
@@ -24,6 +25,11 @@ const isStopping = ref(false)
 const isTemplatePrepared = ref(false)
 const statusMessage = ref('No source folder selected.')
 const statusTone = ref<ArticleFlowStatusTone>('idle')
+const activeSourcePathKey = ref<string | null>(null)
+const completedSourcePathKeys = ref<Set<string>>(new Set())
+const failedSourcePathKeys = ref<Set<string>>(new Set())
+const sourceTreeFrame = ref<HTMLElement | null>(null)
+let removeImportProgressListener: (() => void) | undefined
 
 const sourceFolderName = computed(() => {
   const rootPath = importPlan.value?.rootPath
@@ -97,6 +103,25 @@ const statusIcon = computed(() => {
   return icons[statusTone.value]
 })
 
+onMounted(() => {
+  removeImportProgressListener = window.articleflow.onImportProgress(handleImportProgress)
+})
+
+onBeforeUnmount(() => {
+  removeImportProgressListener?.()
+})
+
+watch(activeSourcePathKey, async pathKey => {
+  if (!pathKey) {
+    return
+  }
+
+  await nextTick()
+  sourceTreeFrame.value?.querySelector<HTMLElement>('[data-progress-state="active"]')?.scrollIntoView({
+    block: 'nearest',
+  })
+})
+
 /**
  * Opens the native directory picker and scans the selected taxonomy.
  */
@@ -120,6 +145,7 @@ async function selectRoot() {
 
     importPlan.value = result.plan
     isTemplatePrepared.value = false
+    resetImportProgress()
     statusMessage.value = formatPlanStatus(result.plan)
     statusTone.value = 'ready'
   } catch (error) {
@@ -155,6 +181,11 @@ async function prepareTemplate() {
     }
 
     isTemplatePrepared.value = true
+
+    if (result.rootCreated) {
+      markSourcePathCreated([result.rootName])
+    }
+
     statusMessage.value = 'Set custom attributes in eGain, press Done, then continue.'
     statusTone.value = 'ready'
   } catch (error) {
@@ -176,6 +207,7 @@ async function runImport() {
   }
 
   isRunning.value = true
+  activeSourcePathKey.value = null
   statusMessage.value = 'Import in progress. See logs for details.'
   statusTone.value = 'running'
 
@@ -184,9 +216,14 @@ async function runImport() {
 
     setResultStatus(result)
   } catch (error) {
+    if (activeSourcePathKey.value) {
+      markSourcePathKeyFailed(activeSourcePathKey.value)
+    }
+
     statusMessage.value = getErrorMessage(error)
     statusTone.value = 'error'
   } finally {
+    activeSourcePathKey.value = null
     isRunning.value = false
     isStopping.value = false
   }
@@ -237,6 +274,69 @@ function handlePrimaryAction() {
   }
 
   void prepareTemplate()
+}
+
+function handleImportProgress(progress: ArticleFlowProgressUpdate) {
+  const pathKey = getSourcePathKey(progress.path)
+
+  if (progress.status === 'started') {
+    removeSourcePath(failedSourcePathKeys, pathKey)
+    activeSourcePathKey.value = pathKey
+    return
+  }
+
+  if (progress.status === 'created') {
+    markSourcePathCreated(progress.path)
+  } else if (progress.status === 'failed') {
+    markSourcePathFailed(progress.path)
+  } else {
+    removeSourcePath(failedSourcePathKeys, pathKey)
+  }
+
+  if (activeSourcePathKey.value === pathKey) {
+    activeSourcePathKey.value = null
+  }
+}
+
+function markSourcePathCreated(path: string[]) {
+  const pathKey = getSourcePathKey(path)
+  const nextCompletedPaths = new Set(completedSourcePathKeys.value)
+
+  nextCompletedPaths.add(pathKey)
+  completedSourcePathKeys.value = nextCompletedPaths
+  removeSourcePath(failedSourcePathKeys, pathKey)
+}
+
+function markSourcePathFailed(path: string[]) {
+  markSourcePathKeyFailed(getSourcePathKey(path))
+}
+
+function markSourcePathKeyFailed(pathKey: string) {
+  const nextFailedPaths = new Set(failedSourcePathKeys.value)
+
+  nextFailedPaths.add(pathKey)
+  failedSourcePathKeys.value = nextFailedPaths
+}
+
+function removeSourcePath(pathKeys: typeof failedSourcePathKeys, pathKey: string) {
+  if (!pathKeys.value.has(pathKey)) {
+    return
+  }
+
+  const nextPathKeys = new Set(pathKeys.value)
+
+  nextPathKeys.delete(pathKey)
+  pathKeys.value = nextPathKeys
+}
+
+function resetImportProgress() {
+  activeSourcePathKey.value = null
+  completedSourcePathKeys.value = new Set()
+  failedSourcePathKeys.value = new Set()
+}
+
+function getSourcePathKey(path: string[]) {
+  return JSON.stringify(path)
 }
 
 function setResultStatus(result: ArticleFlowRunResult) {
@@ -403,8 +503,14 @@ function getErrorMessage(error: unknown) {
                   <span>Source structure</span>
                 </span>
               </summary>
-              <div class="source-tree-frame">
-                <SourceStructureTree :file-paths="sourceFilePaths" :folder-paths="importPlan.folderPaths" />
+              <div ref="sourceTreeFrame" class="source-tree-frame">
+                <SourceStructureTree
+                  :active-path-key="activeSourcePathKey"
+                  :completed-path-keys="completedSourcePathKeys"
+                  :failed-path-keys="failedSourcePathKeys"
+                  :file-paths="sourceFilePaths"
+                  :folder-paths="importPlan.folderPaths"
+                />
               </div>
             </details>
           </div>
