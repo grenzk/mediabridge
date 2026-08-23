@@ -327,7 +327,7 @@ onBeforeUnmount(() => {
 .hub-header :deep(.p-button:focus-visible),
 .open-tool-button:focus-visible {
   outline: 2px solid var(--kw-focus);
-  outline-offset: 2px;
+  outline-offset: 1px;
 }
 
 .browser-button {

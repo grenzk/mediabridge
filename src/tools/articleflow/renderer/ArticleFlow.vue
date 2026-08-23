@@ -543,6 +543,14 @@ function getErrorMessage(error: unknown) {
   border-left: 1px solid var(--kw-border);
 }
 
+.completion-control button:first-child {
+  border-radius: 7px 0 0 7px;
+}
+
+.completion-control button:last-child {
+  border-radius: 0 7px 7px 0;
+}
+
 .completion-control button:hover:not(:disabled) {
   color: var(--kw-text-light);
   background: var(--kw-surface-hover);
@@ -569,7 +577,19 @@ function getErrorMessage(error: unknown) {
 .article-flow-shell :is(button, summary):focus-visible,
 :deep(.article-flow-shell .p-button:focus-visible) {
   outline: 2px solid var(--kw-focus);
-  outline-offset: 2px;
+  outline-offset: 1px;
+}
+
+.completion-control button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 0;
+  background: var(--kw-primary-hover);
+  box-shadow: inset 0 0 0 2px var(--kw-focus);
+}
+
+.completion-control:has(button:focus-visible) button + button {
+  border-left-color: transparent;
 }
 
 .plan-counts {
