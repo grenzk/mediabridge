@@ -672,8 +672,8 @@ async function reportRendererError(message: string, error: unknown) {
 
 .setup-row {
   display: grid;
-  grid-template-columns: 160px minmax(0, 1fr) auto;
-  min-height: 66px;
+  grid-template-columns: 128px minmax(0, 1fr) auto;
+  min-height: 58px;
   align-items: center;
   gap: 12px 16px;
   padding: 10px 16px;
@@ -744,7 +744,8 @@ async function reportRendererError(message: string, error: unknown) {
   grid-column: 2 / -1;
   justify-self: end;
   display: grid;
-  grid-template-columns: repeat(2, 104px);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: min(100%, 280px);
   overflow: hidden;
   border: 1px solid var(--kw-border);
   border-radius: 8px;
