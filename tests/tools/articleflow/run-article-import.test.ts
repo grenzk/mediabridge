@@ -86,6 +86,7 @@ describe('runArticleImport rerun safety', () => {
     expect(articleListMocks.collectExistingArticleTitles).toHaveBeenCalledTimes(1)
     expect(folderMocks.selectFolderPath).toHaveBeenCalledTimes(2)
     expect(progress).toEqual([
+      { folderPath, status: 'started', type: 'folder' },
       { folderPath, status: 'existing', type: 'folder' },
       { article: plan.articles[0], status: 'existing', type: 'article' },
       { article: plan.articles[1], status: 'existing', type: 'article' },
@@ -117,6 +118,30 @@ describe('runArticleImport rerun safety', () => {
     expect(folderMocks.ensureFolderPath.mock.invocationCallOrder.at(-1)).toBeLessThan(
       folderMocks.selectFolderPath.mock.invocationCallOrder[0],
     )
+  })
+
+  it('reports a folder as failed when it cannot be ensured', async () => {
+    const folderPath = ['Sample Product', 'Manuals']
+    const plan: ArticleImportPlan = {
+      articles: [],
+      folderPaths: [folderPath],
+      ignoredPaths: [],
+      rootPath: '/tmp/Sample Product',
+    }
+    const progress: ArticleImportProgress[] = []
+
+    folderMocks.ensureFolderPath.mockRejectedValueOnce(new Error('Folder tree did not settle.'))
+
+    await expect(
+      runArticleImport({} as Page, plan, 'check-in', {
+        onProgress: update => progress.push(update),
+      }),
+    ).rejects.toThrow('Folder tree did not settle.')
+
+    expect(progress).toEqual([
+      { folderPath, status: 'started', type: 'folder' },
+      { folderPath, status: 'failed', type: 'folder' },
+    ])
   })
 
   it('reuses a prepared product root for template imports', async () => {

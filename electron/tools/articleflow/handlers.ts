@@ -14,6 +14,7 @@ import {
   type ArticleCompletionAction,
   type ArticleImportProgress,
 } from '../../../src/tools/articleflow/automation/run-article-import.ts'
+import type { ArticleFlowProgressUpdate } from '../../../src/shared/types/knowledgeworks'
 import { getErrorDetail, getErrorMessage } from '../../platform/error-format.ts'
 
 type AddLog = (level: 'info' | 'success' | 'error', scope: string, message: string, detail?: string) => void
@@ -108,7 +109,7 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
 
   ipcMain.handle(
     'articleflow:run',
-    async (_event: IpcMainInvokeEvent, rootPath: string, completionAction: ArticleCompletionAction) => {
+    async (event: IpcMainInvokeEvent, rootPath: string, completionAction: ArticleCompletionAction) => {
       if (activeImportController) {
         throw new Error('An ArticleFlow import is already running.')
       }
@@ -135,7 +136,10 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
 
         const result = await runArticleImport(articlePage, plan, completionAction, {
           articleTemplateTitle: articleFlowTemplateTitle,
-          onProgress: progress => logProgress(addLog, progress, completionAction),
+          onProgress: progress => {
+            logProgress(addLog, progress, completionAction)
+            sendProgress(event, progress)
+          },
           signal: controller.signal,
           sourceTemplateArticleId: templateSetup.templateArticleId,
         })
@@ -185,6 +189,32 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
       }
     },
   )
+}
+
+function sendProgress(event: IpcMainInvokeEvent, progress: ArticleImportProgress) {
+  if (event.sender.isDestroyed()) {
+    return
+  }
+
+  event.sender.send('articleflow:progress', toProgressUpdate(progress))
+}
+
+function toProgressUpdate(progress: ArticleImportProgress): ArticleFlowProgressUpdate {
+  if (progress.type === 'folder') {
+    return {
+      kind: 'folder',
+      path: progress.folderPath,
+      status: progress.status,
+    }
+  }
+
+  const filename = progress.article.relativeSourcePath.split(/[\\/]/).filter(Boolean).at(-1)
+
+  return {
+    kind: 'article',
+    path: [...progress.article.folderPath, filename ?? progress.article.title],
+    status: progress.status,
+  }
 }
 
 function validateRunRequest(rootPath: string, completionAction: ArticleCompletionAction) {
