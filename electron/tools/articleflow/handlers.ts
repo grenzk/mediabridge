@@ -76,11 +76,11 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
   })
 
   ipcMain.handle('articleflow:prepare-template', async (_event: IpcMainInvokeEvent, rootPath: string) => {
-    if (activeImportController) {
-      throw new Error('An ArticleFlow import is already running.')
-    }
-
     try {
+      if (activeImportController) {
+        throw new Error('An ArticleFlow import is already running.')
+      }
+
       validateRootPath(rootPath)
 
       const plan = await createArticleImportPlan(rootPath)
@@ -110,14 +110,14 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
   ipcMain.handle(
     'articleflow:run',
     async (event: IpcMainInvokeEvent, rootPath: string, completionAction: ArticleCompletionAction) => {
-      if (activeImportController) {
-        throw new Error('An ArticleFlow import is already running.')
-      }
-
       const controller = new AbortController()
-      activeImportController = controller
 
       try {
+        if (activeImportController) {
+          throw new Error('An ArticleFlow import is already running.')
+        }
+
+        activeImportController = controller
         validateRunRequest(rootPath, completionAction)
 
         const plan = await createArticleImportPlan(rootPath)
