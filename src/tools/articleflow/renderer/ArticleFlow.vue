@@ -13,6 +13,7 @@ const completionAction = ref<ArticleFlowCompletionAction>('check-in')
 const importPlan = ref<ArticleFlowImportPlan | null>(null)
 const isSelectingRoot = ref(false)
 const isRunning = ref(false)
+const isStopping = ref(false)
 const statusMessage = ref('No source folder selected.')
 const statusTone = ref<ArticleFlowStatusTone>('idle')
 
@@ -96,6 +97,28 @@ async function runImport() {
     statusTone.value = 'error'
   } finally {
     isRunning.value = false
+    isStopping.value = false
+  }
+}
+
+/**
+ * Requests a cooperative stop after ArticleFlow finishes its current eGain operation.
+ */
+async function stopImport() {
+  if (!isRunning.value || isStopping.value) {
+    return
+  }
+
+  isStopping.value = true
+  statusMessage.value = 'Stopping import after the current operation...'
+  statusTone.value = 'running'
+
+  try {
+    await window.articleflow.cancelImport()
+  } catch (error) {
+    isStopping.value = false
+    statusMessage.value = getErrorMessage(error)
+    statusTone.value = 'error'
   }
 }
 
@@ -112,6 +135,12 @@ async function openLogs() {
 }
 
 function setResultStatus(result: ArticleFlowRunResult) {
+  if (result.canceled) {
+    statusMessage.value = `Import stopped. ${formatCount(result.createdArticleCount, 'article')} completed.`
+    statusTone.value = 'ready'
+    return
+  }
+
   const action = completionAction.value === 'check-in' ? 'checked in' : 'published'
   const parts = [`${formatCount(result.createdArticleCount, 'article')} ${action}`]
 
@@ -299,11 +328,11 @@ function getErrorMessage(error: unknown) {
 
       <Button
         class="run-import-button"
-        icon="pi pi-play"
-        label="Run import"
-        :loading="isRunning"
-        :disabled="!canRun"
-        @click="runImport"
+        :icon="isRunning ? 'pi pi-stop' : 'pi pi-play'"
+        :label="isStopping ? 'Stopping...' : isRunning ? 'Stop import' : 'Run import'"
+        :severity="isRunning ? 'danger' : undefined"
+        :disabled="isRunning ? isStopping : !canRun"
+        @click="isRunning ? stopImport() : runImport()"
       />
     </footer>
   </main>
@@ -514,6 +543,14 @@ function getErrorMessage(error: unknown) {
   border-left: 1px solid var(--kw-border);
 }
 
+.completion-control button:first-child {
+  border-radius: 7px 0 0 7px;
+}
+
+.completion-control button:last-child {
+  border-radius: 0 7px 7px 0;
+}
+
 .completion-control button:hover:not(:disabled) {
   color: var(--kw-text-light);
   background: var(--kw-surface-hover);
@@ -540,7 +577,19 @@ function getErrorMessage(error: unknown) {
 .article-flow-shell :is(button, summary):focus-visible,
 :deep(.article-flow-shell .p-button:focus-visible) {
   outline: 2px solid var(--kw-focus);
-  outline-offset: 2px;
+  outline-offset: 1px;
+}
+
+.completion-control button:focus-visible {
+  position: relative;
+  z-index: 1;
+  outline: 0;
+  background: var(--kw-primary-hover);
+  box-shadow: inset 0 0 0 2px var(--kw-focus);
+}
+
+.completion-control:has(button:focus-visible) button + button {
+  border-left-color: transparent;
 }
 
 .plan-counts {

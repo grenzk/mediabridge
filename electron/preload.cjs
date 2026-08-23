@@ -7,6 +7,7 @@ const { contextBridge, ipcRenderer } = require('electron')
  *
  * @typedef {{
  *   articleUrl?: string,
+ *   canceled?: boolean,
  *   linkedTargetCount?: number,
  *   mode?: string,
  *   ok: boolean,
@@ -15,6 +16,8 @@ const { contextBridge, ipcRenderer } = require('electron')
  *   targetCount?: number,
  *   unlinkedTargetCount?: number,
  * }} MediaBridgeActionResult
+ *
+ * @typedef {{ cancellationRequested: boolean, ok: boolean }} AutomationCancelResult
  *
  * @typedef {{
  *   ok: boolean,
@@ -61,6 +64,7 @@ const { contextBridge, ipcRenderer } = require('electron')
  * }} ArticleFlowSelectionResult
  *
  * @typedef {{
+ *   canceled: boolean,
  *   createdArticleCount: number,
  *   createdFolderCount: number,
  *   existingArticleCount: number,
@@ -144,6 +148,9 @@ contextBridge.exposeInMainWorld('knowledgeworks', {
 })
 
 contextBridge.exposeInMainWorld('articleflow', {
+  /** @returns {Promise<AutomationCancelResult>} */
+  cancelImport: () => ipcRenderer.invoke('articleflow:cancel'),
+
   /**
    * @param {string} rootPath
    * @param {ArticleFlowCompletionAction} completionAction
@@ -158,6 +165,12 @@ contextBridge.exposeInMainWorld('articleflow', {
 })
 
 contextBridge.exposeInMainWorld('mediabridge', {
+  /** @returns {Promise<AutomationCancelResult>} */
+  cancelMediaLinking: () => ipcRenderer.invoke('session:cancel-media-linking'),
+
+  /** @returns {Promise<AutomationCancelResult>} */
+  cancelTargetCount: () => ipcRenderer.invoke('session:cancel-target-count'),
+
   clearLogs,
 
   /**

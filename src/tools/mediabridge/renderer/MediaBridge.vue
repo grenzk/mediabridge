@@ -7,12 +7,18 @@ const { currentMessage, errorMessage, isBusy, reportActionError, showProgressDot
 const {
   chooseLinkingType,
   doneTargetCount,
+  isCountingTargets,
   isLinkingTypeMenuOpen,
+  isRunningMediaLinking,
+  isStoppingTargetCount,
+  isStoppingMediaLinking,
   linkingOptions,
   refreshTargetCount,
   runMediaLinking,
   selectedLinkingType,
   selectedLinkingTypeConfig,
+  stopMediaLinking,
+  stopTargetCount,
   targetCount,
   targetLabel,
   targetSingularLabel,
@@ -44,20 +50,39 @@ async function openLogs() {
         <span class="brand-mark">MB</span>
       </div>
 
+      <button
+        v-tooltip.bottom="isCountingTargets ? 'Stop counting' : `Refresh ${targetSingularLabel} count`"
+        class="target-counter"
+        :class="{ 'stop-state': isCountingTargets }"
+        type="button"
+        :disabled="isStoppingTargetCount || (isBusy && !isCountingTargets)"
+        :aria-label="isCountingTargets ? 'Stop counting targets' : `Refresh ${targetSingularLabel} count`"
+        @click="isCountingTargets ? stopTargetCount() : refreshTargetCount()"
+      >
+        <template v-if="isCountingTargets">
+          <i class="pi pi-stop stop-count-icon" aria-hidden="true" />
+          <span>Stop</span>
+        </template>
+        <template v-else>
+          <span class="counter-number">{{ targetCount ?? '--' }}</span>
+          <span class="counter-label">{{ targetLabel }}</span>
+        </template>
+      </button>
+
       <div
-        v-tooltip.bottom="`Run ${selectedLinkingTypeConfig.label}`"
+        v-tooltip.bottom="isRunningMediaLinking ? 'Stop automation' : `Run ${selectedLinkingTypeConfig.label}`"
         class="run-control"
         :class="{ open: isLinkingTypeMenuOpen }"
       >
         <button
           class="run-button"
           type="button"
-          :disabled="isBusy"
-          aria-label="Run selected link automation"
-          @click="runMediaLinking"
+          :disabled="isStoppingMediaLinking || (isBusy && !isRunningMediaLinking)"
+          :aria-label="isRunningMediaLinking ? 'Stop link automation' : 'Run selected link automation'"
+          @click="isRunningMediaLinking ? stopMediaLinking() : runMediaLinking()"
         >
-          <i class="pi pi-play" aria-hidden="true" />
-          <span>Run</span>
+          <i :class="isRunningMediaLinking ? 'pi pi-stop' : 'pi pi-play'" aria-hidden="true" />
+          <span>{{ isRunningMediaLinking ? 'Stop' : 'Run' }}</span>
         </button>
 
         <button
@@ -71,17 +96,6 @@ async function openLogs() {
           <i class="pi pi-chevron-down run-chevron" aria-hidden="true" />
         </button>
       </div>
-
-      <button
-        v-tooltip.bottom="`Refresh ${targetSingularLabel} count`"
-        class="target-counter"
-        type="button"
-        :disabled="isBusy"
-        @click="refreshTargetCount"
-      >
-        <span class="counter-number">{{ targetCount ?? '--' }}</span>
-        <span class="counter-label">{{ targetLabel }}</span>
-      </button>
 
       <div class="divider" aria-hidden="true" />
 

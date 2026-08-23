@@ -34,6 +34,10 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }: Too
   const processedTargetCount = ref<number | null>(null)
   const selectedLinkingType = ref<MediaBridgeLinkingMode>('pdf')
   const isLinkingTypeMenuOpen = ref(false)
+  const isCountingTargets = ref(false)
+  const isRunningMediaLinking = ref(false)
+  const isStoppingTargetCount = ref(false)
+  const isStoppingMediaLinking = ref(false)
 
   const targetLabel = computed(() => {
     if (selectedLinkingType.value === 'image') {
@@ -92,47 +96,101 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }: Too
   }
 
   /** @returns {Promise<void>} */
-  function refreshTargetCount() {
+  async function refreshTargetCount() {
     resetCounts()
     closeLinkingTypeMenu()
+    isCountingTargets.value = true
 
-    return runAction(
-      `Counting ${targetPluralLabel.value}`,
-      () => window.mediabridge.getTargetCount(selectedLinkingType.value),
-      result => {
-        const noun =
-          selectedLinkingType.value === 'image'
-            ? result.unlinkedTargetCount === 1
-              ? 'image'
-              : 'images'
-            : `${result.mode} ${result.unlinkedTargetCount === 1 ? 'link' : 'links'}`
+    try {
+      await runAction(
+        `Counting ${targetPluralLabel.value}`,
+        () => window.mediabridge.getTargetCount(selectedLinkingType.value),
+        result => {
+          if (result.canceled) {
+            return 'Counting stopped'
+          }
 
-        return `${result.unlinkedTargetCount} ${noun} ready`
-      },
-      updateCounts,
-    )
+          const noun =
+            selectedLinkingType.value === 'image'
+              ? result.unlinkedTargetCount === 1
+                ? 'image'
+                : 'images'
+              : `${result.mode} ${result.unlinkedTargetCount === 1 ? 'link' : 'links'}`
+
+          return `${result.unlinkedTargetCount} ${noun} ready`
+        },
+        updateCounts,
+      )
+    } finally {
+      isCountingTargets.value = false
+      isStoppingTargetCount.value = false
+    }
+  }
+
+  async function stopTargetCount() {
+    if (!isCountingTargets.value || isStoppingTargetCount.value) {
+      return
+    }
+
+    isStoppingTargetCount.value = true
+    status.value = 'Stopping count'
+
+    try {
+      await window.mediabridge.cancelTargetCount()
+    } catch (error) {
+      isStoppingTargetCount.value = false
+      await window.mediabridge.writeLog('error', 'Counter', 'Could not stop target counting.', String(error))
+      status.value = 'Could not stop. See logs.'
+    }
   }
 
   /** @returns {Promise<void>} */
-  function runMediaLinking() {
+  async function runMediaLinking() {
     closeLinkingTypeMenu()
+    isRunningMediaLinking.value = true
 
-    return runAction(
-      'Running script',
-      () => window.mediabridge.runMediaLinking(selectedLinkingType.value),
-      result => {
-        const noun =
-          selectedLinkingType.value === 'image'
-            ? result.processedCount === 1
-              ? 'image'
-              : 'images'
-            : `${result.mode} ${result.processedCount === 1 ? 'link' : 'links'}`
-        const skippedText = result.skippedCount ? `, skipped ${result.skippedCount} missing` : ''
+    try {
+      await runAction(
+        'Running script',
+        () => window.mediabridge.runMediaLinking(selectedLinkingType.value),
+        result => {
+          if (result.canceled) {
+            return `Stopped after ${result.processedCount ?? 0} completed`
+          }
 
-        return `Inserted ${result.processedCount} ${noun}${skippedText}`
-      },
-      updateCounts,
-    )
+          const noun =
+            selectedLinkingType.value === 'image'
+              ? result.processedCount === 1
+                ? 'image'
+                : 'images'
+              : `${result.mode} ${result.processedCount === 1 ? 'link' : 'links'}`
+          const skippedText = result.skippedCount ? `, skipped ${result.skippedCount} missing` : ''
+
+          return `Inserted ${result.processedCount} ${noun}${skippedText}`
+        },
+        updateCounts,
+      )
+    } finally {
+      isRunningMediaLinking.value = false
+      isStoppingMediaLinking.value = false
+    }
+  }
+
+  async function stopMediaLinking() {
+    if (!isRunningMediaLinking.value || isStoppingMediaLinking.value) {
+      return
+    }
+
+    isStoppingMediaLinking.value = true
+    status.value = 'Stopping script'
+
+    try {
+      await window.mediabridge.cancelMediaLinking()
+    } catch (error) {
+      isStoppingMediaLinking.value = false
+      await window.mediabridge.writeLog('error', 'Linking', 'Could not request automation cancellation.', String(error))
+      status.value = 'Could not stop. See logs.'
+    }
   }
 
   function toggleLinkingTypeMenu() {
@@ -162,11 +220,17 @@ export function useMediaLinking({ errorMessage, isBusy, runAction, status }: Too
     closeLinkingTypeMenu,
     doneTargetCount,
     isLinkingTypeMenuOpen,
+    isCountingTargets,
+    isRunningMediaLinking,
+    isStoppingTargetCount,
+    isStoppingMediaLinking,
     linkingOptions,
     refreshTargetCount,
     runMediaLinking,
     selectedLinkingType,
     selectedLinkingTypeConfig,
+    stopMediaLinking,
+    stopTargetCount,
     targetCount,
     targetLabel,
     targetSingularLabel,

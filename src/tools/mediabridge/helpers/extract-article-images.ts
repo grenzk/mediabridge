@@ -1,16 +1,11 @@
 import type { Page } from 'playwright'
-import { getArticleEditorLocators } from '../../../shared/egain/editor/get-article-editor-locators.ts'
 import type { ArticleEditorImage } from '../types.ts'
 
 /**
  * Reads image placeholders from the source editor. Content developers can use
  * dummy src paths as long as the path ends with the media server filename.
  */
-export async function extractArticleImages(articlePage: Page): Promise<ArticleEditorImage[]> {
-  const { sourceEditor } = getArticleEditorLocators(articlePage)
-
-  const html = await sourceEditor.inputValue()
-
+export async function extractArticleImages(articlePage: Page, html: string): Promise<ArticleEditorImage[]> {
   const images = await articlePage.evaluate(html => {
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')

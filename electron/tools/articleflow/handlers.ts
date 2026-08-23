@@ -29,6 +29,19 @@ const selectDirectoryOptions: OpenDialogOptions = {
 }
 
 export function registerArticleFlowHandlers({ addLog, browserService }: ArticleFlowHandlerDependencies) {
+  let activeImportController: AbortController | undefined
+
+  ipcMain.handle('articleflow:cancel', () => {
+    if (!activeImportController) {
+      return { cancellationRequested: false, ok: true }
+    }
+
+    activeImportController.abort()
+    addLog('info', 'ArticleFlow', 'Stopping ArticleFlow after the current operation.')
+
+    return { cancellationRequested: true, ok: true }
+  })
+
   ipcMain.handle('articleflow:select-root', async (event: IpcMainInvokeEvent) => {
     try {
       const parentWindow = BrowserWindow.fromWebContents(event.sender)
@@ -59,6 +72,13 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
   ipcMain.handle(
     'articleflow:run',
     async (_event: IpcMainInvokeEvent, rootPath: string, completionAction: ArticleCompletionAction) => {
+      if (activeImportController) {
+        throw new Error('An ArticleFlow import is already running.')
+      }
+
+      const controller = new AbortController()
+      activeImportController = controller
+
       try {
         validateRunRequest(rootPath, completionAction)
 
@@ -75,6 +95,7 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
         const folderPage = findFolderWorkspacePage(session.pages)
         const result = await runArticleImport(folderPage, plan, completionAction, {
           onProgress: progress => logProgress(addLog, progress, completionAction),
+          signal: controller.signal,
         })
         const failedArticleCount = result.failedArticles.length
         const createdArticleCount = result.createdArticles.length
@@ -83,7 +104,9 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
           .map(({ article, message }) => `${article.relativeSourcePath}: ${message}`)
           .join('\n')
 
-        if (failedArticleCount > 0) {
+        if (result.canceled) {
+          addLog('info', 'ArticleFlow', `Import stopped after ${formatCount(createdArticleCount, 'article')}.`)
+        } else if (failedArticleCount > 0) {
           addLog(
             'error',
             'ArticleFlow',
@@ -99,6 +122,7 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
         }
 
         return {
+          canceled: result.canceled,
           createdArticleCount,
           createdFolderCount: result.createdFolderPaths.length,
           existingArticleCount,
@@ -107,11 +131,15 @@ export function registerArticleFlowHandlers({ addLog, browserService }: ArticleF
             message,
             relativeSourcePath: article.relativeSourcePath,
           })),
-          ok: failedArticleCount === 0,
+          ok: !result.canceled && failedArticleCount === 0,
         }
       } catch (error) {
         addLog('error', 'ArticleFlow', getErrorMessage(error), getErrorDetail(error))
         throw error
+      } finally {
+        if (activeImportController === controller) {
+          activeImportController = undefined
+        }
       }
     },
   )
