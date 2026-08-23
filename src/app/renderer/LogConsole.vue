@@ -87,3 +87,120 @@ onBeforeUnmount(() => {
     </section>
   </main>
 </template>
+
+<style scoped>
+.log-window {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  color: var(--kw-text-light);
+  background: var(--kw-canvas);
+}
+
+:deep(.log-clear-button.p-button) {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  color: var(--kw-text-light) !important;
+  border: 1px solid var(--kw-border) !important;
+  border-radius: 8px;
+  background: var(--kw-surface) !important;
+  box-shadow: 0 6px 18px rgb(0 0 0 / 28%);
+}
+
+:deep(.log-clear-button.p-button:hover) {
+  border-color: var(--kw-text-muted) !important;
+  background: var(--kw-surface-hover) !important;
+}
+
+:deep(.log-clear-button.p-button:focus-visible) {
+  outline: 2px solid var(--kw-focus);
+  outline-offset: 2px;
+}
+
+:deep(.log-clear-button.p-button:disabled) {
+  color: var(--kw-text-disabled) !important;
+  opacity: 1;
+}
+
+.log-console {
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  padding: 20px 20px 80px;
+  background: var(--kw-canvas);
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  scrollbar-color: var(--kw-border) var(--kw-canvas);
+}
+
+.log-empty {
+  margin: 0;
+  color: var(--kw-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.log-entry {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--kw-border-subtle);
+}
+
+.log-entry-line {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+  color: var(--kw-text-light);
+  font-size: 0.78rem;
+  line-height: 1.45;
+}
+
+.log-time {
+  flex: 0 0 auto;
+  color: var(--kw-text-muted);
+  font-size: 0.72rem;
+}
+
+.log-level {
+  flex: 0 0 auto;
+  color: var(--kw-focus);
+  font-weight: 700;
+}
+
+.log-entry.error .log-level {
+  color: var(--kw-danger);
+}
+
+.log-entry.success .log-level {
+  color: var(--kw-success);
+}
+
+.log-scope {
+  flex: 0 0 auto;
+  color: var(--kw-text-muted);
+  font-weight: 700;
+}
+
+.log-message {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  color: var(--kw-text-light);
+}
+
+.log-detail {
+  margin: 5px 0 0;
+  padding-left: 12px;
+  overflow-x: auto;
+  color: var(--kw-text-muted);
+  border-left: 2px solid var(--kw-border-subtle);
+  font: inherit;
+  font-size: 0.72rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+</style>

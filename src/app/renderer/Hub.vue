@@ -392,28 +392,31 @@ onBeforeUnmount(() => {
 }
 
 .tool-mark {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   color: var(--kw-text-light);
-  border: 1px solid var(--kw-border);
+  border: 2px solid var(--kw-primary);
   border-radius: 8px;
-  background: var(--kw-quiet-surface);
-  font-size: 0.8rem;
+  background: var(--kw-surface);
+  font-size: 1rem;
 }
 
-.media-mark {
-  color: var(--kw-focus);
-  border-color: var(--kw-primary);
-}
-
-.article-mark {
-  color: var(--kw-accent);
-  border-color: var(--kw-accent);
-}
-
+.media-mark,
+.article-mark,
 .docsweep-mark {
-  color: var(--kw-accent);
-  border-color: var(--kw-accent);
+  color: var(--kw-text-light);
+}
+
+.media-mark::after,
+.article-mark::after,
+.docsweep-mark::after {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 4px;
+  height: 4px;
+  content: '';
+  background: var(--kw-accent);
 }
 
 .tool-copy {
