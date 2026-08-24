@@ -4,6 +4,7 @@ import { connectToBrowser } from '../../../src/shared/browser/connect-to-browser
 import type { BrowserSession } from '../../../src/shared/browser/connect-to-browser.ts'
 import { getErrorDetail, getErrorMessage } from '../../platform/error-format.ts'
 import { verifySites, type DocSweepSiteName } from '../../../src/tools/docsweep/automation/verification.ts'
+import { loadExcelFile } from '../../../src/tools/docsweep/automation/excel-reader.ts'
 
 type BrowserService = {
   getCdpUrl: () => string
@@ -43,6 +44,31 @@ export function registerDocSweepHandlers({ addLog, browserService }: Dependencie
       canceled: false,
       ok: true,
       filePath: result.filePaths[0],
+    }
+  })
+
+  ipcMain.handle('docsweep:load-excel', async (_event: IpcMainInvokeEvent, filePath: string) => {
+    try {
+      addLog('info', 'DocSweep', `Loading Excel file: ${filePath}`)
+
+      const result = await loadExcelFile(filePath)
+
+      addLog('success', 'DocSweep', `Loaded ${result.documents.length} control number(s) from "${result.sheetName}".`)
+
+      return {
+        ok: true,
+        sheetName: result.sheetName,
+        documents: result.documents,
+      }
+    } catch (error) {
+      addLog('error', 'DocSweep', `Failed to load Excel file: ${getErrorMessage(error)}`, getErrorDetail(error))
+
+      return {
+        ok: false,
+        sheetName: '',
+        documents: [],
+        error: getErrorMessage(error),
+      }
     }
   })
 

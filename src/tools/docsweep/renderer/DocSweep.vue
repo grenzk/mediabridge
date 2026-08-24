@@ -26,6 +26,10 @@ type SiteSummary = {
 }
 
 const excelFile = ref('')
+const documents = ref<Array<{
+  row: number
+  controlNumber: string
+}>>([])
 
 const isVerifying = ref(false)
 const isRunning = ref(false)
@@ -36,6 +40,7 @@ const currentSite = ref('-')
 const currentControlNumber = ref('-')
 const completedCount = ref(0)
 const totalCount = ref(0)
+const controlNumbers = ref<string[]>([])
 
 const sites = ref<DocSweepSite[]>([
   {
@@ -129,20 +134,34 @@ async function showLogs(): Promise<void> {
 }
 
 async function selectExcelFile(): Promise<void> {
+  if (isRunning.value) {
+    return
+  }
+
   const result = await window.docsweep.selectExcelFile()
 
   if (!result.ok || !result.filePath) {
     return
   }
 
-  excelFile.value = result.filePath
+  const loadResult = await window.docsweep.loadExcel(result.filePath)
 
-  if (isSitesVerified.value && canStartSweep.value) {
-    footerStatus.value = 'ready'
-    sweepStatus.value = 'Ready to start sweep.'
-  } else {
-    footerStatus.value = 'warning'
+  if (!loadResult.ok) {
+    excelFile.value = ''
+    documents.value = []
+    isSitesVerified.value = false
+    footerStatus.value = 'error'
+    sweepStatus.value = loadResult.error ?? 'Unable to load the Excel file.'
+
+    return
   }
+
+  excelFile.value = result.filePath
+  documents.value = loadResult.documents
+
+  isSitesVerified.value = false
+  footerStatus.value = 'warning'
+  sweepStatus.value = `Loaded ${documents.value.length} control number(s). Verify enabled sites before starting.`
 }
 
 async function openSite(url: string, matchUrl: string): Promise<void> {
@@ -218,6 +237,10 @@ const canStartSweep = computed(() => {
     return false
   }
 
+  if (documents.value.length === 0) {
+    return false
+  }
+
   const enabledSites = sites.value.filter(site => site.enabled)
 
   if (enabledSites.length === 0) {
@@ -278,6 +301,10 @@ const footerStatusMessage = computed(() => {
 
   if (!excelFile.value.trim()) {
     return 'Select an Excel file.'
+  }
+
+  if (documents.value.length === 0) {
+    return 'Load a valid Excel file.'
   }
 
   const enabledSites = sites.value.filter(site => site.enabled)

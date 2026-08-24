@@ -97,7 +97,8 @@
     "playwright": "^1.60.0",
     "primeicons": "^7.0.0",
     "primevue": "^4.5.5",
-    "vue": "^3.5.39"
+    "vue": "^3.5.39",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@types/node": "^22.19.19",

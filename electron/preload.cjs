@@ -228,6 +228,20 @@ contextBridge.exposeInMainWorld('docsweep', {
   verifySites: includedSites => ipcRenderer.invoke('docsweep:verify-sites', includedSites),
 
   /**
+   * @param {string} filePath
+   * @returns {Promise<{
+   *   ok: boolean,
+   *   sheetName: string,
+   *   documents: Array<{
+   *     row: number,
+   *     controlNumber: string
+   *   }>,
+   *   error?: string
+   * }>}
+   */
+  loadExcel: filePath => ipcRenderer.invoke('docsweep:load-excel', filePath),
+
+  /**
    * @param {string} controlNumber
    * @returns {Promise<DocSweepRunResult>}
    */
