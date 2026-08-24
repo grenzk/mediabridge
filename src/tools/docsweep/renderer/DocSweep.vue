@@ -25,22 +25,25 @@ type SiteSummary = {
   total: number
 }
 
-const excelFile = ref('')
-const documents = ref<Array<{
+type SweepDocument = {
   row: number
   controlNumber: string
-}>>([])
+}
+
+const excelFile = ref('')
+const documents = ref<SweepDocument[]>([])
 
 const isVerifying = ref(false)
 const isRunning = ref(false)
 const isSitesVerified = ref(false)
+const isSweepInitialized = ref(false)
 
 const sweepStatus = ref('Select an Excel file.')
 const currentSite = ref('-')
 const currentControlNumber = ref('-')
 const completedCount = ref(0)
 const totalCount = ref(0)
-const controlNumbers = ref<string[]>([])
+const sweepDocuments = ref<SweepDocument[]>([])
 
 const sites = ref<DocSweepSite[]>([
   {
@@ -158,6 +161,7 @@ async function selectExcelFile(): Promise<void> {
 
   excelFile.value = result.filePath
   documents.value = loadResult.documents
+  isSweepInitialized.value = false
 
   isSitesVerified.value = false
   footerStatus.value = 'warning'
@@ -252,12 +256,13 @@ const canStartSweep = computed(() => {
 
 function invalidateSiteVerification(): void {
   isSitesVerified.value = false
+  isSweepInitialized.value = false
   footerStatus.value = 'warning'
   sweepStatus.value = 'Site configuration changed. Verify sites again.'
 }
 
 async function startSweep(): Promise<void> {
-  if (!canStartSweep.value) {
+  if (!canStartSweep.value || isRunning.value) {
     footerStatus.value = 'warning'
     return
   }
@@ -265,20 +270,29 @@ async function startSweep(): Promise<void> {
   isRunning.value = true
   footerStatus.value = 'warning'
   sweepStatus.value = 'Starting sweep...'
+
   completedCount.value = 0
-  totalCount.value = 0
+  totalCount.value = documents.value.length
+  currentSite.value = '-'
+  currentControlNumber.value = '-'
+
+  sweepDocuments.value = documents.value.map(document => ({
+    row: document.row,
+    controlNumber: document.controlNumber,
+  }))
 
   try {
-    // TODO:
-    // Replace this temporary implementation with the
-    // actual DocSweep IPC call.
-    await new Promise(resolve => setTimeout(resolve, 500))
+    if (sweepDocuments.value.length === 0) {
+      throw new Error('No control numbers are available for the sweep.')
+    }
 
-    footerStatus.value = 'ready'
-    sweepStatus.value = 'Ready'
+    isSweepInitialized.value = true
+    sweepStatus.value = `Sweep initialized with ${sweepDocuments.value.length} control number(s).`
+
+    // Site sweep logic will be implemented in the next feature.
   } catch (error) {
     footerStatus.value = 'error'
-    sweepStatus.value = error instanceof Error ? error.message : 'Sweep failed.'
+    sweepStatus.value = error instanceof Error ? error.message : 'Failed to initialize sweep.'
   } finally {
     isRunning.value = false
   }
@@ -292,6 +306,10 @@ const footerStatusMessage = computed(() => {
   }
 
   if (isRunning.value) {
+    return sweepStatus.value
+  }
+
+  if (isSweepInitialized.value) {
     return sweepStatus.value
   }
 
