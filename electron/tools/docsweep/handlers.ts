@@ -6,6 +6,7 @@ import { getErrorDetail, getErrorMessage } from '../../platform/error-format.ts'
 import { verifySites, type DocSweepSiteName } from '../../../src/tools/docsweep/automation/verification.ts'
 import { loadExcelFile } from '../../../src/tools/docsweep/automation/excel-reader.ts'
 import { sweepAssetLibrary } from '../../../src/tools/docsweep/automation/asset-library.ts'
+import { sweepMASW } from '../../../src/tools/docsweep/automation/masw.ts'
 import { sweepPDCloud } from '../../../src/tools/docsweep/automation/pd-cloud.ts'
 import { sweepVertiv } from '../../../src/tools/docsweep/automation/vertiv.ts'
 
@@ -180,12 +181,10 @@ export function registerDocSweepHandlers({ addLog, browserService }: Dependencie
         case 'PD Cloud':
           result = await sweepPDCloud(session.pages, value)
           break
+          
         case 'MASW':
-          return {
-            ok: false,
-            status: 'Error',
-            message: `${site} sweep is not implemented yet.`,
-          }
+          result = await sweepMASW(session.pages, value)
+          break
 
         default:
           return {
