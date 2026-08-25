@@ -108,6 +108,20 @@ export type MediaBridgeApi = {
 
 export type DocSweepApi = {
   selectExcelFile: () => Promise<DocSweepFileSelectionResult>
+  saveExcel: (
+    filePath: string,
+    documents: Array<{
+      row: number
+      controlNumber: string
+      masw: string
+      vertiv: string
+      assetLibrary: string
+      pdCloud: string
+    }>,
+  ) => Promise<{
+    ok: boolean
+    message?: string
+  }>
   loadExcel: (filePath: string) => Promise<{
     ok: boolean
     sheetName: string

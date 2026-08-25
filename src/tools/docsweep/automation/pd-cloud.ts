@@ -57,7 +57,7 @@ async function prepareSearch(page: Page): Promise<void> {
 
   await button.waitFor({
     state: 'visible',
-    timeout: 10_000,
+    timeout: 15_000,
   })
 
   const expanded = await button.getAttribute('aria-expanded')
@@ -76,7 +76,7 @@ async function prepareSearch(page: Page): Promise<void> {
     },
     ADVANCED_SEARCH_BUTTON,
     {
-      timeout: 10_000,
+      timeout: 15_000,
     },
   )
 }
@@ -86,7 +86,7 @@ async function executeSearch(page: Page, controlNumber: string): Promise<void> {
 
   await search.waitFor({
     state: 'visible',
-    timeout: 10_000,
+    timeout: 15_000,
   })
 
   await search.fill(controlNumber)
@@ -95,7 +95,7 @@ async function executeSearch(page: Page, controlNumber: string): Promise<void> {
 
   await button.waitFor({
     state: 'visible',
-    timeout: 10_000,
+    timeout: 15_000,
   })
 
   await button.click()
@@ -108,18 +108,8 @@ async function waitForSearchComplete(page: Page, timeout = 30_000): Promise<void
 
   await table.waitFor({
     state: 'attached',
-    timeout: 10_000,
+    timeout,
   })
-
-  /*
-   * Python implementation:
-   *
-   * 1. Wait briefly for busy state to appear.
-   * 2. Wait for busy state to disappear.
-   *
-   * The busy state may not appear for very fast searches,
-   * so failure of the first wait is intentionally ignored.
-   */
 
   try {
     await page.waitForFunction(
@@ -137,16 +127,13 @@ async function waitForSearchComplete(page: Page, timeout = 30_000): Promise<void
         busyClass: BUSY_CLASS,
       },
       {
-        timeout: 2_000,
+        timeout,
       },
     )
   } catch {
-    // Busy state may not appear for fast searches.
+    
   }
 
-  /*
-   * Wait until Oracle finishes updating the table.
-   */
   await page.waitForFunction(
     ({ selector, busyClass }) => {
       const element = document.querySelector(selector)

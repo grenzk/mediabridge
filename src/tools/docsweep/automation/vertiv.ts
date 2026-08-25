@@ -41,9 +41,11 @@ export async function sweepVertiv(pages: Page[], controlNumber: string): Promise
 
     await searchInput.fill(controlNumber)
 
+    const responsePromise = waitForSearchResponse(page)
+
     await searchInput.press('Enter')
 
-    await waitForSearchResponse(page)
+    await responsePromise
 
     if (
       await page
@@ -101,7 +103,7 @@ async function prepareSearch(page: Page): Promise<void> {
 
   await searchButton.waitFor({
     state: 'visible',
-    timeout: 10_000,
+    timeout: 15_000,
   })
 
   await searchButton.click()
@@ -114,13 +116,13 @@ async function prepareSearch(page: Page): Promise<void> {
     },
     SEARCH_FORM_SELECTOR,
     {
-      timeout: 10_000,
+      timeout: 15_000,
     },
   )
 }
 
 async function waitForSearchResponse(page: Page): Promise<void> {
   await page.waitForResponse(response => response.url().endsWith('/api-lang/en/searchResults/search'), {
-    timeout: 15_000,
+    timeout: 30_000,
   })
 }

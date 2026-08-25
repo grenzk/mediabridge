@@ -53,7 +53,7 @@ async function executeSearch(page: Page, controlNumber: string): Promise<void> {
 
   await search.waitFor({
     state: 'visible',
-    timeout: 10_000,
+    timeout: 15_000,
   })
 
   await search.fill(controlNumber)
@@ -62,15 +62,15 @@ async function executeSearch(page: Page, controlNumber: string): Promise<void> {
 
   await button.waitFor({
     state: 'visible',
-    timeout: 10_000,
+    timeout: 15_000,
   })
 
-  await button.click()
+  await button.click({ noWaitAfter: true })
 
   await waitForSearchComplete(page, controlNumber)
 }
 
-async function waitForSearchComplete(page: Page, controlNumber: string, timeout = 30_000): Promise<void> {
+async function waitForSearchComplete(page: Page, controlNumber: string): Promise<void> {
   await page.waitForFunction(
     ({ selector, expected }) => {
       const element = document.querySelector(selector)
@@ -88,7 +88,7 @@ async function waitForSearchComplete(page: Page, controlNumber: string, timeout 
       expected: controlNumber,
     },
     {
-      timeout,
+      timeout: 30_000,
     },
   )
 }

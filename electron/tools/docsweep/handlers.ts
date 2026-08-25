@@ -5,6 +5,7 @@ import type { BrowserSession } from '../../../src/shared/browser/connect-to-brow
 import { getErrorDetail, getErrorMessage } from '../../platform/error-format.ts'
 import { verifySites, type DocSweepSiteName } from '../../../src/tools/docsweep/automation/verification.ts'
 import { loadExcelFile } from '../../../src/tools/docsweep/automation/excel-reader.ts'
+import { saveExcelResults } from '../../../src/tools/docsweep/automation/excel-writer.ts'
 import { sweepAssetLibrary } from '../../../src/tools/docsweep/automation/asset-library.ts'
 import { sweepMASW } from '../../../src/tools/docsweep/automation/masw.ts'
 import { sweepPDCloud } from '../../../src/tools/docsweep/automation/pd-cloud.ts'
@@ -72,6 +73,21 @@ export function registerDocSweepHandlers({ addLog, browserService }: Dependencie
         sheetName: '',
         documents: [],
         error: getErrorMessage(error),
+      }
+    }
+  })
+
+  ipcMain.handle('docsweep:save-excel', async (_event, filePath: string, documents) => {
+    try {
+      await saveExcelResults(filePath, documents)
+
+      return {
+        ok: true,
+      }
+    } catch (error) {
+      return {
+        ok: false,
+        message: error instanceof Error ? error.message : 'Unable to save Excel results.',
       }
     }
   })
@@ -181,7 +197,7 @@ export function registerDocSweepHandlers({ addLog, browserService }: Dependencie
         case 'PD Cloud':
           result = await sweepPDCloud(session.pages, value)
           break
-          
+
         case 'MASW':
           result = await sweepMASW(session.pages, value)
           break

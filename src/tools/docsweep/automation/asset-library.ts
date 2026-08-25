@@ -9,9 +9,9 @@ export type AssetLibrarySweepResult = {
 const EXPECTED_HOST = 'asset-library.vertiv.com'
 
 const SEARCH_INPUT_SELECTOR = '#searchInput'
-const CLEAR_BUTTON_SELECTOR = 'div.content-header-button a'
+const CLEAR_BUTTON_SELECTOR = 'a'
 const KEYWORD_SELECTOR = 'li span[title]'
-const NO_RESULTS_SELECTOR = 'xpath=//span[text()="No Assets Found"]'
+const NO_RESULTS_SELECTOR = "span:has-text('No Assets Found')"
 
 export async function sweepAssetLibrary(pages: Page[], controlNumber: string): Promise<AssetLibrarySweepResult> {
   const page = pages.find(page => page.url().toLowerCase().includes(EXPECTED_HOST))
@@ -62,6 +62,8 @@ export async function sweepAssetLibrary(pages: Page[], controlNumber: string): P
 }
 
 async function clearSearch(page: Page): Promise<void> {
+  // Python implementation uses link text "Clear".
+  // Restrict the locator to an anchor containing exactly "Clear".
   const clearButton = page
     .locator(CLEAR_BUTTON_SELECTOR)
     .filter({ hasText: /^Clear$/ })
@@ -117,13 +119,11 @@ async function waitUntilLoadingComplete(page: Page): Promise<void> {
 }
 
 async function hasNoResults(page: Page): Promise<boolean> {
-  const elements = page.locator(NO_RESULTS_SELECTOR)
+  const noResults = page.locator(NO_RESULTS_SELECTOR).first()
 
-  const count = await elements.count()
-
-  if (count === 0) {
+  if (!(await noResults.count())) {
     return false
   }
 
-  return elements.first().isVisible()
+  return noResults.isVisible()
 }

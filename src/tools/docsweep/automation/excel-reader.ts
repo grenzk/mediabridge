@@ -4,6 +4,10 @@ import XLSX from 'xlsx'
 export type DocSweepDocument = {
   row: number
   controlNumber: string
+  masw: string
+  vertiv: string
+  assetLibrary: string
+  pdCloud: string
 }
 
 export type ExcelLoadResult = {
@@ -60,13 +64,15 @@ export async function loadExcelFile(filePath: string): Promise<ExcelLoadResult> 
     documents.push({
       row: index + 1,
       controlNumber: String(value).trim(),
+      masw: '',
+      vertiv: '',
+      assetLibrary: '',
+      pdCloud: '',
     })
   }
 
   if (documents.length === 0) {
-    throw new Error(
-      'No control numbers were found in column A starting at row 2.',
-    )
+    throw new Error('No control numbers were found in column A starting at row 2.')
   }
 
   return {

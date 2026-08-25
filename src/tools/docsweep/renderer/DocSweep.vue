@@ -25,13 +25,22 @@ type SiteSummary = {
   total: number
 }
 
-type SweepDocument = {
+type ExcelDocument = {
   row: number
   controlNumber: string
 }
 
+type SweepDocument = {
+  row: number
+  controlNumber: string
+  masw: string
+  vertiv: string
+  assetLibrary: string
+  pdCloud: string
+}
+
 const excelFile = ref('')
-const documents = ref<SweepDocument[]>([])
+const documents = ref<ExcelDocument[]>([])
 
 const isVerifying = ref(false)
 const isRunning = ref(false)
@@ -278,6 +287,10 @@ async function startSweep(): Promise<void> {
   sweepDocuments.value = documents.value.map(document => ({
     row: document.row,
     controlNumber: document.controlNumber,
+    masw: '',
+    vertiv: '',
+    assetLibrary: '',
+    pdCloud: '',
   }))
 
   const enabledSites = sites.value.filter(site => site.enabled)
@@ -311,7 +324,7 @@ async function startSweep(): Promise<void> {
         total: 0,
       }
     })
-    
+
     for (const site of enabledSites) {
       currentSite.value = site.name
 
@@ -324,6 +337,19 @@ async function startSweep(): Promise<void> {
 
         try {
           const result = await window.docsweep.runSweep(site.name, document.controlNumber)
+
+          const resultValue =
+            !result.ok || result.status === 'Error' ? 'Error' : result.status === 'Found' ? 'Check' : 'NA'
+
+          if (site.name === 'MASW') {
+            document.masw = resultValue
+          } else if (site.name === 'Vertiv') {
+            document.vertiv = resultValue
+          } else if (site.name === 'Asset Library') {
+            document.assetLibrary = resultValue
+          } else if (site.name === 'PD Cloud') {
+            document.pdCloud = resultValue
+          }
 
           summary.value = summary.value.map(item => {
             if (item.site !== site.name) {
@@ -381,7 +407,27 @@ async function startSweep(): Promise<void> {
     currentSite.value = '-'
     currentControlNumber.value = '-'
 
-    sweepStatus.value = `Sweep completed for ${sweepDocuments.value.length} control number(s) across ${enabledSites.length} enabled site(s).`
+    sweepStatus.value = 'Saving sweep results to Excel...'
+
+    const saveResult = await window.docsweep.saveExcel(
+      excelFile.value,
+      sweepDocuments.value.map(document => ({
+        row: document.row,
+        controlNumber: document.controlNumber,
+        masw: document.masw,
+        vertiv: document.vertiv,
+        assetLibrary: document.assetLibrary,
+        pdCloud: document.pdCloud,
+      })),
+    )
+
+    if (!saveResult.ok) {
+      throw new Error(saveResult.message ?? 'Unable to save sweep results to Excel.')
+    }
+
+    sweepStatus.value =
+      `Sweep completed for ${sweepDocuments.value.length} control number(s) ` +
+      `across ${enabledSites.length} enabled site(s). Results saved to Excel.`
 
     footerStatus.value = 'ready'
   } catch (error) {

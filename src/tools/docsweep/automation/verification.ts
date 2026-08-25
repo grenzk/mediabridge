@@ -125,19 +125,24 @@ async function verifyAssetLibrary(page: Page): Promise<DocSweepSiteVerification>
 }
 
 async function verifyPDCloud(page: Page): Promise<DocSweepSiteVerification> {
-  const searchInput = page.locator("input[aria-label=' Keyword']")
+  const advancedSearchButton = page.locator("a[aria-label*='Advanced Search']").first()
 
-  if (!(await searchInput.first().isVisible())) {
+  try {
+    await advancedSearchButton.waitFor({
+      state: 'visible',
+      timeout: 10_000,
+    })
+
+    return {
+      name: 'PD Cloud',
+      status: 'Ready',
+    }
+  } catch (error) {
     return {
       name: 'PD Cloud',
       status: 'Not connected',
-      reason: 'PD Cloud search box is not visible.',
+      reason: error instanceof Error ? error.message : 'PD Cloud Advanced Search is not available.',
     }
-  }
-
-  return {
-    name: 'PD Cloud',
-    status: 'Ready',
   }
 }
 

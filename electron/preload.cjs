@@ -207,6 +207,23 @@ contextBridge.exposeInMainWorld('docsweep', {
   selectExcelFile: () => ipcRenderer.invoke('docsweep:select-excel-file'),
 
   /**
+   * @param {string} filePath
+   * @param {Array<{
+   *   row: number,
+   *   controlNumber: string,
+   *   masw: string,
+   *   vertiv: string,
+   *   assetLibrary: string,
+   *   pdCloud: string,
+   * }>} documents
+   * @returns {Promise<{
+   *   ok: boolean,
+   *   message?: string,
+   * }>}
+   */
+  saveExcel: (filePath, documents) => ipcRenderer.invoke('docsweep:save-excel', filePath, documents),
+
+  /**
    * @param {string} url
    * @param {string} matchUrl
    * @returns {Promise<{ ok: boolean }>}
