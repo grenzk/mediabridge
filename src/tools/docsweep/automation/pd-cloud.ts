@@ -111,29 +111,40 @@ async function waitForSearchComplete(page: Page, timeout = 30_000): Promise<void
     timeout,
   })
 
+  /*
+   * Oracle may show the busy state while processing the search.
+   *
+   * Only wait up to 2 seconds for Busy to appear.
+   * This matches the Python implementation.
+   *
+   * If Busy does not appear within 2 seconds, the search may
+   * have already completed, so continue immediately.
+   */
   try {
     await page.waitForFunction(
       ({ selector, busyClass }) => {
         const element = document.querySelector(selector)
 
-        if (!element) {
-          return false
-        }
-
-        return element.classList.contains(busyClass)
+        return element?.classList.contains(busyClass) ?? false
       },
       {
         selector: RESULT_TABLE,
         busyClass: BUSY_CLASS,
       },
       {
-        timeout,
+        timeout: 2_000,
       },
     )
   } catch {
-    
+    // Busy state was not observed.
+    // The search may have already completed.
   }
 
+  /*
+   * If Oracle is busy, wait for it to finish.
+   *
+   * This is the actual search timeout.
+   */
   await page.waitForFunction(
     ({ selector, busyClass }) => {
       const element = document.querySelector(selector)
@@ -154,14 +165,14 @@ async function waitForSearchComplete(page: Page, timeout = 30_000): Promise<void
   )
 
   /*
-   * Oracle can replace/update the table several times after
-   * the busy class disappears. Match the Python implementation
-   * by waiting until the table HTML remains unchanged.
+   * Oracle can update/replace the table after Busy disappears.
+   *
+   * Wait until the table HTML remains unchanged for 3 checks.
    */
   let previousHtml = ''
   let stableCount = 0
 
-  const endTime = Date.now() + timeout
+  const endTime = Date.now() + 3_000
 
   while (Date.now() < endTime) {
     const html = await table.evaluate(element => element.innerHTML)
@@ -180,7 +191,9 @@ async function waitForSearchComplete(page: Page, timeout = 30_000): Promise<void
     await page.waitForTimeout(200)
   }
 
-  throw new Error('PD Cloud search results did not stabilize within the timeout.')
+  throw new Error(
+    'PD Cloud search results did not stabilize within the timeout.',
+  )
 }
 
 async function hasNoResults(page: Page): Promise<boolean> {
