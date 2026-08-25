@@ -176,13 +176,42 @@ describe('runArticleImport rerun safety', () => {
       expect.objectContaining({ name: 'Sample Product' }),
       ['[004]Manuals'],
       undefined,
+      expect.any(Map),
     )
     expect(folderMocks.selectFolderPath).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ name: 'Sample Product' }),
       ['[004]Manuals'],
       undefined,
+      expect.any(Map),
     )
+  })
+
+  it('shares confirmed folder references across folder creation and article selection', async () => {
+    const folderPath = ['Sample Product', 'Manuals']
+    const plan: ArticleImportPlan = {
+      articles: [
+        {
+          folderPath,
+          relativeSourcePath: 'Manuals/Installation.htm',
+          sourcePath: '/tmp/Manuals/Installation.htm',
+          title: 'Installation',
+        },
+      ],
+      folderPaths: [folderPath],
+      ignoredPaths: [],
+      rootPath: '/tmp/Sample Product',
+    }
+
+    articleListMocks.collectExistingArticleTitles.mockResolvedValue(new Set(['Installation']))
+
+    await runArticleImport({} as unknown as Page, plan, 'check-in')
+
+    const ensureCache = folderMocks.ensureFolderPath.mock.calls[0][4]
+    const selectCache = folderMocks.selectFolderPath.mock.calls[0][4]
+
+    expect(ensureCache).toBeInstanceOf(Map)
+    expect(selectCache).toBe(ensureCache)
   })
 
   it('waits for the source template row to leave a selected destination', async () => {

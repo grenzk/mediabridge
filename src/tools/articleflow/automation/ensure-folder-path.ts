@@ -12,6 +12,8 @@ const folderTreeRetryLimit = 3
 const folderUiTimeoutMs = 60000
 const folderUiPollIntervalMs = 100
 const folderSelectionSettleDelayMs = 500
+const duplicateFolderSettleTimeoutMs = 3000
+const createdFolderStableSnapshotCount = 3
 
 export type EgainFolderReference = {
   id: string
@@ -21,6 +23,8 @@ export type EgainFolderReference = {
 export type EgainImportParent = EgainFolderReference & {
   ancestorPath: EgainFolderReference[]
 }
+
+export type FolderTraversalCache = Map<string, EgainFolderReference>
 
 type ResolvedFolder = {
   folder: EgainFolderReference
@@ -79,19 +83,31 @@ export async function ensureFolderPath(
   importParent: EgainImportParent,
   folderPath: string[],
   signal?: AbortSignal,
+  cache: FolderTraversalCache = new Map(),
 ): Promise<boolean> {
   let createdFinalFolder = false
+
+  cacheFolderReference(cache, [], importParent)
 
   for (const [index, folderName] of folderPath.entries()) {
     throwIfAutomationCancelled(signal)
     const parentPath = folderPath.slice(0, index)
-    const existingChild = await resolveDirectChild(articlePage, importParent, parentPath, folderName, signal)
+    const childPath = [...parentPath, folderName]
 
-    if (existingChild) {
+    if (cache.has(getFolderPathKey(childPath))) {
       continue
     }
 
-    await createChildFolder(articlePage, importParent, parentPath, folderName, signal)
+    const existingChild = await resolveDirectChild(articlePage, importParent, parentPath, folderName, signal, cache)
+
+    if (existingChild) {
+      cacheFolderReference(cache, childPath, existingChild)
+      continue
+    }
+
+    const createdFolder = await createChildFolder(articlePage, importParent, parentPath, folderName, signal, cache)
+
+    cacheFolderReference(cache, childPath, createdFolder)
 
     if (index === folderPath.length - 1) {
       createdFinalFolder = true
@@ -109,14 +125,19 @@ export async function selectFolderPath(
   importParent: EgainImportParent,
   folderPath: string[],
   signal?: AbortSignal,
+  cache: FolderTraversalCache = new Map(),
 ): Promise<void> {
+  cacheFolderReference(cache, [], importParent)
+
   await retryFolderTreeOperation(
     articlePage,
     `select folder path "${formatFolderPath(folderPath)}"`,
     async () => {
-      const destination = await resolveFolderPathOnce(articlePage, importParent, folderPath, signal)
+      const destination = await resolveFolderPathOnce(articlePage, importParent, folderPath, signal, cache)
 
-      await selectResolvedFolder(articlePage, destination, signal)
+      if (!(await isFolderSelectionComplete(articlePage, destination.folder.id))) {
+        await selectResolvedFolder(articlePage, destination, signal)
+      }
     },
     signal,
   )
@@ -128,15 +149,16 @@ async function resolveDirectChild(
   parentPath: string[],
   folderName: string,
   signal?: AbortSignal,
+  cache: FolderTraversalCache = new Map(),
 ): Promise<EgainFolderReference | null> {
   return retryFolderTreeOperation(
     articlePage,
     `resolve folder "${folderName}" under "${formatFolderPath(parentPath, importParent.name)}"`,
     async () => {
-      const parent = await resolveFolderPathOnce(articlePage, importParent, parentPath, signal)
+      const parent = await resolveFolderPathOnce(articlePage, importParent, parentPath, signal, cache)
       const expandedParent = await expandResolvedFolder(articlePage, parent, signal)
 
-      return findDirectChildFolder(articlePage, expandedParent.folder.id, folderName)
+      return findDirectChildFolder(articlePage, expandedParent.folder, folderName, signal)
     },
     signal,
   )
@@ -147,23 +169,49 @@ async function resolveFolderPathOnce(
   importParent: EgainImportParent,
   folderPath: string[],
   signal?: AbortSignal,
+  cache: FolderTraversalCache = new Map(),
 ): Promise<ResolvedFolder> {
-  let current = await resolveImportParentOnce(articlePage, importParent, signal)
+  const cachedFolder = await resolveDeepestVisibleCachedFolder(articlePage, folderPath, cache)
+  let current = cachedFolder?.resolved ?? (await resolveImportParentOnce(articlePage, importParent, signal))
+  const resolvedDepth = cachedFolder?.depth ?? 0
 
-  for (const folderName of folderPath) {
+  cacheFolderReference(cache, folderPath.slice(0, resolvedDepth), current.folder)
+
+  for (const [index, folderName] of folderPath.slice(resolvedDepth).entries()) {
     throwIfAutomationCancelled(signal)
     current = await expandResolvedFolder(articlePage, current, signal)
 
-    const child = await findDirectChildFolder(articlePage, current.folder.id, folderName)
+    const child = await findDirectChildFolder(articlePage, current.folder, folderName, signal)
 
     if (!child) {
       throw new FolderTreeChangedError(`Could not find folder "${folderName}" directly under "${current.folder.name}".`)
     }
 
     current = await resolveVisibleFolder(articlePage, child)
+    cacheFolderReference(cache, folderPath.slice(0, resolvedDepth + index + 1), child)
   }
 
   return current
+}
+
+async function resolveDeepestVisibleCachedFolder(
+  articlePage: Page,
+  folderPath: string[],
+  cache: FolderTraversalCache,
+): Promise<{ depth: number; resolved: ResolvedFolder } | undefined> {
+  for (let depth = folderPath.length; depth >= 0; depth -= 1) {
+    const folder = cache.get(getFolderPathKey(folderPath.slice(0, depth)))
+
+    if (!folder) {
+      continue
+    }
+
+    const row = getFolderRowById(articlePage, folder.id)
+
+    if ((await row.count()) === 1 && (await row.isVisible())) {
+      return { depth, resolved: { folder, row } }
+    }
+  }
 }
 
 async function resolveImportParentOnce(
@@ -203,9 +251,10 @@ async function createChildFolder(
   parentPath: string[],
   folderName: string,
   signal?: AbortSignal,
-): Promise<void> {
+  cache: FolderTraversalCache = new Map(),
+): Promise<EgainFolderReference> {
   throwIfAutomationCancelled(signal)
-  const selectedParent = await openCreateFolderForm(articlePage, importParent, parentPath, signal)
+  const selectedParent = await openCreateFolderForm(articlePage, importParent, parentPath, signal, cache)
   const { backButton, heading, nameInput, saveButton } = getCreateFolderFormLocators(articlePage)
 
   await requireUniqueLocator(heading, 'Create Folder heading')
@@ -224,8 +273,12 @@ async function createChildFolder(
   await heading.waitFor({ state: 'hidden' })
   await articlePage.getByRole('heading', { exact: true, name: 'Folders' }).waitFor({ state: 'visible' })
 
-  await waitForCreatedFolder(articlePage, importParent, parentPath, folderName, signal)
-  await selectFolderPath(articlePage, importParent, [...parentPath, folderName], signal)
+  const createdFolder = await waitForCreatedFolder(articlePage, importParent, parentPath, folderName, signal, cache)
+
+  cacheFolderReference(cache, [...parentPath, folderName], createdFolder)
+  await selectFolderPath(articlePage, importParent, [...parentPath, folderName], signal, cache)
+
+  return createdFolder
 }
 
 async function openCreateFolderForm(
@@ -233,12 +286,13 @@ async function openCreateFolderForm(
   importParent: EgainImportParent,
   parentPath: string[],
   signal?: AbortSignal,
+  cache: FolderTraversalCache = new Map(),
 ): Promise<EgainFolderReference> {
   return retryFolderTreeOperation(
     articlePage,
     `open Create Folder under "${formatFolderPath(parentPath, importParent.name)}"`,
     async () => {
-      const parent = await resolveFolderPathOnce(articlePage, importParent, parentPath, signal)
+      const parent = await resolveFolderPathOnce(articlePage, importParent, parentPath, signal, cache)
 
       if (!(await isFolderSelectionComplete(articlePage, parent.folder.id))) {
         await selectResolvedFolder(articlePage, parent, signal)
@@ -301,15 +355,30 @@ async function waitForCreatedFolder(
   parentPath: string[],
   folderName: string,
   signal?: AbortSignal,
-): Promise<void> {
+  cache: FolderTraversalCache = new Map(),
+): Promise<EgainFolderReference> {
   const deadline = Date.now() + folderUiTimeoutMs
+  let stableFolderId: string | undefined
+  let stableSnapshotCount = 0
 
   while (Date.now() < deadline) {
     throwIfAutomationCancelled(signal)
-    const createdFolder = await resolveDirectChild(articlePage, importParent, parentPath, folderName, signal)
+    const createdFolder = await resolveDirectChild(articlePage, importParent, parentPath, folderName, signal, cache)
 
     if (createdFolder) {
-      return
+      if (createdFolder.id === stableFolderId) {
+        stableSnapshotCount += 1
+      } else {
+        stableFolderId = createdFolder.id
+        stableSnapshotCount = 1
+      }
+
+      if (stableSnapshotCount >= createdFolderStableSnapshotCount) {
+        return createdFolder
+      }
+    } else {
+      stableFolderId = undefined
+      stableSnapshotCount = 0
     }
 
     await articlePage.waitForTimeout(folderUiPollIntervalMs)
@@ -458,69 +527,135 @@ async function resolveVisibleFolder(articlePage: Page, folder: EgainFolderRefere
 
 async function findDirectChildFolder(
   articlePage: Page,
-  parentId: string,
+  parentFolder: EgainFolderReference,
   folderName: string,
+  signal?: AbortSignal,
 ): Promise<EgainFolderReference | null> {
-  const matchingFolders = (await getDirectChildFolderReferences(articlePage, parentId)).filter(
+  const deadline = Date.now() + duplicateFolderSettleTimeoutMs
+  let matchingFolders: EgainFolderReference[] = []
+
+  while (Date.now() < deadline) {
+    throwIfAutomationCancelled(signal)
+    matchingFolders = (await getDirectChildFolderReferences(articlePage, parentFolder.id)).filter(
+      folder => folder.name === folderName,
+    )
+
+    if (matchingFolders.length <= 1) {
+      return matchingFolders[0] ?? null
+    }
+
+    await articlePage.waitForTimeout(folderUiPollIntervalMs)
+  }
+
+  await refreshFolderChildren(articlePage, parentFolder, signal)
+  matchingFolders = (await getDirectChildFolderReferences(articlePage, parentFolder.id)).filter(
     folder => folder.name === folderName,
   )
 
   if (matchingFolders.length > 1) {
-    throw new FolderTreeStructureError(`Found multiple folders named "${folderName}" under the same eGain parent.`)
+    throw new FolderTreeStructureError(
+      `eGain still returned multiple folders named "${folderName}" under the same parent after refreshing that branch. Verify the destination before retrying.`,
+    )
   }
 
   return matchingFolders[0] ?? null
 }
 
+async function refreshFolderChildren(
+  articlePage: Page,
+  parentFolder: EgainFolderReference,
+  signal?: AbortSignal,
+): Promise<void> {
+  throwIfAutomationCancelled(signal)
+  const current = await resolveVisibleFolder(articlePage, parentFolder)
+  const { collapseButton } = getArticleFolderLocators(current.row, current.folder.name)
+
+  if (await collapseButton.isVisible()) {
+    await collapseButton.click({ timeout: folderUiTimeoutMs })
+
+    const deadline = Date.now() + folderUiTimeoutMs
+
+    while (Date.now() < deadline) {
+      throwIfAutomationCancelled(signal)
+      await waitForFolderUiReady(articlePage, signal)
+
+      const freshParent = await resolveVisibleFolder(articlePage, parentFolder)
+      const { expandButton } = getArticleFolderLocators(freshParent.row, freshParent.folder.name)
+
+      if (await expandButton.isVisible()) {
+        await expandResolvedFolder(articlePage, freshParent, signal)
+        return
+      }
+
+      await articlePage.waitForTimeout(folderUiPollIntervalMs)
+    }
+
+    throw new FolderTreeChangedError(`Folder "${parentFolder.name}" did not finish refreshing.`)
+  }
+
+  await expandResolvedFolder(articlePage, current, signal)
+}
+
 async function getDirectChildFolderReferences(articlePage: Page, parentId: string): Promise<EgainFolderReference[]> {
-  return (await getFolderTreeEntries(articlePage)).filter(entry => entry.parentId === parentId).map(toFolderReference)
+  const directChildren = (await getFolderTreeEntries(articlePage))
+    .filter(entry => entry.parentId === parentId)
+    .map(toFolderReference)
+
+  return deduplicateFolderReferences(directChildren)
+}
+
+export function deduplicateFolderReferences(folders: EgainFolderReference[]): EgainFolderReference[] {
+  return [...new Map(folders.map(folder => [folder.id, toFolderReference(folder)])).values()]
 }
 
 async function getFolderTreeEntries(articlePage: Page): Promise<FolderTreeEntry[]> {
-  return articlePage.locator(folderTreeRowSelector).evaluateAll(
-    (rows, options) => {
-      const entries: FolderTreeEntry[] = []
-      const folderIdsByLevel: string[] = []
+  return articlePage
+    .locator(folderTreeRowSelector)
+    .filter({ visible: true })
+    .evaluateAll(
+      (rows, options) => {
+        const entries: FolderTreeEntry[] = []
+        const folderIdsByLevel: string[] = []
 
-      rows.forEach(row => {
-        const levelMatch = row.className.match(/\blevel-(\d+)\b/)
+        rows.forEach(row => {
+          const levelMatch = row.className.match(/\blevel-(\d+)\b/)
 
-        if (!levelMatch) {
-          return
-        }
+          if (!levelMatch) {
+            return
+          }
 
-        const belongsToRow = (element: Element) => element.closest(options.folderTreeRowSelector) === row
-        const folderCell = Array.from(
-          row.querySelectorAll<HTMLElement>(`[data-testid^="${options.folderCellTestIdPrefix}"]`),
-        ).find(belongsToRow)
-        const contextMenuIcon = Array.from(
-          row.querySelectorAll<HTMLElement>('[id^="ic-dot-menu-"][id$="-context"]'),
-        ).find(belongsToRow)
-        const name = folderCell?.dataset.testid?.slice(options.folderCellTestIdPrefix.length)
-        const id = contextMenuIcon?.id.match(/^ic-dot-menu-(.+)-context$/)?.[1]
+          const belongsToRow = (element: Element) => element.closest(options.folderTreeRowSelector) === row
+          const folderCell = Array.from(
+            row.querySelectorAll<HTMLElement>(`[data-testid^="${options.folderCellTestIdPrefix}"]`),
+          ).find(belongsToRow)
+          const contextMenuIcon = Array.from(
+            row.querySelectorAll<HTMLElement>('[id^="ic-dot-menu-"][id$="-context"]'),
+          ).find(belongsToRow)
+          const name = folderCell?.dataset.testid?.slice(options.folderCellTestIdPrefix.length)
+          const id = contextMenuIcon?.id.match(/^ic-dot-menu-(.+)-context$/)?.[1]
 
-        if (!id || !name) {
-          return
-        }
+          if (!id || !name) {
+            return
+          }
 
-        const level = Number(levelMatch[1])
+          const level = Number(levelMatch[1])
 
-        entries.push({
-          id,
-          level,
-          name,
-          parentId: level > 0 ? folderIdsByLevel[level - 1] : undefined,
-          selected: row.classList.contains('selected-table-row'),
+          entries.push({
+            id,
+            level,
+            name,
+            parentId: level > 0 ? folderIdsByLevel[level - 1] : undefined,
+            selected: row.classList.contains('selected-table-row'),
+          })
+
+          folderIdsByLevel[level] = id
+          folderIdsByLevel.length = level + 1
         })
 
-        folderIdsByLevel[level] = id
-        folderIdsByLevel.length = level + 1
-      })
-
-      return entries
-    },
-    { folderCellTestIdPrefix, folderTreeRowSelector },
-  )
+        return entries
+      },
+      { folderCellTestIdPrefix, folderTreeRowSelector },
+    )
 }
 
 async function retryFolderTreeOperation<T>(
@@ -595,6 +730,8 @@ function getFolderRowById(articlePage: Page, folderId: string): Locator {
   return articlePage
     .locator(`[id="ic-dot-menu-${folderId}-context"]`)
     .locator('xpath=ancestor::tr[@data-testid="grid-body-row-folders"][1]')
+    .filter({ visible: true })
+    .last()
 }
 
 function getFolderIdFromUrl(value: string): string | undefined {
@@ -621,6 +758,14 @@ function toFolderReference(folder: EgainFolderReference): EgainFolderReference {
 
 function formatFolderPath(folderPath: string[], rootName?: string): string {
   return [rootName, ...folderPath].filter(Boolean).join(' > ')
+}
+
+function getFolderPathKey(folderPath: string[]): string {
+  return JSON.stringify(folderPath)
+}
+
+function cacheFolderReference(cache: FolderTraversalCache, folderPath: string[], folder: EgainFolderReference): void {
+  cache.set(getFolderPathKey(folderPath), toFolderReference(folder))
 }
 
 async function requireUniqueLocator(locator: Locator, description: string): Promise<void> {
