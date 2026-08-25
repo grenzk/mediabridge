@@ -5,6 +5,7 @@ import type { BrowserSession } from '../../../src/shared/browser/connect-to-brow
 import { getErrorDetail, getErrorMessage } from '../../platform/error-format.ts'
 import { verifySites, type DocSweepSiteName } from '../../../src/tools/docsweep/automation/verification.ts'
 import { loadExcelFile } from '../../../src/tools/docsweep/automation/excel-reader.ts'
+import { sweepVertiv } from '../../../src/tools/docsweep/automation/vertiv.ts'
 
 type BrowserService = {
   getCdpUrl: () => string
@@ -151,24 +152,41 @@ export function registerDocSweepHandlers({ addLog, browserService }: Dependencie
     }
   })
 
-  ipcMain.handle('docsweep:run', async (_event, controlNumber: string) => {
+  ipcMain.handle('docsweep:run', async (_event: IpcMainInvokeEvent, controlNumber: string) => {
     const value = controlNumber?.trim()
 
     if (!value) {
       throw new Error('Control number is required.')
     }
 
-    const cdpUrl = browserService.getCdpUrl()
+    try {
+      addLog('info', 'DocSweep', `Starting Vertiv sweep for ${value}.`)
 
-    addLog('info', 'DocSweep', `Starting sweep for ${value}.`)
+      const session = await getSession(browserService)
 
-    const session = await connectToBrowser(cdpUrl)
+      const result = await sweepVertiv(session.pages, value)
 
-    addLog('info', 'DocSweep', `Connected to browser with ${session.pages.length} page(s).`)
+      if (result.status === 'Found') {
+        addLog('success', 'DocSweep', `Vertiv: ${value} found.`)
+      } else if (result.status === 'Not Found') {
+        addLog('info', 'DocSweep', `Vertiv: ${value} not found.`)
+      } else {
+        addLog('error', 'DocSweep', `Vertiv: ${value}: ${result.message}`)
+      }
 
-    return {
-      ok: true,
-      status: `Browser connected. ${session.pages.length} page(s) available.`,
+      return {
+        ok: result.status !== 'Error',
+        status: result.status,
+        message: result.message,
+      }
+    } catch (error) {
+      addLog('error', 'DocSweep', `Vertiv sweep failed for ${value}: ${getErrorMessage(error)}`, getErrorDetail(error))
+
+      return {
+        ok: false,
+        status: 'Error',
+        message: getErrorMessage(error),
+      }
     }
   })
 }

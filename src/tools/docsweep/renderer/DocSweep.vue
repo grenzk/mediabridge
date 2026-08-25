@@ -269,7 +269,7 @@ async function startSweep(): Promise<void> {
 
   isRunning.value = true
   footerStatus.value = 'warning'
-  sweepStatus.value = 'Starting sweep...'
+  isSweepInitialized.value = false
 
   completedCount.value = 0
   totalCount.value = documents.value.length
@@ -287,12 +287,72 @@ async function startSweep(): Promise<void> {
     }
 
     isSweepInitialized.value = true
-    sweepStatus.value = `Sweep initialized with ${sweepDocuments.value.length} control number(s).`
 
-    // Site sweep logic will be implemented in the next feature.
+    summary.value = summary.value.map(item =>
+      item.site === 'Vertiv'
+        ? {
+            ...item,
+            found: 0,
+            notFound: 0,
+            errors: 0,
+            total: 0,
+          }
+        : item,
+    )
+
+    for (const document of sweepDocuments.value) {
+      currentSite.value = 'Vertiv'
+      currentControlNumber.value = document.controlNumber
+
+      sweepStatus.value = `Searching Vertiv for ${document.controlNumber}...`
+
+      const result = await window.docsweep.runSweep(document.controlNumber)
+
+      if (!result.ok) {
+        summary.value = summary.value.map(item =>
+          item.site === 'Vertiv'
+            ? {
+                ...item,
+                errors: item.errors + 1,
+                total: item.total + 1,
+              }
+            : item,
+        )
+      } else if (result.status === 'Found') {
+        summary.value = summary.value.map(item =>
+          item.site === 'Vertiv'
+            ? {
+                ...item,
+                found: item.found + 1,
+                total: item.total + 1,
+              }
+            : item,
+        )
+      } else {
+        summary.value = summary.value.map(item =>
+          item.site === 'Vertiv'
+            ? {
+                ...item,
+                notFound: item.notFound + 1,
+                total: item.total + 1,
+              }
+            : item,
+        )
+      }
+
+      completedCount.value += 1
+
+      sweepStatus.value = `Completed Vertiv search for ${document.controlNumber}.`
+    }
+
+    currentSite.value = '-'
+    currentControlNumber.value = '-'
+
+    sweepStatus.value = `Vertiv sweep completed for ${sweepDocuments.value.length} control number(s).`
   } catch (error) {
     footerStatus.value = 'error'
-    sweepStatus.value = error instanceof Error ? error.message : 'Failed to initialize sweep.'
+
+    sweepStatus.value = error instanceof Error ? error.message : 'Vertiv sweep failed.'
   } finally {
     isRunning.value = false
   }
