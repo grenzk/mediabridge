@@ -18,6 +18,7 @@ import {
   getSelectedFolderReference,
   selectFolderPath,
   type EgainImportParent,
+  type FolderTraversalCache,
 } from './ensure-folder-path.ts'
 
 const editorSyncTimeoutMs = 30000
@@ -111,6 +112,7 @@ export async function runArticleImport(
   const existingFolderPaths: string[][] = []
   const failedArticles: ArticleImportFailure[] = []
   const existingTitlesByFolder = new Map<string, Set<string>>()
+  const folderTraversalCache: FolderTraversalCache = new Map()
   let importParent: EgainImportParent | undefined
   let rootTemplateMayNeedRestoration = false
   let canceled = false
@@ -132,7 +134,7 @@ export async function runArticleImport(
         const destinationFolderPath = getImportDestinationPath(folderPath, importRootName)
         const createdFinalFolder =
           destinationFolderPath.length > 0
-            ? await ensureFolderPath(articlePage, importParent, destinationFolderPath, signal)
+            ? await ensureFolderPath(articlePage, importParent, destinationFolderPath, signal, folderTraversalCache)
             : false
 
         if (createdFinalFolder) {
@@ -156,7 +158,7 @@ export async function runArticleImport(
         throwIfAutomationCancelled(signal)
         const destinationFolderPath = getImportDestinationPath(article.folderPath, importRootName)
 
-        await selectFolderPath(articlePage, importParent, destinationFolderPath, signal)
+        await selectFolderPath(articlePage, importParent, destinationFolderPath, signal, folderTraversalCache)
 
         if (options.sourceTemplateArticleId && destinationFolderPath.length > 0) {
           await waitForSourceTemplateToLeaveArticleList(articlePage, options.sourceTemplateArticleId, signal)
@@ -221,7 +223,7 @@ export async function runArticleImport(
   }
 
   if (importParent && rootTemplateMayNeedRestoration && options.articleTemplateTitle) {
-    await restoreRootArticleTemplate(articlePage, importParent, options.articleTemplateTitle)
+    await restoreRootArticleTemplate(articlePage, importParent, options.articleTemplateTitle, folderTraversalCache)
   }
 
   canceled ||= signal?.aborted ?? false
@@ -393,8 +395,9 @@ async function restoreRootArticleTemplate(
   articlePage: Page,
   importRoot: EgainImportParent,
   templateTitle: string,
+  folderTraversalCache: FolderTraversalCache,
 ): Promise<void> {
-  await selectFolderPath(articlePage, importRoot, [])
+  await selectFolderPath(articlePage, importRoot, [], undefined, folderTraversalCache)
 
   const existingTitles = await collectExistingArticleTitles(articlePage)
 
