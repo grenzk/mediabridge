@@ -127,6 +127,7 @@ export async function createArticleFlowBrowserWindow({ devServerUrl, electronDir
     height: 560,
     minWidth: 560,
     minHeight: 500,
+    alwaysOnTop: true,
     title: 'ArticleFlow',
     backgroundColor: '#202426',
     webPreferences: {
