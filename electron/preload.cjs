@@ -242,8 +242,9 @@ contextBridge.exposeInMainWorld('docsweep', {
   loadExcel: filePath => ipcRenderer.invoke('docsweep:load-excel', filePath),
 
   /**
+   * @param {'Vertiv' | 'Asset Library' | 'PD Cloud' | 'MASW'} site
    * @param {string} controlNumber
    * @returns {Promise<DocSweepRunResult>}
    */
-  runSweep: controlNumber => ipcRenderer.invoke('docsweep:run', controlNumber),
+  runSweep: (site, controlNumber) => ipcRenderer.invoke('docsweep:run', site, controlNumber),
 })

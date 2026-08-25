@@ -5,6 +5,7 @@ import type { BrowserSession } from '../../../src/shared/browser/connect-to-brow
 import { getErrorDetail, getErrorMessage } from '../../platform/error-format.ts'
 import { verifySites, type DocSweepSiteName } from '../../../src/tools/docsweep/automation/verification.ts'
 import { loadExcelFile } from '../../../src/tools/docsweep/automation/excel-reader.ts'
+import { sweepAssetLibrary } from '../../../src/tools/docsweep/automation/asset-library.ts'
 import { sweepVertiv } from '../../../src/tools/docsweep/automation/vertiv.ts'
 
 type BrowserService = {
@@ -152,7 +153,7 @@ export function registerDocSweepHandlers({ addLog, browserService }: Dependencie
     }
   })
 
-  ipcMain.handle('docsweep:run', async (_event: IpcMainInvokeEvent, controlNumber: string) => {
+  ipcMain.handle('docsweep:run', async (_event: IpcMainInvokeEvent, site: DocSweepSiteName, controlNumber: string) => {
     const value = controlNumber?.trim()
 
     if (!value) {
@@ -160,18 +161,43 @@ export function registerDocSweepHandlers({ addLog, browserService }: Dependencie
     }
 
     try {
-      addLog('info', 'DocSweep', `Starting Vertiv sweep for ${value}.`)
+      addLog('info', 'DocSweep', `Starting ${site} sweep for ${value}.`)
 
       const session = await getSession(browserService)
 
-      const result = await sweepVertiv(session.pages, value)
+      let result
+
+      switch (site) {
+        case 'Vertiv':
+          result = await sweepVertiv(session.pages, value)
+          break
+
+        case 'Asset Library':
+          result = await sweepAssetLibrary(session.pages, value)
+          break
+
+        case 'PD Cloud':
+        case 'MASW':
+          return {
+            ok: false,
+            status: 'Error',
+            message: `${site} sweep is not implemented yet.`,
+          }
+
+        default:
+          return {
+            ok: false,
+            status: 'Error',
+            message: `Unsupported DocSweep site: ${site}`,
+          }
+      }
 
       if (result.status === 'Found') {
-        addLog('success', 'DocSweep', `Vertiv: ${value} found.`)
+        addLog('success', 'DocSweep', `${site}: ${value} found.`)
       } else if (result.status === 'Not Found') {
-        addLog('info', 'DocSweep', `Vertiv: ${value} not found.`)
+        addLog('info', 'DocSweep', `${site}: ${value} not found.`)
       } else {
-        addLog('error', 'DocSweep', `Vertiv: ${value}: ${result.message}`)
+        addLog('error', 'DocSweep', `${site}: ${value}: ${result.message}`)
       }
 
       return {
@@ -180,7 +206,7 @@ export function registerDocSweepHandlers({ addLog, browserService }: Dependencie
         message: result.message,
       }
     } catch (error) {
-      addLog('error', 'DocSweep', `Vertiv sweep failed for ${value}: ${getErrorMessage(error)}`, getErrorDetail(error))
+      addLog('error', 'DocSweep', `${site} sweep failed for ${value}: ${getErrorMessage(error)}`, getErrorDetail(error))
 
       return {
         ok: false,

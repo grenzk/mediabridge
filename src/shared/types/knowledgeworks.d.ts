@@ -127,7 +127,14 @@ export type DocSweepApi = {
     }>
     error?: string
   }>
-  runSweep: (controlNumber: string) => Promise<DocSweepRunResult>
+  runSweep: (
+    site: 'Vertiv' | 'Asset Library' | 'PD Cloud' | 'MASW',
+    controlNumber: string,
+  ) => Promise<{
+    ok: boolean
+    status: 'Found' | 'Not Found' | 'Error'
+    message: string
+  }>
 }
 
 export type KnowledgeWorksApi = {
