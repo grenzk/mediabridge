@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 import InputText from 'primevue/inputtext'
 import ToggleSwitch from 'primevue/toggleswitch'
 import Dialog from 'primevue/dialog'
@@ -26,6 +26,7 @@ type SiteSummary = {
   notFound: number
   errors: number
   total: number
+  elapsedMs: number
 }
 
 type ExcelDocument = {
@@ -54,6 +55,8 @@ const showCancelDialog = ref(false)
 const showSaveResultsDialog = ref(false)
 const showSaveErrorDialog = ref(false)
 const isSearchFinishing = ref(false)
+const totalElapsedMs = ref(0)
+const elapsedTick = ref(Date.now())
 
 const sweepStatus = ref('Select an Excel file.')
 const currentSite = ref('-')
@@ -64,6 +67,9 @@ const sweepDocuments = ref<SweepDocument[]>([])
 const saveResultsChoice = ref<SaveResultsChoice | null>(null)
 let saveResultsResolver: ((choice: SaveResultsChoice) => void) | null = null
 let saveErrorResolver: ((saved: boolean) => void) | null = null
+let totalStartTime = 0
+let elapsedTimer: ReturnType<typeof setInterval> | null = null
+const siteStartTimes = new Map<string, number>()
 const footerStatus = ref<FooterStatus>('warning')
 
 const sites = ref<DocSweepSite[]>([
@@ -105,6 +111,7 @@ const summary = ref<SiteSummary[]>([
     notFound: 0,
     errors: 0,
     total: 0,
+    elapsedMs: 0,
   },
   {
     site: 'Asset Library',
@@ -112,6 +119,7 @@ const summary = ref<SiteSummary[]>([
     notFound: 0,
     errors: 0,
     total: 0,
+    elapsedMs: 0,
   },
   {
     site: 'PD Cloud',
@@ -119,6 +127,7 @@ const summary = ref<SiteSummary[]>([
     notFound: 0,
     errors: 0,
     total: 0,
+    elapsedMs: 0,
   },
   {
     site: 'MASW',
@@ -126,6 +135,7 @@ const summary = ref<SiteSummary[]>([
     notFound: 0,
     errors: 0,
     total: 0,
+    elapsedMs: 0,
   },
 ])
 
@@ -516,6 +526,91 @@ function waitForSaveResultsChoice(): Promise<SaveResultsChoice> {
   })
 }
 
+function formatElapsed(ms: number): string {
+  const totalSeconds = Math.floor(ms / 1000)
+
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  if (hours > 0) {
+    return `${hours.toString().padStart(2, '0')}:${minutes
+      .toString()
+      .padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+  }
+
+  return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+}
+
+function startElapsedTimer(): void {
+  totalStartTime = Date.now()
+  totalElapsedMs.value = 0
+  elapsedTick.value = Date.now()
+
+  if (elapsedTimer) {
+    clearInterval(elapsedTimer)
+  }
+
+  elapsedTimer = setInterval(() => {
+    elapsedTick.value = Date.now()
+
+    if (totalStartTime > 0) {
+      totalElapsedMs.value = Date.now() - totalStartTime
+    }
+
+    if (currentSite.value !== '-') {
+      const siteStartTime = siteStartTimes.get(currentSite.value)
+
+      if (siteStartTime) {
+        const elapsedMs = Date.now() - siteStartTime
+
+        summary.value = summary.value.map(item =>
+          item.site === currentSite.value
+            ? {
+                ...item,
+                elapsedMs,
+              }
+            : item,
+        )
+      }
+    }
+  }, 1000)
+}
+
+function stopElapsedTimer(): void {
+  if (elapsedTimer) {
+    clearInterval(elapsedTimer)
+    elapsedTimer = null
+  }
+
+  elapsedTick.value = Date.now()
+
+  if (totalStartTime > 0) {
+    totalElapsedMs.value = Date.now() - totalStartTime
+  }
+
+  if (currentSite.value !== '-') {
+    const siteStartTime = siteStartTimes.get(currentSite.value)
+
+    if (siteStartTime) {
+      const elapsedMs = Date.now() - siteStartTime
+
+      summary.value = summary.value.map(item =>
+        item.site === currentSite.value
+          ? {
+              ...item,
+              elapsedMs,
+            }
+          : item,
+      )
+    }
+  }
+}
+
+onUnmounted(() => {
+  stopElapsedTimer()
+})
+
 async function startSweep(): Promise<void> {
   if (!canStartSweep.value || isRunning.value) {
     footerStatus.value = 'warning'
@@ -523,6 +618,8 @@ async function startSweep(): Promise<void> {
   }
 
   isRunning.value = true
+  startElapsedTimer()
+  siteStartTimes.clear()
   footerStatus.value = 'warning'
   isSweepInitialized.value = false
   isCancelRequested.value = false
@@ -564,11 +661,14 @@ async function startSweep(): Promise<void> {
         notFound: 0,
         errors: 0,
         total: 0,
+        elapsedMs: 0,
       }
     })
 
     for (let siteIndex = 0; siteIndex < enabledSites.length; siteIndex++) {
       const site = enabledSites[siteIndex]
+      const siteStartTime = Date.now()
+      siteStartTimes.set(site.name, siteStartTime)
       currentSite.value = site.name
 
       sweepStatus.value = `Starting ${site.name} sweep...`
@@ -683,6 +783,17 @@ async function startSweep(): Promise<void> {
         }
       }
 
+      const siteElapsedMs = Date.now() - siteStartTime
+
+      summary.value = summary.value.map(item =>
+        item.site === site.name
+          ? {
+              ...item,
+              elapsedMs: siteElapsedMs,
+            }
+          : item,
+      )
+
       sweepStatus.value = `${site.name} sweep completed for ${sweepDocuments.value.length} control number(s).`
     }
 
@@ -707,6 +818,7 @@ async function startSweep(): Promise<void> {
 
     sweepStatus.value = error instanceof Error ? error.message : 'Sweep failed.'
   } finally {
+    stopElapsedTimer()
     isRunning.value = false
   }
 }
@@ -851,6 +963,17 @@ async function startSweep(): Promise<void> {
         </header>
 
         <div class="progress-content">
+          <!-- Progress visualization -->
+          <div class="progress-visual">
+            <div class="progress-circle" :style="{ '--progress': progress }">
+              <span>{{ progress }}%</span>
+            </div>
+
+            <div class="progress-caption">{{ completedCount }} of {{ totalCount }} completed</div>
+
+            <ProgressBar :value="progress" :show-value="false" />
+          </div>
+
           <!-- Progress information -->
           <div class="progress-details">
             <div class="progress-detail">
@@ -865,20 +988,8 @@ async function startSweep(): Promise<void> {
 
             <div class="progress-detail">
               <span>Progress</span>
-
               <strong> {{ completedCount }} / {{ totalCount }} ({{ progress }}%) </strong>
             </div>
-          </div>
-
-          <!-- Progress visualization -->
-          <div class="progress-visual">
-            <div class="progress-circle">
-              <span>{{ progress }}%</span>
-            </div>
-
-            <div class="progress-caption">{{ completedCount }} of {{ totalCount }} completed</div>
-
-            <ProgressBar :value="progress" :show-value="false" />
           </div>
         </div>
       </article>
@@ -897,6 +1008,15 @@ async function startSweep(): Promise<void> {
 
         <div class="summary-table-wrapper">
           <table class="summary-table">
+            <colgroup>
+              <col class="col-site" />
+              <col class="col-count" />
+              <col class="col-count" />
+              <col class="col-count" />
+              <col class="col-count" />
+              <col class="col-success" />
+              <col class="col-elapsed" />
+            </colgroup>
             <thead>
               <tr>
                 <th>Site</th>
@@ -905,6 +1025,7 @@ async function startSweep(): Promise<void> {
                 <th>Errors</th>
                 <th>Total</th>
                 <th>Success Rate</th>
+                <th>Elapsed</th>
               </tr>
             </thead>
 
@@ -937,6 +1058,10 @@ async function startSweep(): Promise<void> {
                     <ProgressBar :value="item.total ? (item.found / item.total) * 100 : 0" :show-value="false" />
                   </div>
                 </td>
+
+                <td class="elapsed-value">
+                  {{ formatElapsed(item.elapsedMs) }}
+                </td>
               </tr>
 
               <!-- TOTAL -->
@@ -965,6 +1090,10 @@ async function startSweep(): Promise<void> {
 
                     <ProgressBar :value="successRate" :show-value="false" />
                   </div>
+                </td>
+
+                <td class="elapsed-value">
+                  {{ formatElapsed(totalElapsedMs) }}
                 </td>
               </tr>
             </tbody>
@@ -1506,13 +1635,12 @@ async function startSweep(): Promise<void> {
 }
 .progress-content {
   display: grid;
-  grid-template-columns:
-    minmax(0, 1fr)
-    170px;
+  grid-template-columns: 1fr;
+  grid-template-rows: auto minmax(0, 1fr);
   height: calc(100% - 38px);
   min-height: 250px;
-  gap: 18px;
-  padding: 20px 18px;
+  gap: 16px;
+  padding: 20px 24px;
   align-items: stretch;
   box-sizing: border-box;
 }
@@ -1549,24 +1677,33 @@ async function startSweep(): Promise<void> {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
-  padding-left: 18px;
-  border-left: 1px solid var(--kw-border-subtle);
+  padding: 16px 0px;
+  border-bottom: 1px solid var(--kw-border-subtle);
 }
 .progress-circle {
+  position: relative;
   display: grid;
-  width: 100px;
-  height: 100px;
+  width: 116px;
+  height: 116px;
   place-items: center;
   box-sizing: border-box;
   color: var(--kw-text-light);
-  border: 8px solid var(--kw-border);
-  border-top-color: var(--kw-vertiv-color);
-  border-right-color: var(--kw-vertiv-color);
   border-radius: 50%;
+  background: conic-gradient(from 0deg, var(--kw-vertiv-color) calc(var(--progress) * 1%), var(--kw-border) 0);
+}
+.progress-circle::before {
+  position: absolute;
+  width: 100px;
+  height: 100px;
+  content: '';
+  border-radius: 50%;
+  background: var(--kw-surface);
 }
 .progress-circle span {
+  position: relative;
+  z-index: 1;
   font-size: 1.1rem;
   font-weight: 700;
 }
@@ -1603,6 +1740,19 @@ async function startSweep(): Promise<void> {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.75rem;
+  table-layout: fixed;
+}
+.summary-table .col-site {
+  width: 30%;
+}
+.summary-table .col-count {
+  width: 20%;
+}
+.summary-table .col-success {
+  width: 25%;
+}
+.summary-table .col-elapsed {
+  width: 25%;
 }
 .summary-table th,
 .summary-table td {
@@ -1621,6 +1771,10 @@ async function startSweep(): Promise<void> {
 }
 .summary-table tbody tr:hover {
   background: var(--kw-surface-hover);
+}
+.summary-table th:last-child,
+.summary-table td:last-child {
+  white-space: nowrap;
 }
 .found-value {
   color: var(--kw-success) !important;
@@ -1655,6 +1809,10 @@ async function startSweep(): Promise<void> {
   color: var(--kw-text-light);
   border-bottom: 0;
   font-weight: 700;
+}
+.elapsed-value {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* =========================================================
