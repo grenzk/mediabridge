@@ -11,7 +11,7 @@ const EXPECTED_HOST = 'asset-library.vertiv.com'
 const SEARCH_INPUT_SELECTOR = '#searchInput'
 const CLEAR_BUTTON_SELECTOR = 'a'
 const KEYWORD_SELECTOR = 'li span[title]'
-const NO_RESULTS_SELECTOR = "span:has-text('No Assets Found')"
+const NO_RESULTS_SELECTOR = 'xpath=//span[text()="No Assets Found"]'
 
 export async function sweepAssetLibrary(pages: Page[], controlNumber: string): Promise<AssetLibrarySweepResult> {
   const page = pages.find(page => page.url().toLowerCase().includes(EXPECTED_HOST))
@@ -25,19 +25,7 @@ export async function sweepAssetLibrary(pages: Page[], controlNumber: string): P
   }
 
   try {
-    await clearSearch(page)
-
-    const search = page.locator(SEARCH_INPUT_SELECTOR).first()
-
-    await search.waitFor({
-      state: 'visible',
-      timeout: 10_000,
-    })
-
-    await search.fill(controlNumber)
-    await search.press('Enter')
-
-    await waitForSearchComplete(page, controlNumber)
+    await executeSearch(page, controlNumber)
 
     if (await hasNoResults(page)) {
       return {
@@ -61,9 +49,53 @@ export async function sweepAssetLibrary(pages: Page[], controlNumber: string): P
   }
 }
 
+async function executeSearch(page: Page, controlNumber: string): Promise<void> {
+  /*
+   * Python:
+   *
+   * self.clear_search()
+   */
+  await clearSearch(page)
+
+  /*
+   * Python:
+   *
+   * search = WaitHelper.clickable(self.driver, self.SEARCH_INPUT)
+   */
+  const search = page.locator(SEARCH_INPUT_SELECTOR).first()
+
+  await search.waitFor({
+    state: 'visible',
+    timeout: 15_000,
+  })
+
+  /*
+   * Python:
+   *
+   * search.clear()
+   * search.send_keys(control_number)
+   * search.send_keys(Keys.ENTER)
+   */
+  await search.fill(controlNumber)
+  await search.press('Enter')
+
+  /*
+   * Python:
+   *
+   * self.wait_for_search_complete(control_number)
+   */
+  await waitForSearchComplete(page, controlNumber)
+}
+
 async function clearSearch(page: Page): Promise<void> {
-  // Python implementation uses link text "Clear".
-  // Restrict the locator to an anchor containing exactly "Clear".
+  /*
+   * Python:
+   *
+   * buttons = self.driver.find_elements(*self.CLEAR_BUTTON)
+   *
+   * if not buttons:
+   *     return
+   */
   const clearButton = page
     .locator(CLEAR_BUTTON_SELECTOR)
     .filter({ hasText: /^Clear$/ })
@@ -73,17 +105,43 @@ async function clearSearch(page: Page): Promise<void> {
     return
   }
 
+  /*
+   * Python:
+   *
+   * buttons[0].click()
+   */
   await clearButton.click()
 
+  await waitForClearComplete(page)
+}
+
+async function waitForClearComplete(page: Page): Promise<void> {
+  /*
+   * Python:
+   *
+   * Wait until all keyword chips are gone.
+   */
   await page.waitForFunction(selector => document.querySelectorAll(selector).length === 0, KEYWORD_SELECTOR, {
-    timeout: 10_000,
+    timeout: 15_000,
   })
 
+  /*
+   * Python:
+   *
+   * self.wait_until_loading_complete()
+   */
   await waitUntilLoadingComplete(page)
 
-  await page.locator(SEARCH_INPUT_SELECTOR).first().waitFor({
+  /*
+   * Python:
+   *
+   * WaitHelper.clickable(self.driver, self.SEARCH_INPUT)
+   */
+  const search = page.locator(SEARCH_INPUT_SELECTOR).first()
+
+  await search.waitFor({
     state: 'visible',
-    timeout: 10_000,
+    timeout: 15_000,
   })
 }
 
@@ -113,17 +171,22 @@ async function waitForSearchComplete(page: Page, controlNumber: string): Promise
 }
 
 async function waitUntilLoadingComplete(page: Page): Promise<void> {
+  /*
+   * Python:
+   *
+   * "Loading..." not in driver.page_source
+   */
   await page.waitForFunction(() => !document.body.innerText.includes('Loading...'), undefined, {
     timeout: 15_000,
   })
 }
 
 async function hasNoResults(page: Page): Promise<boolean> {
-  const noResults = page.locator(NO_RESULTS_SELECTOR).first()
+  const elements = page.locator(NO_RESULTS_SELECTOR)
 
-  if (!(await noResults.count())) {
+  if ((await elements.count()) === 0) {
     return false
   }
 
-  return noResults.isVisible()
+  return elements.first().isVisible()
 }
