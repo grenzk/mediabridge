@@ -77,9 +77,9 @@ export function registerDocSweepHandlers({ addLog, browserService }: Dependencie
     }
   })
 
-  ipcMain.handle('docsweep:save-excel', async (_event, filePath: string, documents) => {
+  ipcMain.handle('docsweep:save-excel', async (_event, filePath: string, documents, outputFilePath?: string) => {
     try {
-      await saveExcelResults(filePath, documents)
+      await saveExcelResults(filePath, documents, outputFilePath)
 
       return {
         ok: true,
@@ -89,6 +89,32 @@ export function registerDocSweepHandlers({ addLog, browserService }: Dependencie
         ok: false,
         message: error instanceof Error ? error.message : 'Unable to save Excel results.',
       }
+    }
+  })
+
+  ipcMain.handle('docsweep:save-excel-as', async () => {
+    const result = await dialog.showSaveDialog({
+      title: 'Save DocSweep Results',
+      defaultPath: 'DocSweep_Results.xlsx',
+      filters: [
+        {
+          name: 'Excel Workbook',
+          extensions: ['xlsx'],
+        },
+      ],
+    })
+
+    if (result.canceled || !result.filePath) {
+      return {
+        canceled: true,
+        ok: false,
+      }
+    }
+
+    return {
+      canceled: false,
+      ok: true,
+      filePath: result.filePath,
     }
   })
 

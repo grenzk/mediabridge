@@ -6,25 +6,34 @@ const VERTIV_COLUMN = 6
 const ASSET_LIBRARY_COLUMN = 7
 const PD_CLOUD_COLUMN = 8
 
-export async function saveExcelResults(filePath: string, documents: DocSweepDocument[]): Promise<void> {
+export async function saveExcelResults(
+  sourceFilePath: string,
+  documents: DocSweepDocument[],
+  outputFilePath = sourceFilePath,
+): Promise<void> {
   const workbook = new ExcelJS.Workbook()
 
-  await workbook.xlsx.readFile(filePath)
+  await workbook.xlsx.readFile(sourceFilePath)
+
+  if (workbook.worksheets.length === 0) {
+    throw new Error('The Excel workbook does not contain any worksheets.')
+  }
 
   const worksheet = workbook.worksheets[0]
 
   if (!worksheet) {
-    throw new Error('The Excel workbook does not contain any worksheets.')
+    throw new Error('Unable to determine the worksheet.')
   }
 
   for (const document of documents) {
-    const row = worksheet.getRow(document.row)
+    worksheet.getCell(document.row, MASW_COLUMN).value = document.masw
 
-    row.getCell(MASW_COLUMN).value = document.masw
-    row.getCell(VERTIV_COLUMN).value = document.vertiv
-    row.getCell(ASSET_LIBRARY_COLUMN).value = document.assetLibrary
-    row.getCell(PD_CLOUD_COLUMN).value = document.pdCloud
+    worksheet.getCell(document.row, VERTIV_COLUMN).value = document.vertiv
+
+    worksheet.getCell(document.row, ASSET_LIBRARY_COLUMN).value = document.assetLibrary
+
+    worksheet.getCell(document.row, PD_CLOUD_COLUMN).value = document.pdCloud
   }
 
-  await workbook.xlsx.writeFile(filePath)
+  await workbook.xlsx.writeFile(outputFilePath)
 }
