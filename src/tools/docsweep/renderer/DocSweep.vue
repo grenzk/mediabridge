@@ -201,6 +201,8 @@ async function verifySites(): Promise<void> {
   for (const site of sites.value) {
     if (site.enabled) {
       site.status = 'Verifying'
+    } else {
+      site.status = 'Not connected'
     }
   }
 
@@ -266,6 +268,13 @@ const canStartSweep = computed(() => {
 function invalidateSiteVerification(): void {
   isSitesVerified.value = false
   isSweepInitialized.value = false
+
+  for (const site of sites.value) {
+    if (!site.enabled) {
+      site.status = 'Not connected'
+    }
+  }
+
   footerStatus.value = 'warning'
   sweepStatus.value = 'Site configuration changed. Verify sites again.'
 }
@@ -310,12 +319,6 @@ async function startSweep(): Promise<void> {
 
     // Reset results for all enabled sites.
     summary.value = summary.value.map(item => {
-      const isEnabled = enabledSites.some(site => site.name === item.site)
-
-      if (!isEnabled) {
-        return item
-      }
-
       return {
         ...item,
         found: 0,
