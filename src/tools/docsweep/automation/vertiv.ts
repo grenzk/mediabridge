@@ -158,7 +158,7 @@ async function findMatchingResult(page: Page, controlNumber: string): Promise<Ve
 
   const titles = await page.locator(RESULT_TITLE_SELECTOR).allTextContents()
 
-  console.info(`Vertiv: ${titles.length} search result(s) found.`)
+  // console.info(`Vertiv: ${titles.length} search result(s) found.`)
 
   const normalizedControlNumber = controlNumber.trim().toUpperCase()
 

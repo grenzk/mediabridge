@@ -1,5 +1,4 @@
-import { readFile } from 'node:fs/promises'
-import XLSX from 'xlsx'
+import ExcelJS from 'exceljs'
 
 export type DocSweepDocument = {
   row: number
@@ -16,53 +15,36 @@ export type ExcelLoadResult = {
 }
 
 export async function loadExcelFile(filePath: string): Promise<ExcelLoadResult> {
-  const fileBuffer = await readFile(filePath)
+  const workbook = new ExcelJS.Workbook()
 
-  const workbook = XLSX.read(fileBuffer, {
-    type: 'buffer',
-  })
+  await workbook.xlsx.readFile(filePath)
 
-  if (workbook.SheetNames.length === 0) {
+  if (workbook.worksheets.length === 0) {
     throw new Error('The Excel workbook does not contain any worksheets.')
   }
 
-  const sheetName = workbook.SheetNames[0]
-
-  if (!sheetName) {
-    throw new Error('Unable to determine the worksheet name.')
-  }
-
-  const worksheet = workbook.Sheets[sheetName]
+  const worksheet = workbook.worksheets[0]
 
   if (!worksheet) {
-    throw new Error(`Unable to read worksheet "${sheetName}".`)
+    throw new Error('Unable to determine the worksheet.')
   }
-
-  const rows = XLSX.utils.sheet_to_json<(string | number | null)[]>(worksheet, {
-    header: 1,
-    defval: '',
-  })
 
   const documents: DocSweepDocument[] = []
 
-  const CONTROL_NUMBER_COLUMN_INDEX = 0
-  const FIRST_DATA_ROW_INDEX = 1
+  const CONTROL_NUMBER_COLUMN = 1
+  const FIRST_DATA_ROW = 2
 
-  for (let index = FIRST_DATA_ROW_INDEX; index < rows.length; index += 1) {
-    const row = rows[index]
+  for (let rowNumber = FIRST_DATA_ROW; rowNumber <= worksheet.rowCount; rowNumber += 1) {
+    const row = worksheet.getRow(rowNumber)
 
-    if (!row) {
-      continue
-    }
-
-    const value = row[CONTROL_NUMBER_COLUMN_INDEX]
+    const value = row.getCell(CONTROL_NUMBER_COLUMN).value
 
     if (value === undefined || value === null || String(value).trim() === '') {
       break
     }
 
     documents.push({
-      row: index + 1,
+      row: rowNumber,
       controlNumber: String(value).trim(),
       masw: '',
       vertiv: '',
@@ -76,7 +58,7 @@ export async function loadExcelFile(filePath: string): Promise<ExcelLoadResult> 
   }
 
   return {
-    sheetName,
+    sheetName: worksheet.name,
     documents,
   }
 }
