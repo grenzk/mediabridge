@@ -191,9 +191,7 @@ async function waitForSearchComplete(page: Page, timeout = 30_000): Promise<void
     await page.waitForTimeout(200)
   }
 
-  throw new Error(
-    'PD Cloud search results did not stabilize within the timeout.',
-  )
+  throw new Error('PD Cloud search results did not stabilize within the timeout.')
 }
 
 async function hasNoResults(page: Page): Promise<boolean> {
