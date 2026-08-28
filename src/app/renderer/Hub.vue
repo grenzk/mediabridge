@@ -412,8 +412,8 @@ onBeforeUnmount(() => {
 }
 
 .docsweep-mark {
-  color: var(--kw-accent);
-  border-color: var(--kw-accent);
+  color: var(--kw-focus);
+  border-color: var(--kw-primary);
 }
 
 .tool-copy {
