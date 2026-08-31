@@ -490,15 +490,12 @@ async function reportRendererError(message: string, error: unknown) {
         </div>
       </section>
 
-      <section class="plan-section" aria-labelledby="import-plan-title">
+      <section class="plan-section" aria-labelledby="source-structure-title">
         <div class="plan-heading">
-          <h2 id="import-plan-title" class="section-title">
-            <span class="compact-layout-only">Import plan</span>
-            <span class="wide-layout-only">Source structure</span>
-          </h2>
+          <h2 id="source-structure-title" class="section-title">Source structure</h2>
 
           <div class="plan-heading-actions">
-            <div v-if="importPlan" class="plan-counts" aria-label="Import plan totals">
+            <div v-if="importPlan" class="plan-counts" aria-label="Source structure totals">
               <span
                 ><strong>{{ importPlan.folderPaths.length }}</strong> folder{{
                   importPlan.folderPaths.length === 1 ? '' : 's'
@@ -546,7 +543,7 @@ async function reportRendererError(message: string, error: unknown) {
               <summary>
                 <span class="summary-label">
                   <i class="pi pi-chevron-right detail-chevron" aria-hidden="true" />
-                  <span>Source structure</span>
+                  <span>Folder hierarchy</span>
                 </span>
               </summary>
               <div ref="sourceTreeFrame" class="source-tree-frame">
@@ -885,14 +882,27 @@ async function reportRendererError(message: string, error: unknown) {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 16px;
+  gap: 8px;
   color: var(--kw-text-muted);
   font-size: 0.8125rem;
   line-height: 1.125rem;
 }
 
 .plan-counts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   white-space: nowrap;
+}
+
+.plan-counts span + span::before {
+  width: 3px;
+  height: 3px;
+  flex: 0 0 3px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  content: '';
 }
 
 .plan-counts strong {
@@ -1124,8 +1134,7 @@ async function reportRendererError(message: string, error: unknown) {
   }
 
   .compact-layout-only,
-  .source-row,
-  .source-details > summary {
+  .source-row {
     display: none;
   }
 
@@ -1145,7 +1154,6 @@ async function reportRendererError(message: string, error: unknown) {
   .plan-counts {
     grid-column: 2;
     flex-wrap: nowrap;
-    gap: 12px;
   }
 
   :deep(.wide-source-button.p-button) {
