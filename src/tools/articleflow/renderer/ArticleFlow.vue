@@ -406,9 +406,12 @@ async function reportRendererError(message: string, error: unknown) {
 
 <template>
   <main class="article-flow-shell app-dark">
+    <div class="article-flow-titlebar" aria-hidden="true"></div>
+
     <header class="article-flow-header">
       <div class="article-flow-brand" aria-label="ArticleFlow">
         <span class="article-flow-mark" aria-hidden="true">AF</span>
+        <h1>ArticleFlow</h1>
       </div>
 
       <Button
@@ -567,12 +570,18 @@ async function reportRendererError(message: string, error: unknown) {
 <style scoped>
 .article-flow-shell {
   display: grid;
-  grid-template-rows: 60px minmax(0, 1fr) 64px;
+  grid-template-rows: 36px 60px minmax(0, 1fr) 64px;
   width: 100%;
   height: 100%;
   overflow: hidden;
   color: var(--kw-text-light);
   background: var(--kw-quiet-surface);
+}
+
+.article-flow-titlebar {
+  -webkit-app-region: drag;
+  border-bottom: 1px solid var(--kw-border-subtle);
+  background: var(--kw-canvas);
 }
 
 .article-flow-header {
@@ -589,6 +598,18 @@ async function reportRendererError(message: string, error: unknown) {
   display: flex;
   min-width: 0;
   align-items: center;
+  gap: 12px;
+}
+
+.article-flow-brand h1 {
+  overflow: hidden;
+  margin: 0;
+  color: var(--kw-text-light);
+  font-size: 1rem;
+  font-weight: 650;
+  line-height: 1.5rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .article-flow-mark {
