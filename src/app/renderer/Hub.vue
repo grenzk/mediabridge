@@ -12,6 +12,7 @@ type HubToolDefinition = {
   label: string
   mark: string
 }
+type ToolPageDirection = 'backward' | 'forward'
 
 const toolsPerPage = 4
 const hubTools: HubToolDefinition[] = [
@@ -63,6 +64,7 @@ const currentToolPage = ref(0)
 const errorMessage = ref<string | null>(null)
 const browserStatus = ref<KnowledgeWorksBrowserStatus>({ state: 'idle' })
 const openingTools = ref<Partial<Record<KnowledgeWorksTool, boolean>>>({})
+const toolPageDirection = ref<ToolPageDirection>('forward')
 let removeBrowserStatusListener: (() => void) | undefined
 let browserStatusTimer: ReturnType<typeof setInterval> | undefined
 
@@ -99,7 +101,14 @@ async function openTool(tool: HubToolDefinition) {
  * Selects a valid page from the tool launcher.
  */
 function selectToolPage(page: number) {
-  currentToolPage.value = Math.min(Math.max(page, 0), toolPageCount.value - 1)
+  const nextPage = Math.min(Math.max(page, 0), toolPageCount.value - 1)
+
+  if (nextPage === currentToolPage.value) {
+    return
+  }
+
+  toolPageDirection.value = nextPage > currentToolPage.value ? 'forward' : 'backward'
+  currentToolPage.value = nextPage
 }
 
 /**
@@ -209,22 +218,31 @@ onBeforeUnmount(() => {
     <section class="hub-tools" aria-labelledby="hub-tools-title">
       <h2 id="hub-tools-title">Automation tools</h2>
 
-      <div class="tool-grid" role="group" :aria-label="`Tools page ${currentToolPage + 1} of ${toolPageCount}`">
-        <button
-          v-for="tool in visibleTools"
-          :key="tool.id"
-          v-tooltip.bottom="tool.description"
-          class="tool-launcher"
-          type="button"
-          :aria-busy="openingTools[tool.id]"
-          :disabled="openingTools[tool.id]"
-          :aria-label="`Open ${tool.label}: ${tool.description}`"
-          @click="openTool(tool)"
-        >
-          <span class="tool-mark" aria-hidden="true">{{ tool.mark }}</span>
-          <strong>{{ tool.label }}</strong>
-          <i v-if="openingTools[tool.id]" class="pi pi-spinner pi-spin tool-loading" aria-hidden="true" />
-        </button>
+      <div class="tool-page-frame">
+        <Transition :name="`tool-page-${toolPageDirection}`" mode="out-in">
+          <div
+            :key="currentToolPage"
+            class="tool-grid"
+            role="group"
+            :aria-label="`Tools page ${currentToolPage + 1} of ${toolPageCount}`"
+          >
+            <button
+              v-for="tool in visibleTools"
+              :key="tool.id"
+              v-tooltip.bottom="tool.description"
+              class="tool-launcher"
+              type="button"
+              :aria-busy="openingTools[tool.id]"
+              :disabled="openingTools[tool.id]"
+              :aria-label="`Open ${tool.label}: ${tool.description}`"
+              @click="openTool(tool)"
+            >
+              <span class="tool-mark" aria-hidden="true">{{ tool.mark }}</span>
+              <strong>{{ tool.label }}</strong>
+              <i v-if="openingTools[tool.id]" class="pi pi-spinner pi-spin tool-loading" aria-hidden="true" />
+            </button>
+          </div>
+        </Transition>
       </div>
 
       <nav
@@ -406,12 +424,41 @@ onBeforeUnmount(() => {
   line-height: 1.25rem;
 }
 
+.tool-page-frame {
+  position: relative;
+  min-height: 120px;
+  overflow: hidden;
+}
+
 .tool-grid {
+  position: absolute;
+  inset: 0;
   display: grid;
   grid-template-columns: repeat(4, 120px);
   align-content: start;
   justify-content: center;
   gap: 10px;
+}
+
+.tool-page-forward-enter-active,
+.tool-page-forward-leave-active,
+.tool-page-backward-enter-active,
+.tool-page-backward-leave-active {
+  transition:
+    opacity 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+.tool-page-forward-enter-from,
+.tool-page-backward-leave-to {
+  opacity: 0;
+  transform: translateX(12px);
+}
+
+.tool-page-forward-leave-to,
+.tool-page-backward-enter-from {
+  opacity: 0;
+  transform: translateX(-12px);
 }
 
 .tool-mark {
@@ -526,6 +573,15 @@ onBeforeUnmount(() => {
 .page-dot:focus-visible {
   outline: 2px solid var(--kw-focus);
   outline-offset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-page-forward-enter-active,
+  .tool-page-forward-leave-active,
+  .tool-page-backward-enter-active,
+  .tool-page-backward-leave-active {
+    transition: none;
+  }
 }
 
 .hub-footer {
