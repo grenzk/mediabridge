@@ -427,7 +427,10 @@ async function reportRendererError(message: string, error: unknown) {
 
     <section class="article-flow-workspace">
       <section class="setup-section" aria-labelledby="import-setup-title">
-        <h1 id="import-setup-title" class="section-title">Import setup</h1>
+        <h1 id="import-setup-title" class="section-title">
+          <span class="compact-layout-only">Import setup</span>
+          <span class="wide-layout-only">Import settings</span>
+        </h1>
 
         <div class="setup-panel">
           <div class="setup-row source-row">
@@ -489,23 +492,48 @@ async function reportRendererError(message: string, error: unknown) {
 
       <section class="plan-section" aria-labelledby="import-plan-title">
         <div class="plan-heading">
-          <h2 id="import-plan-title" class="section-title">Import plan</h2>
-          <div v-if="importPlan" class="plan-counts" aria-label="Import plan totals">
-            <span
-              ><strong>{{ importPlan.folderPaths.length }}</strong> folder{{
-                importPlan.folderPaths.length === 1 ? '' : 's'
-              }}</span
-            >
-            <span
-              ><strong>{{ importPlan.articles.length }}</strong> article{{
-                importPlan.articles.length === 1 ? '' : 's'
-              }}</span
-            >
-            <span
-              ><strong>{{ importPlan.ignoredPaths.length }}</strong> ignored</span
-            >
+          <h2 id="import-plan-title" class="section-title">
+            <span class="compact-layout-only">Import plan</span>
+            <span class="wide-layout-only">Source structure</span>
+          </h2>
+
+          <div class="plan-heading-actions">
+            <div v-if="importPlan" class="plan-counts" aria-label="Import plan totals">
+              <span
+                ><strong>{{ importPlan.folderPaths.length }}</strong> folder{{
+                  importPlan.folderPaths.length === 1 ? '' : 's'
+                }}</span
+              >
+              <span
+                ><strong>{{ importPlan.articles.length }}</strong> article{{
+                  importPlan.articles.length === 1 ? '' : 's'
+                }}</span
+              >
+              <span
+                ><strong>{{ importPlan.ignoredPaths.length }}</strong> ignored</span
+              >
+            </div>
+
+            <Button
+              class="choose-folder-button wide-source-button"
+              icon="pi pi-folder-open"
+              :label="importPlan ? 'Change folder' : 'Choose folder'"
+              severity="secondary"
+              outlined
+              :loading="isSelectingRoot"
+              :disabled="isBusy"
+              @click="selectRoot"
+            />
           </div>
         </div>
+
+        <p class="wide-source-path">
+          <span class="wide-source-label">
+            <span>Source folder</span>
+            <span class="source-path-separator" aria-hidden="true"></span>
+          </span>
+          <strong :title="importPlan?.rootPath">{{ sourceFolderName }}</strong>
+        </p>
 
         <div v-if="!importPlan" class="plan-empty">
           <i class="pi pi-folder-open" aria-hidden="true" />
@@ -683,6 +711,12 @@ async function reportRendererError(message: string, error: unknown) {
   line-height: 1.25rem;
 }
 
+.wide-layout-only,
+.wide-source-path,
+:deep(.wide-source-button.p-button) {
+  display: none;
+}
+
 .setup-panel,
 .plan-panel,
 .ignored-details {
@@ -734,6 +768,13 @@ async function reportRendererError(message: string, error: unknown) {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.plan-heading-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  margin-left: auto;
 }
 
 :deep(.choose-folder-button.p-button),
@@ -1052,7 +1093,7 @@ async function reportRendererError(message: string, error: unknown) {
   will-change: transform;
 }
 
-@media (min-width: 860px) {
+@media (min-width: 960px) {
   .article-flow-workspace {
     display: grid;
     grid-template-areas: 'plan setup';
@@ -1082,10 +1123,78 @@ async function reportRendererError(message: string, error: unknown) {
     border-left: 1px solid var(--kw-border-subtle);
   }
 
+  .compact-layout-only,
+  .source-row,
+  .source-details > summary {
+    display: none;
+  }
+
+  .wide-layout-only {
+    display: inline;
+  }
+
+  .plan-heading {
+    display: grid;
+    grid-template-columns: minmax(max-content, 1fr) max-content max-content;
+  }
+
+  .plan-heading-actions {
+    display: contents;
+  }
+
+  .plan-counts {
+    grid-column: 2;
+    flex-wrap: nowrap;
+    gap: 12px;
+  }
+
+  :deep(.wide-source-button.p-button) {
+    display: inline-flex;
+    grid-column: 3;
+  }
+
+  .wide-source-path {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--kw-text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.125rem;
+  }
+
+  .wide-source-label {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .source-path-separator {
+    width: 4px;
+    height: 4px;
+    flex: 0 0 4px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .wide-source-path strong {
+    overflow: hidden;
+    color: var(--kw-text-light);
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .setup-row {
     grid-template-columns: minmax(0, 1fr);
     gap: 8px;
     padding: 14px 16px;
+  }
+
+  .destination-row {
+    border-top: 0;
   }
 
   .setup-label,
@@ -1100,6 +1209,11 @@ async function reportRendererError(message: string, error: unknown) {
   .completion-control {
     width: 100%;
     justify-self: stretch;
+  }
+
+  .source-tree-frame {
+    padding-top: 16px;
+    padding-left: 32px;
   }
 }
 
