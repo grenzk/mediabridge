@@ -1052,6 +1052,57 @@ async function reportRendererError(message: string, error: unknown) {
   will-change: transform;
 }
 
+@media (min-width: 860px) {
+  .article-flow-workspace {
+    display: grid;
+    grid-template-areas: 'plan setup';
+    grid-template-columns: minmax(0, 1fr) 340px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .plan-section,
+  .setup-section {
+    min-width: 0;
+    min-height: 0;
+    align-content: start;
+    overflow-y: auto;
+    scrollbar-color: var(--kw-border) var(--kw-quiet-surface);
+  }
+
+  .plan-section {
+    grid-area: plan;
+    margin-top: 0;
+    padding: 20px 24px 24px;
+  }
+
+  .setup-section {
+    grid-area: setup;
+    padding: 20px;
+    border-left: 1px solid var(--kw-border-subtle);
+  }
+
+  .setup-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 14px 16px;
+  }
+
+  .setup-label,
+  .setup-value,
+  .destination-row .setup-value,
+  .completion-control,
+  .source-row :deep(.choose-folder-button.p-button) {
+    grid-column: 1;
+  }
+
+  .source-row :deep(.choose-folder-button.p-button),
+  .completion-control {
+    width: 100%;
+    justify-self: stretch;
+  }
+}
+
 @media (max-width: 700px) {
   .article-flow-workspace {
     padding: 16px;
