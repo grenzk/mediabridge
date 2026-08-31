@@ -370,9 +370,10 @@ onBeforeUnmount(() => {
 
 .tool-grid {
   display: grid;
-  grid-template-columns: repeat(2, 136px);
+  grid-template-columns: repeat(4, 120px);
   align-content: start;
-  gap: 12px;
+  justify-content: center;
+  gap: 10px;
 }
 
 .tool-mark {
@@ -404,10 +405,10 @@ onBeforeUnmount(() => {
 .tool-launcher {
   position: relative;
   display: grid;
-  width: 136px;
-  height: 132px;
-  padding: 16px 12px 14px;
-  cursor: default;
+  width: 120px;
+  height: 120px;
+  padding: 12px 8px 10px;
+  cursor: pointer;
   color: var(--kw-text-light);
   border: 1px solid transparent;
   border-radius: 10px;
