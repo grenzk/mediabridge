@@ -376,13 +376,13 @@ onBeforeUnmount(() => {
 }
 
 .tool-mark {
-  width: 56px;
-  height: 56px;
+  width: 48px;
+  height: 48px;
   color: var(--kw-text-light);
   border: 2px solid var(--kw-primary);
-  border-radius: 10px;
+  border-radius: 8px;
   background: var(--kw-surface);
-  font-size: 1.12rem;
+  font-size: 1.06rem;
 }
 
 .media-mark,
