@@ -427,7 +427,10 @@ async function reportRendererError(message: string, error: unknown) {
 
     <section class="article-flow-workspace">
       <section class="setup-section" aria-labelledby="import-setup-title">
-        <h1 id="import-setup-title" class="section-title">Import setup</h1>
+        <h1 id="import-setup-title" class="section-title">
+          <span class="compact-layout-only">Import setup</span>
+          <span class="wide-layout-only">Import settings</span>
+        </h1>
 
         <div class="setup-panel">
           <div class="setup-row source-row">
@@ -487,25 +490,47 @@ async function reportRendererError(message: string, error: unknown) {
         </div>
       </section>
 
-      <section class="plan-section" aria-labelledby="import-plan-title">
+      <section class="plan-section" aria-labelledby="source-structure-title">
         <div class="plan-heading">
-          <h2 id="import-plan-title" class="section-title">Import plan</h2>
-          <div v-if="importPlan" class="plan-counts" aria-label="Import plan totals">
-            <span
-              ><strong>{{ importPlan.folderPaths.length }}</strong> folder{{
-                importPlan.folderPaths.length === 1 ? '' : 's'
-              }}</span
-            >
-            <span
-              ><strong>{{ importPlan.articles.length }}</strong> article{{
-                importPlan.articles.length === 1 ? '' : 's'
-              }}</span
-            >
-            <span
-              ><strong>{{ importPlan.ignoredPaths.length }}</strong> ignored</span
-            >
+          <h2 id="source-structure-title" class="section-title">Source structure</h2>
+
+          <div class="plan-heading-actions">
+            <div v-if="importPlan" class="plan-counts" aria-label="Source structure totals">
+              <span
+                ><strong>{{ importPlan.folderPaths.length }}</strong> folder{{
+                  importPlan.folderPaths.length === 1 ? '' : 's'
+                }}</span
+              >
+              <span
+                ><strong>{{ importPlan.articles.length }}</strong> article{{
+                  importPlan.articles.length === 1 ? '' : 's'
+                }}</span
+              >
+              <span
+                ><strong>{{ importPlan.ignoredPaths.length }}</strong> ignored</span
+              >
+            </div>
+
+            <Button
+              class="choose-folder-button wide-source-button"
+              icon="pi pi-folder-open"
+              :label="importPlan ? 'Change folder' : 'Choose folder'"
+              severity="secondary"
+              outlined
+              :loading="isSelectingRoot"
+              :disabled="isBusy"
+              @click="selectRoot"
+            />
           </div>
         </div>
+
+        <p class="wide-source-path">
+          <span class="wide-source-label">
+            <span>Source folder</span>
+            <span class="source-path-separator" aria-hidden="true"></span>
+          </span>
+          <strong :title="importPlan?.rootPath">{{ sourceFolderName }}</strong>
+        </p>
 
         <div v-if="!importPlan" class="plan-empty">
           <i class="pi pi-folder-open" aria-hidden="true" />
@@ -518,7 +543,7 @@ async function reportRendererError(message: string, error: unknown) {
               <summary>
                 <span class="summary-label">
                   <i class="pi pi-chevron-right detail-chevron" aria-hidden="true" />
-                  <span>Source structure</span>
+                  <span>Folder hierarchy</span>
                 </span>
               </summary>
               <div ref="sourceTreeFrame" class="source-tree-frame">
@@ -676,11 +701,29 @@ async function reportRendererError(message: string, error: unknown) {
 }
 
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   color: var(--kw-text-light);
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.25rem;
+}
+
+.section-title::before {
+  width: 3px;
+  height: 16px;
+  flex: 0 0 3px;
+  border-radius: 1px;
+  background: var(--kw-primary);
+  content: '';
+}
+
+.wide-layout-only,
+.wide-source-path,
+:deep(.wide-source-button.p-button) {
+  display: none;
 }
 
 .setup-panel,
@@ -734,6 +777,13 @@ async function reportRendererError(message: string, error: unknown) {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+}
+
+.plan-heading-actions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  margin-left: auto;
 }
 
 :deep(.choose-folder-button.p-button),
@@ -844,14 +894,27 @@ async function reportRendererError(message: string, error: unknown) {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 16px;
+  gap: 8px;
   color: var(--kw-text-muted);
   font-size: 0.8125rem;
   line-height: 1.125rem;
 }
 
 .plan-counts span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   white-space: nowrap;
+}
+
+.plan-counts span + span::before {
+  width: 3px;
+  height: 3px;
+  flex: 0 0 3px;
+  margin-right: 4px;
+  border-radius: 50%;
+  background: currentColor;
+  content: '';
 }
 
 .plan-counts strong {
@@ -1050,6 +1113,128 @@ async function reportRendererError(message: string, error: unknown) {
   transform-origin: 50% 50%;
   backface-visibility: hidden;
   will-change: transform;
+}
+
+@media (min-width: 960px) {
+  .article-flow-workspace {
+    display: grid;
+    grid-template-areas: 'plan setup';
+    grid-template-columns: minmax(0, 1fr) 340px;
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .plan-section,
+  .setup-section {
+    min-width: 0;
+    min-height: 0;
+    align-content: start;
+    overflow-y: auto;
+    scrollbar-color: var(--kw-border) var(--kw-quiet-surface);
+  }
+
+  .plan-section {
+    grid-area: plan;
+    margin-top: 0;
+    padding: 20px 24px 24px;
+  }
+
+  .setup-section {
+    grid-area: setup;
+    padding: 20px;
+    border-left: 1px solid var(--kw-border-subtle);
+  }
+
+  .compact-layout-only,
+  .source-row {
+    display: none;
+  }
+
+  .wide-layout-only {
+    display: inline;
+  }
+
+  .plan-heading {
+    display: grid;
+    grid-template-columns: minmax(max-content, 1fr) max-content max-content;
+  }
+
+  .plan-heading-actions {
+    display: contents;
+  }
+
+  .plan-counts {
+    grid-column: 2;
+    flex-wrap: nowrap;
+  }
+
+  :deep(.wide-source-button.p-button) {
+    display: inline-flex;
+    grid-column: 3;
+  }
+
+  .wide-source-path {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 8px;
+    margin: 0;
+    color: var(--kw-text-muted);
+    font-size: 0.8125rem;
+    line-height: 1.125rem;
+  }
+
+  .wide-source-label {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .source-path-separator {
+    width: 4px;
+    height: 4px;
+    flex: 0 0 4px;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .wide-source-path strong {
+    overflow: hidden;
+    color: var(--kw-text-light);
+    font-weight: 500;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .setup-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 8px;
+    padding: 14px 16px;
+  }
+
+  .destination-row {
+    border-top: 0;
+  }
+
+  .setup-label,
+  .setup-value,
+  .destination-row .setup-value,
+  .completion-control,
+  .source-row :deep(.choose-folder-button.p-button) {
+    grid-column: 1;
+  }
+
+  .source-row :deep(.choose-folder-button.p-button),
+  .completion-control {
+    width: 100%;
+    justify-self: stretch;
+  }
+
+  .source-tree-frame {
+    padding-top: 16px;
+    padding-left: 32px;
+  }
 }
 
 @media (max-width: 700px) {
