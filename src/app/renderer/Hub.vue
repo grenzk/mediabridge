@@ -1,6 +1,33 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue'
-import type { KnowledgeWorksBrowserState, KnowledgeWorksBrowserStatus } from '../../shared/types/knowledgeworks'
+import type {
+  KnowledgeWorksBrowserState,
+  KnowledgeWorksBrowserStatus,
+  KnowledgeWorksTool,
+} from '../../shared/types/knowledgeworks'
+
+type HubToolDefinition = {
+  description: string
+  id: KnowledgeWorksTool
+  label: string
+  mark: string
+}
+
+const toolsPerPage = 4
+const hubTools: HubToolDefinition[] = [
+  {
+    description: 'Link files and articles in eGain',
+    id: 'mediabridge',
+    label: 'MediaBridge',
+    mark: 'MB',
+  },
+  {
+    description: 'Create and manage eGain articles',
+    id: 'articleflow',
+    label: 'ArticleFlow',
+    mark: 'AF',
+  },
+]
 
 const browserButtonLabels: Record<KnowledgeWorksBrowserState, string> = {
   connected: 'Open browser',
@@ -32,10 +59,10 @@ const browserStatusLabels: Record<KnowledgeWorksBrowserState, string> = {
 }
 
 const appVersion = ref<string | null>(null)
+const currentToolPage = ref(0)
 const errorMessage = ref<string | null>(null)
 const browserStatus = ref<KnowledgeWorksBrowserStatus>({ state: 'idle' })
-const isOpeningArticleFlow = ref(false)
-const isOpeningMediaBridge = ref(false)
+const openingTools = ref<Partial<Record<KnowledgeWorksTool, boolean>>>({})
 let removeBrowserStatusListener: (() => void) | undefined
 let browserStatusTimer: ReturnType<typeof setInterval> | undefined
 
@@ -43,39 +70,43 @@ const browserButtonLabel = computed(() => browserButtonLabels[browserStatus.valu
 const browserButtonIcon = computed(() => browserButtonIcons[browserStatus.value.state])
 const browserStatusIcon = computed(() => browserStatusIcons[browserStatus.value.state])
 const browserStatusLabel = computed(() => browserStatusLabels[browserStatus.value.state])
+const toolPageCount = computed(() => Math.ceil(hubTools.length / toolsPerPage))
+const visibleTools = computed(() => {
+  const pageStart = currentToolPage.value * toolsPerPage
+
+  return hubTools.slice(pageStart, pageStart + toolsPerPage)
+})
 
 const isBrowserActionDisabled = computed(() => browserStatus.value.state === 'launching')
 
 /**
- * Opens or focuses the MediaBridge toolbar.
+ * Opens or focuses a KnowledgeWorks tool window.
  */
-async function openMediaBridge() {
+async function openTool(tool: HubToolDefinition) {
   errorMessage.value = null
-  isOpeningMediaBridge.value = true
+  openingTools.value[tool.id] = true
 
   try {
-    await window.knowledgeworks.openTool('mediabridge')
+    await window.knowledgeworks.openTool(tool.id)
   } catch (error) {
     errorMessage.value = getErrorMessage(error)
   } finally {
-    isOpeningMediaBridge.value = false
+    openingTools.value[tool.id] = false
   }
 }
 
 /**
- * Opens or focuses the ArticleFlow import window.
+ * Selects a valid page from the tool launcher.
  */
-async function openArticleFlow() {
-  errorMessage.value = null
-  isOpeningArticleFlow.value = true
+function selectToolPage(page: number) {
+  currentToolPage.value = Math.min(Math.max(page, 0), toolPageCount.value - 1)
+}
 
-  try {
-    await window.knowledgeworks.openTool('articleflow')
-  } catch (error) {
-    errorMessage.value = getErrorMessage(error)
-  } finally {
-    isOpeningArticleFlow.value = false
-  }
+/**
+ * Moves between adjacent tool pages from the pagination controls.
+ */
+function moveToolPage(offset: number) {
+  selectToolPage(currentToolPage.value + offset)
 }
 
 /**
@@ -178,35 +209,42 @@ onBeforeUnmount(() => {
     <section class="hub-tools" aria-labelledby="hub-tools-title">
       <h2 id="hub-tools-title">Automation tools</h2>
 
-      <div class="tool-grid">
+      <div class="tool-grid" role="group" :aria-label="`Tools page ${currentToolPage + 1} of ${toolPageCount}`">
         <button
-          v-tooltip.bottom="'Link files and articles in eGain'"
+          v-for="tool in visibleTools"
+          :key="tool.id"
+          v-tooltip.bottom="tool.description"
           class="tool-launcher"
           type="button"
-          :aria-busy="isOpeningMediaBridge"
-          :disabled="isOpeningMediaBridge"
-          aria-label="Open MediaBridge: Link files and articles in eGain"
-          @click="openMediaBridge"
+          :aria-busy="openingTools[tool.id]"
+          :disabled="openingTools[tool.id]"
+          :aria-label="`Open ${tool.label}: ${tool.description}`"
+          @click="openTool(tool)"
         >
-          <span class="tool-mark media-mark" aria-hidden="true">MB</span>
-          <strong>MediaBridge</strong>
-          <i v-if="isOpeningMediaBridge" class="pi pi-spinner pi-spin tool-loading" aria-hidden="true" />
-        </button>
-
-        <button
-          v-tooltip.bottom="'Create and manage eGain articles'"
-          class="tool-launcher"
-          type="button"
-          :aria-busy="isOpeningArticleFlow"
-          :disabled="isOpeningArticleFlow"
-          aria-label="Open ArticleFlow: Create and manage eGain articles"
-          @click="openArticleFlow"
-        >
-          <span class="tool-mark article-mark" aria-hidden="true">AF</span>
-          <strong>ArticleFlow</strong>
-          <i v-if="isOpeningArticleFlow" class="pi pi-spinner pi-spin tool-loading" aria-hidden="true" />
+          <span class="tool-mark" aria-hidden="true">{{ tool.mark }}</span>
+          <strong>{{ tool.label }}</strong>
+          <i v-if="openingTools[tool.id]" class="pi pi-spinner pi-spin tool-loading" aria-hidden="true" />
         </button>
       </div>
+
+      <nav
+        v-if="toolPageCount > 1"
+        class="tool-pagination"
+        aria-label="Tool pages"
+        @keydown.left.prevent="moveToolPage(-1)"
+        @keydown.right.prevent="moveToolPage(1)"
+      >
+        <button
+          v-for="page in toolPageCount"
+          :key="page"
+          class="page-dot"
+          type="button"
+          :class="{ active: currentToolPage === page - 1 }"
+          :aria-current="currentToolPage === page - 1 ? 'page' : undefined"
+          :aria-label="`Show tools page ${page} of ${toolPageCount}`"
+          @click="selectToolPage(page - 1)"
+        />
+      </nav>
     </section>
 
     <footer class="hub-footer" :class="{ error: errorMessage }" aria-live="polite">
@@ -386,13 +424,7 @@ onBeforeUnmount(() => {
   font-size: 1.06rem;
 }
 
-.media-mark,
-.article-mark {
-  color: var(--kw-text-light);
-}
-
-.media-mark::after,
-.article-mark::after {
+.tool-mark::after {
   position: absolute;
   right: 3px;
   bottom: 3px;
@@ -453,6 +485,47 @@ onBeforeUnmount(() => {
   right: 10px;
   color: var(--kw-focus);
   font-size: 0.82rem;
+}
+
+.tool-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: end;
+  gap: 0;
+}
+
+.page-dot {
+  display: grid;
+  width: 16px;
+  height: 24px;
+  padding: 0;
+  cursor: pointer;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  place-items: center;
+}
+
+.page-dot::before {
+  width: 6px;
+  height: 6px;
+  content: '';
+  border-radius: 50%;
+  background: var(--kw-border);
+}
+
+.page-dot.active::before {
+  background: var(--kw-text-muted);
+}
+
+.page-dot:hover::before {
+  background: var(--kw-text-light);
+}
+
+.page-dot:focus-visible {
+  outline: 2px solid var(--kw-focus);
+  outline-offset: 0;
 }
 
 .hub-footer {
