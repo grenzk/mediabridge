@@ -60,7 +60,7 @@ async function openLogs() {
         @click="isCountingTargets ? stopTargetCount() : refreshTargetCount()"
       >
         <template v-if="isCountingTargets">
-          <i class="pi pi-stop stop-count-icon" aria-hidden="true" />
+          <i class="pi pi-stop action-state-icon" aria-hidden="true" />
           <span>Stop</span>
         </template>
         <template v-else>
@@ -81,7 +81,11 @@ async function openLogs() {
           :aria-label="isRunningMediaLinking ? 'Stop link automation' : 'Run selected link automation'"
           @click="isRunningMediaLinking ? stopMediaLinking() : runMediaLinking()"
         >
-          <i :class="isRunningMediaLinking ? 'pi pi-stop' : 'pi pi-play'" aria-hidden="true" />
+          <i
+            class="action-state-icon"
+            :class="isRunningMediaLinking ? 'pi pi-stop' : 'pi pi-play'"
+            aria-hidden="true"
+          />
           <span>{{ isRunningMediaLinking ? 'Stop' : 'Run' }}</span>
         </button>
 
@@ -292,9 +296,9 @@ async function openLogs() {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 8px;
   height: 100%;
-  padding: 0 7px;
+  padding: 0 5px;
   color: var(--kw-text-light);
   border: 0;
   border-radius: 7px 0 0 7px;
@@ -398,8 +402,9 @@ async function openLogs() {
   border-color: var(--kw-danger);
 }
 
-.stop-count-icon {
+.action-state-icon {
   font-size: 0.72rem;
+  line-height: 1;
 }
 
 .counter-number {
