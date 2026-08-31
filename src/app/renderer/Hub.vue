@@ -67,6 +67,7 @@ const openingTools = ref<Partial<Record<KnowledgeWorksTool, boolean>>>({})
 const toolPageDirection = ref<ToolPageDirection>('forward')
 let removeBrowserStatusListener: (() => void) | undefined
 let browserStatusTimer: ReturnType<typeof setInterval> | undefined
+let lastBrowserStatusError: string | null = null
 
 const browserButtonLabel = computed(() => browserButtonLabels[browserStatus.value.state])
 const browserButtonIcon = computed(() => browserButtonIcons[browserStatus.value.state])
@@ -91,7 +92,10 @@ async function openTool(tool: HubToolDefinition) {
   try {
     await window.knowledgeworks.openTool(tool.id)
   } catch (error) {
-    errorMessage.value = getErrorMessage(error)
+    const message = `Could not open ${tool.label}.`
+
+    await reportRendererError(message, error)
+    setFailureStatus(message)
   } finally {
     openingTools.value[tool.id] = false
   }
@@ -127,7 +131,10 @@ async function openLogs() {
   try {
     await window.knowledgeworks.openLogs()
   } catch (error) {
-    errorMessage.value = getErrorMessage(error)
+    const message = 'Could not open the log window.'
+
+    await reportRendererError(message, error)
+    setFailureStatus(message, false)
   }
 }
 
@@ -139,8 +146,8 @@ async function launchBrowser() {
 
   try {
     await window.knowledgeworks.launchBrowser()
-  } catch (error) {
-    errorMessage.value = getErrorMessage(error)
+  } catch {
+    setFailureStatus('Browser launch failed.')
   }
 }
 
@@ -148,7 +155,11 @@ async function launchBrowser() {
  * Reads the installed suite version.
  */
 async function showAppVersion() {
-  appVersion.value = await window.knowledgeworks.getAppVersion()
+  try {
+    appVersion.value = await window.knowledgeworks.getAppVersion()
+  } catch (error) {
+    await reportRendererError('Could not read the KnowledgeWorks version.', error)
+  }
 }
 
 /**
@@ -157,13 +168,30 @@ async function showAppVersion() {
 async function refreshBrowserStatus() {
   try {
     browserStatus.value = await window.knowledgeworks.getBrowserStatus()
+    lastBrowserStatusError = null
   } catch (error) {
-    errorMessage.value = getErrorMessage(error)
+    const detail = getErrorDetail(error)
+
+    if (detail !== lastBrowserStatusError) {
+      lastBrowserStatusError = detail
+      await reportRendererError('Could not check the browser connection.', error)
+    }
+
+    browserStatus.value = { state: 'error' }
+    setFailureStatus('Could not check the browser connection.')
   }
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
+function setFailureStatus(message: string, directToLogs = true) {
+  errorMessage.value = directToLogs ? `${message} See logs.` : message
+}
+
+async function reportRendererError(message: string, error: unknown) {
+  await window.knowledgeworks.writeLog('error', 'KnowledgeWorks', message, getErrorDetail(error)).catch(() => undefined)
+}
+
+function getErrorDetail(error: unknown) {
+  return error instanceof Error ? (error.stack ?? error.message) : String(error)
 }
 
 onBeforeMount(async () => {
