@@ -146,9 +146,12 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="hub-shell app-dark">
+    <div class="hub-titlebar" aria-hidden="true"></div>
+
     <header class="hub-header">
       <div class="hub-brand" aria-label="KnowledgeWorks">
         <span class="hub-brand-mark" aria-hidden="true">KW</span>
+        <h1>KnowledgeWorks</h1>
       </div>
 
       <Button
@@ -173,37 +176,37 @@ onBeforeUnmount(() => {
     </header>
 
     <section class="hub-tools" aria-labelledby="hub-tools-title">
-      <h1 id="hub-tools-title">Automation tools</h1>
+      <h2 id="hub-tools-title">Automation tools</h2>
 
-      <article class="tool-row">
-        <span class="tool-mark media-mark" aria-hidden="true">MB</span>
-        <div class="tool-copy">
-          <strong>MediaBridge</strong>
-          <span>Link files and articles in eGain</span>
-        </div>
-        <Button
-          class="open-tool-button"
-          icon="pi pi-arrow-up-right"
-          label="Open"
-          :loading="isOpeningMediaBridge"
+      <div class="tool-grid">
+        <button
+          v-tooltip.bottom="'Link files and articles in eGain'"
+          class="tool-launcher"
+          type="button"
+          :aria-busy="isOpeningMediaBridge"
+          :disabled="isOpeningMediaBridge"
+          aria-label="Open MediaBridge: Link files and articles in eGain"
           @click="openMediaBridge"
-        />
-      </article>
+        >
+          <span class="tool-mark media-mark" aria-hidden="true">MB</span>
+          <strong>MediaBridge</strong>
+          <i v-if="isOpeningMediaBridge" class="pi pi-spinner pi-spin tool-loading" aria-hidden="true" />
+        </button>
 
-      <article class="tool-row">
-        <span class="tool-mark article-mark" aria-hidden="true">AF</span>
-        <div class="tool-copy">
-          <strong>ArticleFlow</strong>
-          <span>Create and manage eGain articles</span>
-        </div>
-        <Button
-          class="open-tool-button"
-          icon="pi pi-arrow-up-right"
-          label="Open"
-          :loading="isOpeningArticleFlow"
+        <button
+          v-tooltip.bottom="'Create and manage eGain articles'"
+          class="tool-launcher"
+          type="button"
+          :aria-busy="isOpeningArticleFlow"
+          :disabled="isOpeningArticleFlow"
+          aria-label="Open ArticleFlow: Create and manage eGain articles"
           @click="openArticleFlow"
-        />
-      </article>
+        >
+          <span class="tool-mark article-mark" aria-hidden="true">AF</span>
+          <strong>ArticleFlow</strong>
+          <i v-if="isOpeningArticleFlow" class="pi pi-spinner pi-spin tool-loading" aria-hidden="true" />
+        </button>
+      </div>
     </section>
 
     <footer class="hub-footer" :class="{ error: errorMessage }" aria-live="polite">
@@ -227,7 +230,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .hub-shell {
   display: grid;
-  grid-template-rows: 76px 1fr 40px;
+  grid-template-rows: 36px 76px 1fr 40px;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -235,9 +238,15 @@ onBeforeUnmount(() => {
   background: var(--kw-quiet-surface);
 }
 
+.hub-titlebar {
+  -webkit-app-region: drag;
+  border-bottom: 1px solid var(--kw-border-subtle);
+  background: var(--kw-canvas);
+}
+
 .hub-header {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  grid-template-columns: minmax(0, 1fr) auto 44px;
   align-items: center;
   gap: 8px;
   padding: 16px 20px;
@@ -250,6 +259,17 @@ onBeforeUnmount(() => {
   min-width: 0;
   align-items: center;
   gap: 12px;
+}
+
+.hub-brand h1 {
+  overflow: hidden;
+  margin: 0;
+  color: var(--kw-text-light);
+  font-size: 1.1rem;
+  font-weight: 650;
+  line-height: 1.5rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hub-brand-mark,
@@ -293,7 +313,7 @@ onBeforeUnmount(() => {
 }
 
 .hub-header :deep(.p-button:focus-visible),
-.open-tool-button:focus-visible {
+.tool-launcher:focus-visible {
   outline: 2px solid var(--kw-focus);
   outline-offset: 1px;
 }
@@ -331,15 +351,16 @@ onBeforeUnmount(() => {
 
 .hub-tools {
   display: grid;
-  align-content: start;
-  gap: 12px;
+  grid-template-rows: auto 1fr;
+  align-content: stretch;
+  gap: 16px;
   min-height: 0;
   padding: 20px;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-.hub-tools h1 {
+.hub-tools h2 {
   margin: 0;
   color: var(--kw-text-muted);
   font-size: 0.82rem;
@@ -347,26 +368,21 @@ onBeforeUnmount(() => {
   line-height: 1.25rem;
 }
 
-.tool-row {
+.tool-grid {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 84px;
-  align-items: center;
+  grid-template-columns: repeat(2, 136px);
+  align-content: start;
   gap: 12px;
-  min-height: 92px;
-  padding: 12px 16px;
-  border: 1px solid var(--kw-border);
-  border-radius: 10px;
-  background: var(--kw-surface);
 }
 
 .tool-mark {
-  width: 40px;
-  height: 40px;
+  width: 56px;
+  height: 56px;
   color: var(--kw-text-light);
   border: 2px solid var(--kw-primary);
-  border-radius: 8px;
+  border-radius: 10px;
   background: var(--kw-surface);
-  font-size: 1rem;
+  font-size: 1.12rem;
 }
 
 .media-mark,
@@ -385,49 +401,57 @@ onBeforeUnmount(() => {
   background: var(--kw-accent);
 }
 
-.tool-copy {
+.tool-launcher {
+  position: relative;
   display: grid;
-  min-width: 0;
-  gap: 2px;
+  width: 136px;
+  height: 132px;
+  padding: 16px 12px 14px;
+  cursor: default;
+  color: var(--kw-text-light);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  transition:
+    border-color 120ms ease-out,
+    background-color 120ms ease-out;
 }
 
-.tool-copy strong,
-.tool-copy span {
+.tool-launcher:not(:disabled):hover,
+.tool-launcher:focus-visible {
+  border-color: var(--kw-primary);
+  background: var(--kw-surface-hover);
+}
+
+.tool-launcher:disabled {
+  cursor: wait;
+}
+
+.tool-launcher:active {
+  border-color: var(--kw-focus);
+  background: var(--kw-surface);
+}
+
+.tool-launcher strong {
   overflow: hidden;
+  max-width: 100%;
+  color: var(--kw-text-light);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.25rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.tool-copy strong {
-  color: var(--kw-text-light);
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.35rem;
-}
-
-.tool-copy span {
-  color: var(--kw-text-muted);
-  font-size: 0.76rem;
-  line-height: 1.1rem;
-}
-
-.open-tool-button {
-  width: 84px;
-  height: 44px;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-
-.tool-row .open-tool-button {
-  color: var(--kw-text-light);
-  border-color: var(--kw-focus);
-  background: var(--kw-primary);
-}
-
-.tool-row .open-tool-button:enabled:hover {
-  border-color: var(--kw-text-light);
-  background: var(--kw-primary-hover);
+.tool-loading {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: var(--kw-focus);
+  font-size: 0.82rem;
 }
 
 .hub-footer {
