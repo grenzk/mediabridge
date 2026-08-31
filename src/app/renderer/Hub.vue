@@ -1,6 +1,34 @@
 <script setup lang="ts">
 import { computed, onBeforeMount, onBeforeUnmount, ref } from 'vue'
-import type { KnowledgeWorksBrowserState, KnowledgeWorksBrowserStatus } from '../../shared/types/knowledgeworks'
+import type {
+  KnowledgeWorksBrowserState,
+  KnowledgeWorksBrowserStatus,
+  KnowledgeWorksTool,
+} from '../../shared/types/knowledgeworks'
+
+type HubToolDefinition = {
+  description: string
+  id: KnowledgeWorksTool
+  label: string
+  mark: string
+}
+type ToolPageDirection = 'backward' | 'forward'
+
+const toolsPerPage = 4
+const hubTools: HubToolDefinition[] = [
+  {
+    description: 'Link files and articles in eGain',
+    id: 'mediabridge',
+    label: 'MediaBridge',
+    mark: 'MB',
+  },
+  {
+    description: 'Create and manage eGain articles',
+    id: 'articleflow',
+    label: 'ArticleFlow',
+    mark: 'AF',
+  },
+]
 
 const browserButtonLabels: Record<KnowledgeWorksBrowserState, string> = {
   connected: 'Open browser',
@@ -32,50 +60,66 @@ const browserStatusLabels: Record<KnowledgeWorksBrowserState, string> = {
 }
 
 const appVersion = ref<string | null>(null)
+const currentToolPage = ref(0)
 const errorMessage = ref<string | null>(null)
 const browserStatus = ref<KnowledgeWorksBrowserStatus>({ state: 'idle' })
-const isOpeningArticleFlow = ref(false)
-const isOpeningMediaBridge = ref(false)
+const openingTools = ref<Partial<Record<KnowledgeWorksTool, boolean>>>({})
+const toolPageDirection = ref<ToolPageDirection>('forward')
 let removeBrowserStatusListener: (() => void) | undefined
 let browserStatusTimer: ReturnType<typeof setInterval> | undefined
+let lastBrowserStatusError: string | null = null
 
 const browserButtonLabel = computed(() => browserButtonLabels[browserStatus.value.state])
 const browserButtonIcon = computed(() => browserButtonIcons[browserStatus.value.state])
 const browserStatusIcon = computed(() => browserStatusIcons[browserStatus.value.state])
 const browserStatusLabel = computed(() => browserStatusLabels[browserStatus.value.state])
+const toolPageCount = computed(() => Math.ceil(hubTools.length / toolsPerPage))
+const visibleTools = computed(() => {
+  const pageStart = currentToolPage.value * toolsPerPage
+
+  return hubTools.slice(pageStart, pageStart + toolsPerPage)
+})
 
 const isBrowserActionDisabled = computed(() => browserStatus.value.state === 'launching')
 
 /**
- * Opens or focuses the MediaBridge toolbar.
+ * Opens or focuses a KnowledgeWorks tool window.
  */
-async function openMediaBridge() {
+async function openTool(tool: HubToolDefinition) {
   errorMessage.value = null
-  isOpeningMediaBridge.value = true
+  openingTools.value[tool.id] = true
 
   try {
-    await window.knowledgeworks.openTool('mediabridge')
+    await window.knowledgeworks.openTool(tool.id)
   } catch (error) {
-    errorMessage.value = getErrorMessage(error)
+    const message = `Could not open ${tool.label}.`
+
+    await reportRendererError(message, error)
+    setFailureStatus(message)
   } finally {
-    isOpeningMediaBridge.value = false
+    openingTools.value[tool.id] = false
   }
 }
 
 /**
- * Opens or focuses the ArticleFlow import window.
+ * Selects a valid page from the tool launcher.
  */
-async function openArticleFlow() {
-  errorMessage.value = null
-  isOpeningArticleFlow.value = true
+function selectToolPage(page: number) {
+  const nextPage = Math.min(Math.max(page, 0), toolPageCount.value - 1)
 
-  try {
-    await window.knowledgeworks.openTool('articleflow')
-  } catch (error) {
-    errorMessage.value = getErrorMessage(error)
-  } finally {
-    isOpeningArticleFlow.value = false
+  if (nextPage === currentToolPage.value) {
+    return
   }
+
+  toolPageDirection.value = nextPage > currentToolPage.value ? 'forward' : 'backward'
+  currentToolPage.value = nextPage
+}
+
+/**
+ * Moves between adjacent tool pages from the pagination controls.
+ */
+function moveToolPage(offset: number) {
+  selectToolPage(currentToolPage.value + offset)
 }
 
 /**
@@ -87,7 +131,10 @@ async function openLogs() {
   try {
     await window.knowledgeworks.openLogs()
   } catch (error) {
-    errorMessage.value = getErrorMessage(error)
+    const message = 'Could not open the log window.'
+
+    await reportRendererError(message, error)
+    setFailureStatus(message, false)
   }
 }
 
@@ -99,8 +146,8 @@ async function launchBrowser() {
 
   try {
     await window.knowledgeworks.launchBrowser()
-  } catch (error) {
-    errorMessage.value = getErrorMessage(error)
+  } catch {
+    setFailureStatus('Browser launch failed.')
   }
 }
 
@@ -108,7 +155,11 @@ async function launchBrowser() {
  * Reads the installed suite version.
  */
 async function showAppVersion() {
-  appVersion.value = await window.knowledgeworks.getAppVersion()
+  try {
+    appVersion.value = await window.knowledgeworks.getAppVersion()
+  } catch (error) {
+    await reportRendererError('Could not read the KnowledgeWorks version.', error)
+  }
 }
 
 /**
@@ -117,13 +168,30 @@ async function showAppVersion() {
 async function refreshBrowserStatus() {
   try {
     browserStatus.value = await window.knowledgeworks.getBrowserStatus()
+    lastBrowserStatusError = null
   } catch (error) {
-    errorMessage.value = getErrorMessage(error)
+    const detail = getErrorDetail(error)
+
+    if (detail !== lastBrowserStatusError) {
+      lastBrowserStatusError = detail
+      await reportRendererError('Could not check the browser connection.', error)
+    }
+
+    browserStatus.value = { state: 'error' }
+    setFailureStatus('Could not check the browser connection.')
   }
 }
 
-function getErrorMessage(error: unknown) {
-  return error instanceof Error ? error.message : String(error)
+function setFailureStatus(message: string, directToLogs = true) {
+  errorMessage.value = directToLogs ? `${message} See logs.` : message
+}
+
+async function reportRendererError(message: string, error: unknown) {
+  await window.knowledgeworks.writeLog('error', 'KnowledgeWorks', message, getErrorDetail(error)).catch(() => undefined)
+}
+
+function getErrorDetail(error: unknown) {
+  return error instanceof Error ? (error.stack ?? error.message) : String(error)
 }
 
 onBeforeMount(async () => {
@@ -146,9 +214,12 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="hub-shell app-dark">
+    <div class="hub-titlebar" aria-hidden="true"></div>
+
     <header class="hub-header">
       <div class="hub-brand" aria-label="KnowledgeWorks">
         <span class="hub-brand-mark" aria-hidden="true">KW</span>
+        <h1>KnowledgeWorks</h1>
       </div>
 
       <Button
@@ -173,37 +244,53 @@ onBeforeUnmount(() => {
     </header>
 
     <section class="hub-tools" aria-labelledby="hub-tools-title">
-      <h1 id="hub-tools-title">Automation tools</h1>
+      <h2 id="hub-tools-title">Automation tools</h2>
 
-      <article class="tool-row">
-        <span class="tool-mark media-mark" aria-hidden="true">MB</span>
-        <div class="tool-copy">
-          <strong>MediaBridge</strong>
-          <span>Link files and articles in eGain</span>
-        </div>
-        <Button
-          class="open-tool-button"
-          icon="pi pi-arrow-up-right"
-          label="Open"
-          :loading="isOpeningMediaBridge"
-          @click="openMediaBridge"
-        />
-      </article>
+      <div class="tool-page-frame">
+        <Transition :name="`tool-page-${toolPageDirection}`" mode="out-in">
+          <div
+            :key="currentToolPage"
+            class="tool-grid"
+            role="group"
+            :aria-label="`Tools page ${currentToolPage + 1} of ${toolPageCount}`"
+          >
+            <button
+              v-for="tool in visibleTools"
+              :key="tool.id"
+              v-tooltip.bottom="tool.description"
+              class="tool-launcher"
+              type="button"
+              :aria-busy="openingTools[tool.id]"
+              :disabled="openingTools[tool.id]"
+              :aria-label="`Open ${tool.label}: ${tool.description}`"
+              @click="openTool(tool)"
+            >
+              <span class="tool-mark" aria-hidden="true">{{ tool.mark }}</span>
+              <strong>{{ tool.label }}</strong>
+              <i v-if="openingTools[tool.id]" class="pi pi-spinner pi-spin tool-loading" aria-hidden="true" />
+            </button>
+          </div>
+        </Transition>
+      </div>
 
-      <article class="tool-row">
-        <span class="tool-mark article-mark" aria-hidden="true">AF</span>
-        <div class="tool-copy">
-          <strong>ArticleFlow</strong>
-          <span>Create and manage eGain articles</span>
-        </div>
-        <Button
-          class="open-tool-button"
-          icon="pi pi-arrow-up-right"
-          label="Open"
-          :loading="isOpeningArticleFlow"
-          @click="openArticleFlow"
+      <nav
+        v-if="toolPageCount > 1"
+        class="tool-pagination"
+        aria-label="Tool pages"
+        @keydown.left.prevent="moveToolPage(-1)"
+        @keydown.right.prevent="moveToolPage(1)"
+      >
+        <button
+          v-for="page in toolPageCount"
+          :key="page"
+          class="page-dot"
+          type="button"
+          :class="{ active: currentToolPage === page - 1 }"
+          :aria-current="currentToolPage === page - 1 ? 'page' : undefined"
+          :aria-label="`Show tools page ${page} of ${toolPageCount}`"
+          @click="selectToolPage(page - 1)"
         />
-      </article>
+      </nav>
     </section>
 
     <footer class="hub-footer" :class="{ error: errorMessage }" aria-live="polite">
@@ -227,7 +314,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .hub-shell {
   display: grid;
-  grid-template-rows: 76px 1fr 40px;
+  grid-template-rows: 36px 76px 1fr 40px;
   width: 100%;
   height: 100%;
   overflow: hidden;
@@ -235,9 +322,15 @@ onBeforeUnmount(() => {
   background: var(--kw-quiet-surface);
 }
 
+.hub-titlebar {
+  -webkit-app-region: drag;
+  border-bottom: 1px solid var(--kw-border-subtle);
+  background: var(--kw-canvas);
+}
+
 .hub-header {
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  grid-template-columns: minmax(0, 1fr) auto 44px;
   align-items: center;
   gap: 8px;
   padding: 16px 20px;
@@ -250,6 +343,17 @@ onBeforeUnmount(() => {
   min-width: 0;
   align-items: center;
   gap: 12px;
+}
+
+.hub-brand h1 {
+  overflow: hidden;
+  margin: 0;
+  color: var(--kw-text-light);
+  font-size: 1.1rem;
+  font-weight: 650;
+  line-height: 1.5rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .hub-brand-mark,
@@ -293,7 +397,7 @@ onBeforeUnmount(() => {
 }
 
 .hub-header :deep(.p-button:focus-visible),
-.open-tool-button:focus-visible {
+.tool-launcher:focus-visible {
   outline: 2px solid var(--kw-focus);
   outline-offset: 1px;
 }
@@ -331,15 +435,16 @@ onBeforeUnmount(() => {
 
 .hub-tools {
   display: grid;
-  align-content: start;
-  gap: 12px;
+  grid-template-rows: auto 1fr;
+  align-content: stretch;
+  gap: 16px;
   min-height: 0;
   padding: 20px;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-.hub-tools h1 {
+.hub-tools h2 {
   margin: 0;
   color: var(--kw-text-muted);
   font-size: 0.82rem;
@@ -347,35 +452,54 @@ onBeforeUnmount(() => {
   line-height: 1.25rem;
 }
 
-.tool-row {
+.tool-page-frame {
+  position: relative;
+  min-height: 120px;
+  overflow: hidden;
+}
+
+.tool-grid {
+  position: absolute;
+  inset: 0;
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 84px;
-  align-items: center;
-  gap: 12px;
-  min-height: 92px;
-  padding: 12px 16px;
-  border: 1px solid var(--kw-border);
-  border-radius: 10px;
-  background: var(--kw-surface);
+  grid-template-columns: repeat(4, 120px);
+  align-content: start;
+  justify-content: center;
+  gap: 10px;
+}
+
+.tool-page-forward-enter-active,
+.tool-page-forward-leave-active,
+.tool-page-backward-enter-active,
+.tool-page-backward-leave-active {
+  transition:
+    opacity 120ms ease-out,
+    transform 120ms ease-out;
+}
+
+.tool-page-forward-enter-from,
+.tool-page-backward-leave-to {
+  opacity: 0;
+  transform: translateX(12px);
+}
+
+.tool-page-forward-leave-to,
+.tool-page-backward-enter-from {
+  opacity: 0;
+  transform: translateX(-12px);
 }
 
 .tool-mark {
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   color: var(--kw-text-light);
   border: 2px solid var(--kw-primary);
   border-radius: 8px;
   background: var(--kw-surface);
-  font-size: 1rem;
+  font-size: 1.06rem;
 }
 
-.media-mark,
-.article-mark {
-  color: var(--kw-text-light);
-}
-
-.media-mark::after,
-.article-mark::after {
+.tool-mark::after {
   position: absolute;
   right: 3px;
   bottom: 3px;
@@ -385,49 +509,107 @@ onBeforeUnmount(() => {
   background: var(--kw-accent);
 }
 
-.tool-copy {
+.tool-launcher {
+  position: relative;
   display: grid;
-  min-width: 0;
-  gap: 2px;
+  width: 120px;
+  height: 120px;
+  padding: 12px 8px 10px;
+  cursor: pointer;
+  color: var(--kw-text-light);
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  place-items: center;
+  align-content: center;
+  gap: 12px;
+  transition:
+    border-color 120ms ease-out,
+    background-color 120ms ease-out;
 }
 
-.tool-copy strong,
-.tool-copy span {
+.tool-launcher:not(:disabled):hover,
+.tool-launcher:focus-visible {
+  border-color: var(--kw-primary);
+  background: var(--kw-surface-hover);
+}
+
+.tool-launcher:disabled {
+  cursor: wait;
+}
+
+.tool-launcher:active {
+  border-color: var(--kw-focus);
+  background: var(--kw-surface);
+}
+
+.tool-launcher strong {
   overflow: hidden;
+  max-width: 100%;
+  color: var(--kw-text-light);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.25rem;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.tool-copy strong {
-  color: var(--kw-text-light);
-  font-size: 0.95rem;
-  font-weight: 600;
-  line-height: 1.35rem;
+.tool-loading {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  color: var(--kw-focus);
+  font-size: 0.82rem;
 }
 
-.tool-copy span {
-  color: var(--kw-text-muted);
-  font-size: 0.76rem;
-  line-height: 1.1rem;
+.tool-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  align-self: end;
+  gap: 0;
 }
 
-.open-tool-button {
-  width: 84px;
-  height: 44px;
-  border-radius: 8px;
-  font-size: 0.78rem;
-  font-weight: 600;
+.page-dot {
+  display: grid;
+  width: 16px;
+  height: 24px;
+  padding: 0;
+  cursor: pointer;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  place-items: center;
 }
 
-.tool-row .open-tool-button {
-  color: var(--kw-text-light);
-  border-color: var(--kw-focus);
-  background: var(--kw-primary);
+.page-dot::before {
+  width: 6px;
+  height: 6px;
+  content: '';
+  border-radius: 50%;
+  background: var(--kw-border);
 }
 
-.tool-row .open-tool-button:enabled:hover {
-  border-color: var(--kw-text-light);
-  background: var(--kw-primary-hover);
+.page-dot.active::before {
+  background: var(--kw-text-muted);
+}
+
+.page-dot:hover::before {
+  background: var(--kw-text-light);
+}
+
+.page-dot:focus-visible {
+  outline: 2px solid var(--kw-focus);
+  outline-offset: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tool-page-forward-enter-active,
+  .tool-page-forward-leave-active,
+  .tool-page-backward-enter-active,
+  .tool-page-backward-leave-active {
+    transition: none;
+  }
 }
 
 .hub-footer {

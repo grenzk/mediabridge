@@ -86,6 +86,16 @@ export async function createLogsBrowserWindow({ devServerUrl, electronDirectory,
     minHeight: 340,
     title: 'KnowledgeWorks Logs',
     backgroundColor: '#101617',
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+    ...(process.platform === 'darwin'
+      ? { trafficLightPosition: { x: 14, y: 11 } }
+      : {
+          titleBarOverlay: {
+            color: '#101617',
+            symbolColor: '#f4f2ec',
+            height: 36,
+          },
+        }),
     webPreferences: {
       preload: join(electronDirectory, 'preload.cjs'),
       nodeIntegration: false,
@@ -130,6 +140,16 @@ export async function createArticleFlowBrowserWindow({ devServerUrl, electronDir
     alwaysOnTop: true,
     title: 'ArticleFlow',
     backgroundColor: '#202426',
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+    ...(process.platform === 'darwin'
+      ? { trafficLightPosition: { x: 14, y: 11 } }
+      : {
+          titleBarOverlay: {
+            color: '#101617',
+            symbolColor: '#f4f2ec',
+            height: 36,
+          },
+        }),
     webPreferences: {
       preload: join(electronDirectory, 'preload.cjs'),
       nodeIntegration: false,
@@ -224,6 +244,16 @@ export async function createHubBrowserWindow({ devServerUrl, electronDirectory, 
     minHeight: 400,
     resizable: false,
     title: 'KnowledgeWorks',
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+    ...(process.platform === 'darwin'
+      ? { trafficLightPosition: { x: 14, y: 11 } }
+      : {
+          titleBarOverlay: {
+            color: '#101617',
+            symbolColor: '#f4f2ec',
+            height: 36,
+          },
+        }),
     backgroundColor: '#202426',
     webPreferences: {
       preload: join(electronDirectory, 'preload.cjs'),
