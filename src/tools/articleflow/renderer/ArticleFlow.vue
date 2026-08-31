@@ -701,11 +701,23 @@ async function reportRendererError(message: string, error: unknown) {
 }
 
 .section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   color: var(--kw-text-light);
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.25rem;
+}
+
+.section-title::before {
+  width: 3px;
+  height: 16px;
+  flex: 0 0 3px;
+  border-radius: 1px;
+  background: var(--kw-primary);
+  content: '';
 }
 
 .wide-layout-only,

@@ -30,6 +30,7 @@ Changed
 - Kept the controlled browser above ArticleFlow while the import window is active.
 - Temporarily removed the unfinished DocSweep tool from the hub during beta testing.
 - Made Prettier line-ending checks consistent across macOS and Windows.
+- Added a responsive ArticleFlow workspace that gives the source hierarchy more room on larger windows while preserving the compact stacked layout.
 
 Fixed
 
