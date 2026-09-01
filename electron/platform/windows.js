@@ -200,6 +200,16 @@ export async function createDocSweepBrowserWindow({
     title: 'DocSweep',
     backgroundColor: '#202426',
     icon: getRuntimeIcon(appRoot),
+    titleBarStyle: process.platform === 'darwin' ? 'hiddenInset' : 'hidden',
+    ...(process.platform === 'darwin'
+      ? { trafficLightPosition: { x: 14, y: 11 } }
+      : {
+          titleBarOverlay: {
+            color: '#101617',
+            symbolColor: '#f4f2ec',
+            height: 36,
+          },
+        }),
     webPreferences: {
       preload: join(electronDirectory, 'preload.cjs'),
       nodeIntegration: false,

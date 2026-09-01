@@ -40,7 +40,7 @@ const { contextBridge, ipcRenderer } = require('electron')
  *   timestamp: string,
  * }} KnowledgeWorksLogEntry
  *
- * @typedef {'articleflow' | 'mediabridge'} KnowledgeWorksTool
+ * @typedef {'articleflow' | 'mediabridge' | 'docsweep'} KnowledgeWorksTool
  * @typedef {'idle' | 'launching' | 'connected' | 'disconnected' | 'error'} KnowledgeWorksBrowserState
  *
  * @typedef {{

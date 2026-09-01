@@ -804,6 +804,8 @@ async function startSweep(): Promise<void> {
 
 <template>
   <main class="docsweep-shell">
+    <div class="docsweep-titlebar" aria-hidden="true"></div>
+
     <!-- =====================================================
          HEADER
          ===================================================== -->
@@ -1182,6 +1184,7 @@ async function startSweep(): Promise<void> {
 .docsweep-shell {
   display: grid;
   grid-template-rows:
+    36px
     60px
     minmax(0, 1fr)
     64px;
@@ -1192,6 +1195,12 @@ async function startSweep(): Promise<void> {
   overflow: hidden;
   color: var(--kw-text-light);
   background: var(--kw-quiet-surface);
+}
+
+.docsweep-titlebar {
+  -webkit-app-region: drag;
+  border-bottom: 1px solid var(--kw-border-subtle);
+  background: var(--kw-canvas);
 }
 
 /* =========================================================
