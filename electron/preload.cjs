@@ -243,8 +243,85 @@ contextBridge.exposeInMainWorld('mediabridge', {
 
 contextBridge.exposeInMainWorld('docsweep', {
   /**
+   * @returns {Promise<{
+   *   canceled: boolean,
+   *   ok: boolean,
+   *   filePath?: string,
+   * }>}
+   */
+  selectExcelFile: () => ipcRenderer.invoke('docsweep:select-excel-file'),
+
+  /**
+   * @param {string} filePath
+   * @param {Array<{
+   *   row: number,
+   *   controlNumber: string,
+   *   masw: string,
+   *   vertiv: string,
+   *   assetLibrary: string,
+   *   pdCloud: string,
+   * }>} documents
+   * @param {string} [outputFilePath]
+   * @returns {Promise<{
+   *   ok: boolean,
+   *   message?: string,
+   * }>}
+   */
+  saveExcel: (filePath, documents, outputFilePath) =>
+    ipcRenderer.invoke('docsweep:save-excel', filePath, documents, outputFilePath),
+
+  /**
+   * @returns {Promise<{
+   *   canceled: boolean,
+   *   ok: boolean,
+   *   filePath?: string,
+   * }>}
+   */
+  saveExcelAs: () => ipcRenderer.invoke('docsweep:save-excel-as'),
+
+  /**
+   * @param {string} url
+   * @param {string} matchUrl
+   * @returns {Promise<{ ok: boolean }>}
+   */
+  openSite: (url, matchUrl) => ipcRenderer.invoke('docsweep:open-site', url, matchUrl),
+
+  /**
+   * @param {string[]} includedSites
+   * @returns {Promise<{
+   *   ok: boolean
+   *   results: Array<{
+   *     name: string
+   *     status: string
+   *     reason?: string
+   *   }>
+   *   error?: string
+   * }>}
+   */
+  verifySites: includedSites => ipcRenderer.invoke('docsweep:verify-sites', includedSites),
+
+  /**
+   * @param {string} filePath
+   * @returns {Promise<{
+   *   ok: boolean,
+   *   sheetName: string,
+   *   documents: Array<{
+   *     row: number,
+   *     controlNumber: string,
+   *     masw: string,
+   *     vertiv: string,
+   *     assetLibrary: string,
+   *     pdCloud: string
+   *   }>,
+   *   error?: string
+   * }>}
+   */
+  loadExcel: filePath => ipcRenderer.invoke('docsweep:load-excel', filePath),
+
+  /**
+   * @param {'Vertiv' | 'Asset Library' | 'PD Cloud' | 'MASW'} site
    * @param {string} controlNumber
    * @returns {Promise<DocSweepRunResult>}
    */
-  runSweep: controlNumber => ipcRenderer.invoke('docsweep:run', controlNumber),
+  runSweep: (site, controlNumber) => ipcRenderer.invoke('docsweep:run', site, controlNumber),
 })

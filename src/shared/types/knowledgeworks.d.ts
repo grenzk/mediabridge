@@ -26,11 +26,6 @@ export type MediaBridgeOkResult = {
   ok: boolean
 }
 
-export type DocSweepRunResult = {
-  ok: boolean
-  status: string
-}
-
 export type KnowledgeWorksLogEntry = {
   detail?: string
   id: number
@@ -95,6 +90,21 @@ export type AutomationCancelResult = {
   ok: boolean
 }
 
+export type DocSweepRunResult = {
+  ok: boolean
+  status: string
+}
+
+export type DocSweepFileSelectionResult = {
+  canceled: boolean
+  ok: boolean
+  filePath?: string
+}
+
+export type DocSweepActionResult = {
+  ok: boolean
+}
+
 export type ArticleFlowApi = {
   cancelImport: () => Promise<AutomationCancelResult>
   onImportProgress: (callback: (progress: ArticleFlowProgressUpdate) => void) => () => void
@@ -124,7 +134,58 @@ export type MediaBridgeApi = {
 }
 
 export type DocSweepApi = {
-  runSweep: (controlNumber: string) => Promise<DocSweepRunResult>
+  selectExcelFile: () => Promise<DocSweepFileSelectionResult>
+  loadExcel: (filePath: string) => Promise<{
+    ok: boolean
+    sheetName: string
+    documents: Array<{
+      row: number
+      controlNumber: string
+      masw: string
+      vertiv: string
+      assetLibrary: string
+      pdCloud: string
+    }>
+    error?: string
+  }>
+  saveExcel: (
+    filePath: string,
+    documents: Array<{
+      row: number
+      controlNumber: string
+      masw: string
+      vertiv: string
+      assetLibrary: string
+      pdCloud: string
+    }>,
+    outputFilePath?: string,
+  ) => Promise<{
+    ok: boolean
+    message?: string
+  }>
+  saveExcelAs: () => Promise<{
+    canceled: boolean
+    ok: boolean
+    filePath?: string
+  }>
+  openSite: (url: string, matchUrl: string) => Promise<DocSweepActionResult>
+  verifySites: (includedSites: Array<'Vertiv' | 'Asset Library' | 'PD Cloud' | 'MASW'>) => Promise<{
+    ok: boolean
+    results: Array<{
+      name: 'Vertiv' | 'Asset Library' | 'PD Cloud' | 'MASW'
+      status: 'Ready' | 'Not connected' | 'Error'
+      reason?: string
+    }>
+    error?: string
+  }>
+  runSweep: (
+    site: 'Vertiv' | 'Asset Library' | 'PD Cloud' | 'MASW',
+    controlNumber: string,
+  ) => Promise<{
+    ok: boolean
+    status: 'Found' | 'Not Found' | 'Error'
+    message: string
+  }>
 }
 
 export type KnowledgeWorksApi = {
