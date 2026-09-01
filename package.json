@@ -43,6 +43,7 @@
       "src/shared/**/*",
       "src/tools/articleflow/**/*",
       "src/tools/mediabridge/**/*",
+      "src/tools/docsweep/**/*",
       "package.json"
     ],
     "extraResources": [
