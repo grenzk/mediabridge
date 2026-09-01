@@ -1,22 +1,6 @@
 KnowledgeWorks Changelog
 
-Unreleased - August 23, 2026
-
-Added
-
-- Added template-backed ArticleFlow imports so articles can reuse custom attributes configured once on a product template.
-- Added a Prepare Template and Continue Import workflow for configuring the eGain template before an import begins.
-- Added live ArticleFlow source-tree states for folders and articles that are active, created, or failed.
-
-Changed
-
-- Updated the ArticleFlow source tree to follow the active import item automatically while preserving completed and failed states.
-
-Fixed
-
-- Fixed failed ArticleFlow operations leaving the active source item in a permanent loading state.
-
-2.0.0-beta.1 - August 11, 2026
+2.0.0-beta.1 - August 31, 2026
 
 Added
 
@@ -28,16 +12,25 @@ Added
 - Added native KnowledgeWorks icons tailored for macOS and Windows.
 - Added a project-level Prettier configuration with format and formatting-check commands.
 - Added stop controls for MediaBridge target counting and active MediaBridge and ArticleFlow automations without closing the shared browser.
+- Added template-backed ArticleFlow imports so articles can reuse custom attributes configured once on a product template.
+- Added a Prepare Template and Continue Import workflow for configuring the eGain template before an import begins.
+- Added live ArticleFlow source-tree states for folders and articles that are active, created, or failed.
+- Added paginated hub navigation for displaying up to four automation tools per page.
 
 Changed
 
 - Updated MediaBridge, ArticleFlow, the KnowledgeWorks hub, and the shared log window to use the Quiet Utility design system.
 - Made ArticleFlow a compact resizable workflow window with consistent tool branding and a simplified header.
-- Updated the KnowledgeWorks hub to use compact logo-only branding while retaining the full native window title.
 - Updated package and packaged application metadata from MediaBridge to KnowledgeWorks while preserving the existing update identity.
 - Removed the duplicate MediaBridge version badge in favor of the global KnowledgeWorks version shown in the hub.
 - Updated the Windows app icon sizing and geometry for better taskbar legibility while retaining macOS-specific icon padding.
 - Standardized project formatting with a pinned Prettier development dependency.
+- Redesigned the KnowledgeWorks hub as a compact launchpad-style tool grid with tooltips and animated page transitions.
+- Updated the ArticleFlow source tree to follow the active import item automatically while preserving completed and failed states.
+- Kept the controlled browser above ArticleFlow while the import window is active.
+- Temporarily removed the unfinished DocSweep tool from the hub during beta testing.
+- Made Prettier line-ending checks consistent across macOS and Windows.
+- Added a responsive ArticleFlow workspace that gives the source hierarchy more room on larger windows while preserving the compact stacked layout.
 
 Fixed
 
@@ -50,6 +43,8 @@ Fixed
 - Fixed ArticleFlow publication by confirming the summary dialog after Publish is selected.
 - Fixed transparent areas in the macOS and Windows app icons so they no longer render with white backgrounds.
 - Removed the MediaBridge window shadow that produced sharp outer corners on Windows.
+- Fixed failed ArticleFlow operations leaving the active source item in a permanent loading state.
+- Fixed KnowledgeWorks renderer errors exposing full exception details in the hub footer instead of the shared log window.
 
 Refactored
 
@@ -57,6 +52,7 @@ Refactored
 - Migrated the hub, shared log console, MediaBridge, and ArticleFlow renderers to TypeScript incrementally.
 - Shared eGain workspace detection and editor locators across automation tools.
 - Consolidated redundant tool-specific TypeScript configurations into one strict workspace check.
+- Split ArticleFlow folder traversal into focused modules and reused its folder-state cache between operations.
 
 1.2.0 - July 11, 2026
 

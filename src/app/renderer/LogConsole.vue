@@ -60,6 +60,10 @@ onBeforeUnmount(() => {
 
 <template>
   <main class="log-window app-dark">
+    <header class="log-titlebar">
+      <span>KnowledgeWorks Logs</span>
+    </header>
+
     <section ref="consoleBody" class="log-console" aria-live="polite">
       <Button
         v-tooltip.top="'Clear logs'"
@@ -91,11 +95,25 @@ onBeforeUnmount(() => {
 <style scoped>
 .log-window {
   position: relative;
+  display: grid;
+  grid-template-rows: 36px minmax(0, 1fr);
   width: 100vw;
   height: 100vh;
   overflow: hidden;
   color: var(--kw-text-light);
   background: var(--kw-canvas);
+}
+
+.log-titlebar {
+  -webkit-app-region: drag;
+  display: grid;
+  place-items: center;
+  color: var(--kw-text-muted);
+  border-bottom: 1px solid var(--kw-border-subtle);
+  background: var(--kw-canvas);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
 }
 
 :deep(.log-clear-button.p-button) {
