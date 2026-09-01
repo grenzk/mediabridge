@@ -141,6 +141,10 @@ export type DocSweepApi = {
     documents: Array<{
       row: number
       controlNumber: string
+      masw: string
+      vertiv: string
+      assetLibrary: string
+      pdCloud: string
     }>
     error?: string
   }>

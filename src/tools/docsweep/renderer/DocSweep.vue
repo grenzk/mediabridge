@@ -32,11 +32,6 @@ type SiteSummary = {
 type ExcelDocument = {
   row: number
   controlNumber: string
-}
-
-type SweepDocument = {
-  row: number
-  controlNumber: string
   masw: string
   vertiv: string
   assetLibrary: string
@@ -63,7 +58,7 @@ const currentSite = ref('-')
 const currentControlNumber = ref('-')
 const completedCount = ref(0)
 const totalCount = ref(0)
-const sweepDocuments = ref<SweepDocument[]>([])
+const sweepDocuments = ref<ExcelDocument[]>([])
 const saveResultsChoice = ref<SaveResultsChoice | null>(null)
 let saveResultsResolver: ((choice: SaveResultsChoice) => void) | null = null
 let saveErrorResolver: ((saved: boolean) => void) | null = null
@@ -179,23 +174,6 @@ const canStartSweep = computed(() => {
   }
 
   return isSitesVerified.value && enabledSites.every(site => site.status === 'Ready')
-})
-
-const isFinishingLastSearch = computed(() => {
-  if (!isRunning.value || !isSweepInitialized.value) {
-    return false
-  }
-
-  const enabledSites = sites.value.filter(site => site.enabled)
-
-  const lastSite = enabledSites[enabledSites.length - 1]
-  const lastDocument = sweepDocuments.value[sweepDocuments.value.length - 1]
-
-  if (!lastSite || !lastDocument) {
-    return false
-  }
-
-  return currentSite.value === lastSite.name && currentControlNumber.value === lastDocument.controlNumber
 })
 
 const footerStatusMessage = computed(() => {
@@ -632,10 +610,10 @@ async function startSweep(): Promise<void> {
   sweepDocuments.value = documents.value.map(document => ({
     row: document.row,
     controlNumber: document.controlNumber,
-    masw: '',
-    vertiv: '',
-    assetLibrary: '',
-    pdCloud: '',
+    masw: document.masw,
+    vertiv: document.vertiv,
+    assetLibrary: document.assetLibrary,
+    pdCloud: document.pdCloud,
   }))
 
   const enabledSites = sites.value.filter(site => site.enabled)

@@ -32,6 +32,10 @@ export async function loadExcelFile(filePath: string): Promise<ExcelLoadResult> 
   const documents: DocSweepDocument[] = []
 
   const CONTROL_NUMBER_COLUMN = 1
+  const MASW_COLUMN = 5
+  const VERTIV_COLUMN = 6
+  const ASSET_LIBRARY_COLUMN = 7
+  const PD_CLOUD_COLUMN = 8
   const FIRST_DATA_ROW = 2
 
   for (let rowNumber = FIRST_DATA_ROW; rowNumber <= worksheet.rowCount; rowNumber += 1) {
@@ -40,16 +44,16 @@ export async function loadExcelFile(filePath: string): Promise<ExcelLoadResult> 
     const value = row.getCell(CONTROL_NUMBER_COLUMN).value
 
     if (value === undefined || value === null || String(value).trim() === '') {
-      break
+      continue
     }
 
     documents.push({
       row: rowNumber,
       controlNumber: String(value).trim(),
-      masw: '',
-      vertiv: '',
-      assetLibrary: '',
-      pdCloud: '',
+      masw: String(row.getCell(MASW_COLUMN).value ?? '').trim(),
+      vertiv: String(row.getCell(VERTIV_COLUMN).value ?? '').trim(),
+      assetLibrary: String(row.getCell(ASSET_LIBRARY_COLUMN).value ?? '').trim(),
+      pdCloud: String(row.getCell(PD_CLOUD_COLUMN).value ?? '').trim(),
     })
   }
 

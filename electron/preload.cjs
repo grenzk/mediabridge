@@ -307,7 +307,11 @@ contextBridge.exposeInMainWorld('docsweep', {
    *   sheetName: string,
    *   documents: Array<{
    *     row: number,
-   *     controlNumber: string
+   *     controlNumber: string,
+   *     masw: string,
+   *     vertiv: string,
+   *     assetLibrary: string,
+   *     pdCloud: string
    *   }>,
    *   error?: string
    * }>}
