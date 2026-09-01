@@ -28,6 +28,12 @@ const hubTools: HubToolDefinition[] = [
     label: 'ArticleFlow',
     mark: 'AF',
   },
+  {
+    description: 'Check product documents for updated versions',
+    id: 'docsweep',
+    label: 'DocSweep',
+    mark: 'DS',
+  },
 ]
 
 const browserButtonLabels: Record<KnowledgeWorksBrowserState, string> = {
