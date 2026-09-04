@@ -125,9 +125,29 @@ async function verifyAssetLibrary(page: Page): Promise<DocSweepSiteVerification>
 }
 
 async function verifyPDCloud(page: Page): Promise<DocSweepSiteVerification> {
-  const advancedSearchButton = page.locator("a[aria-label*='Advanced Search']").first()
-
   try {
+    const expiredDialog = page
+      .locator('.AFPopupSelector')
+      .filter({ hasText: 'The page has expired. Click OK to continue.' })
+      .first()
+
+    if (await expiredDialog.isVisible().catch(() => false)) {
+      const okButton = expiredDialog.locator('button[_afrpdo="ok"]').first()
+
+      if (await okButton.isVisible().catch(() => false)) {
+        await okButton.click()
+      }
+
+      await expiredDialog
+        .waitFor({
+          state: 'hidden',
+          timeout: 10_000,
+        })
+        .catch(() => {})
+    }
+
+    const advancedSearchButton = page.locator("a[aria-label*='Advanced Search']").first()
+
     await advancedSearchButton.waitFor({
       state: 'visible',
       timeout: 10_000,
